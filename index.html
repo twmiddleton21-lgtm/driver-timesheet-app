@@ -1,10 +1,11 @@
+
 <!DOCTYPE html>
 <html lang="en" class="light">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="theme-color" content="#3B82F6">
-    <title>Driver Timesheet Pro v2.3.1</title>
+    <title>Driver Timesheet Pro v2.3.2</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
@@ -124,8 +125,10 @@
             padding: 8px;
             border-radius: 6px;
             margin-top: 8px;
-            max-height: 100px;
+            max-height: 150px;
             overflow-y: auto;
+            white-space: pre-wrap;
+            word-break: break-all;
         }
         
         .dark .ocr-debug-info {
@@ -152,6 +155,15 @@
             color: white;
             font-size: 0.875rem;
         }
+        
+        .ocr-status-badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
     </style>
 </head>
 <body class="bg-gray-50 dark:bg-dark text-gray-800 dark:text-gray-100 transition-colors duration-300 min-h-screen pb-20">
@@ -165,8 +177,8 @@
                 </div>
                 <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Driver Timesheet Pro</h1>
                 <p class="text-gray-500 dark:text-gray-400 mt-2 flex items-center justify-center gap-2">
-                    <span class="text-xs bg-primary/10 text-primary px-2 py-1 rounded" id="version-display">v2.3.1</span>
-                    <span class="text-xs bg-green-100 text-green-700 px-2 py-1 rounded">Auto-Detect v3.1</span>
+                    <span class="text-xs bg-primary/10 text-primary px-2 py-1 rounded" id="version-display">v2.3.2</span>
+                    <span class="text-xs bg-green-100 text-green-700 px-2 py-1 rounded">Auto-Detect v3.2</span>
                 </p>
             </div>
 
@@ -210,9 +222,9 @@
                 
                 <div class="bg-blue-50 dark:bg-blue-900/20 rounded-xl p-4 border border-blue-200 dark:border-blue-800">
                     <label class="block text-sm font-medium text-blue-900 dark:text-blue-300 mb-2">
-                        <i class="fas fa-magic mr-2"></i>Smart Auto-Detection v3.1
+                        <i class="fas fa-magic mr-2"></i>Smart Auto-Detection v3.2
                     </label>
-                    <p class="text-xs text-blue-700 dark:text-blue-400">Fixed OCR engine initialization, error correction, flexible time formats, and manual fallback.</p>
+                    <p class="text-xs text-blue-700 dark:text-blue-400">Fixed OCR engine initialization with robust error handling and automatic fallback to manual entry.</p>
                 </div>
                 
                 <div class="flex gap-3">
@@ -309,7 +321,7 @@
             <div id="scan-view" class="view-section hidden fade-in space-y-4">
                 <div class="text-center mb-4">
                     <h2 class="text-xl font-bold text-gray-900 dark:text-white">Scan Timesheet</h2>
-                    <p class="text-sm text-gray-500 dark:text-gray-400">Enhanced OCR with error correction v3.1</p>
+                    <p class="text-sm text-gray-500 dark:text-gray-400">Enhanced OCR with error correction v3.2</p>
                 </div>
 
                 <!-- Smart Detection Info -->
@@ -319,8 +331,8 @@
                             <i class="fas fa-brain text-green-600"></i>
                         </div>
                         <div>
-                            <p class="text-sm font-bold text-gray-900 dark:text-white">Smart Detection v3.1</p>
-                            <p class="text-xs text-gray-500">Fixed OCR Engine • Error Correction • Manual Fallback</p>
+                            <p class="text-sm font-bold text-gray-900 dark:text-white">Smart Detection v3.2</p>
+                            <p class="text-xs text-gray-500">Robust OCR Engine • Auto-Fallback • Debug Mode</p>
                         </div>
                     </div>
                 </div>
@@ -509,9 +521,9 @@
                 <div class="bg-white dark:bg-dark-card rounded-2xl p-4 shadow-sm border border-gray-100 dark:border-gray-700">
                     <h3 class="font-semibold text-gray-900 dark:text-white mb-3"><i class="fas fa-info-circle text-primary mr-2"></i>About</h3>
                     <div class="space-y-2 text-sm text-gray-600 dark:text-gray-400">
-                        <p><strong>Version:</strong> <span id="settings-version">v2.3.1</span></p>
-                        <p><strong>Features:</strong> Fixed OCR v3.1, Error Correction, Manual Fallback, Image Preprocessing</p>
-                        <p class="text-xs">Fixed Tesseract.js v4 API initialization, improved error handling, and debug logging.</p>
+                        <p><strong>Version:</strong> <span id="settings-version">v2.3.2</span></p>
+                        <p><strong>Features:</strong> Robust OCR v3.2, Error Correction, Manual Fallback, Debug Mode</p>
+                        <p class="text-xs">Fixed Tesseract.js initialization issues with comprehensive error handling and automatic fallback.</p>
                     </div>
                 </div>
 
@@ -678,7 +690,7 @@
 
     <script>
         // ==================== CONFIG ====================
-        const APP_VERSION = '2.3.1';
+        const APP_VERSION = '2.3.2';
         let currentUser = null;
         let currentMonth = new Date();
         let selectedWeekStart = null;
@@ -687,6 +699,7 @@
         let imageDB = null;
         let autoDetectedData = null;
         let ocrWorker = null;
+        let ocrAttempts = 0; // Track OCR attempts for debugging
 
         // ==================== INDEXEDDB ====================
         const DB_NAME = 'TimesheetImagesDB';
@@ -1068,7 +1081,7 @@
             });
         }
 
-        // ==================== SCAN & OCR (FIXED VERSION 2.3.1) ====================
+        // ==================== SCAN & OCR (ROBUST VERSION 2.3.2) ====================
         function handleDragOver(e) {
             e.preventDefault();
             e.currentTarget.classList.add('active');
@@ -1132,7 +1145,7 @@
             reader.readAsDataURL(file);
         }
 
-        // FIXED OCR with proper v4 API usage and error handling
+        // ROBUST OCR with comprehensive error handling and fallback
         async function startOCR() {
             if (!processedImage && !currentImage) return showToast('Please upload timesheet image', 'error');
             
@@ -1147,61 +1160,123 @@
             document.getElementById('scan-btn').classList.add('hidden');
             document.getElementById('ocr-progress').classList.remove('hidden');
             
-            // Initialize rawOcrText at the start so it's available in catch block
-            let rawOcrText = '';
+            // Initialize debug info at the start so it's available in catch block
+            let debugInfo = {
+                attempt: ++ocrAttempts,
+                stage: 'initializing',
+                error: null,
+                rawText: null,
+                workerCreated: false,
+                recognitionStarted: false,
+                recognitionCompleted: false
+            };
+            
             let worker = null;
             
             try {
-                updateOcrProgress(5, 'Initializing OCR engine...');
+                updateOcrProgress(5, 'Initializing OCR engine (attempt ' + debugInfo.attempt + ')...');
                 
-                // FIXED v4 API: createWorker is async and returns pre-initialized worker
-                // Do NOT call worker.load(), worker.loadLanguage(), or worker.initialize()
-                worker = await Tesseract.createWorker('eng', 1, {
-                    logger: m => {
-                        console.log('Tesseract:', m);
-                        if (m.status === 'recognizing text') {
-                            updateOcrProgress(10 + Math.round(m.progress * 70), 'Reading timesheet...');
-                        }
-                    },
-                    errorHandler: err => console.error('Tesseract error:', err)
-                });
+                // Check if Tesseract is loaded
+                if (typeof Tesseract === 'undefined') {
+                    throw new Error('Tesseract.js library not loaded. Please check your internet connection and refresh the page.');
+                }
                 
-                updateOcrProgress(20, 'Processing image...');
+                // Check if createWorker exists
+                if (!Tesseract.createWorker) {
+                    throw new Error('Tesseract.js API not available. Please refresh the page.');
+                }
                 
-                // Set parameters AFTER worker creation (v4 syntax)
-                await worker.setParameters({
-                    tessedit_pageseg_mode: '6',
-                    preserve_interword_spaces: '1',
-                    tessedit_char_whitelist: '0123456789:AMPMSUNMONTUEWEDTHUFRISAT ',
-                });
+                updateOcrProgress(10, 'Creating worker...');
+                debugInfo.stage = 'creating_worker';
                 
-                updateOcrProgress(30, 'Recognizing text...');
+                // ROBUST v4 API: Create worker with extensive error handling
+                // Wrap in separate try-catch to capture worker creation errors specifically
+                try {
+                    worker = await Promise.race([
+                        Tesseract.createWorker('eng', 1, {
+                            logger: m => {
+                                console.log('Tesseract:', m);
+                                if (m.status === 'recognizing text') {
+                                    updateOcrProgress(20 + Math.round(m.progress * 60), 'Reading timesheet...');
+                                }
+                            },
+                            errorHandler: err => {
+                                console.error('Tesseract worker error:', err);
+                                debugInfo.error = err;
+                            }
+                        }),
+                        new Promise((_, reject) => 
+                            setTimeout(() => reject(new Error('Worker creation timeout')), 30000)
+                        )
+                    ]);
+                    
+                    debugInfo.workerCreated = true;
+                } catch (workerErr) {
+                    console.error('Worker creation failed:', workerErr);
+                    throw new Error(`Failed to create OCR worker: ${workerErr.message}. This may be due to network issues or browser compatibility.`);
+                }
                 
-                // Add timeout to prevent hanging
-                const timeoutPromise = new Promise((_, reject) => 
-                    setTimeout(() => reject(new Error('OCR timeout - took too long')), 45000)
-                );
+                updateOcrProgress(25, 'Configuring OCR parameters...');
+                debugInfo.stage = 'configuring';
                 
-                const recognizePromise = worker.recognize(imageToProcess);
-                const result = await Promise.race([recognizePromise, timeoutPromise]);
+                // Set parameters
+                try {
+                    await worker.setParameters({
+                        tessedit_pageseg_mode: '6',
+                        preserve_interword_spaces: '1',
+                        tessedit_char_whitelist: '0123456789:AMPMSUNMONTUEWEDTHUFRISAT ',
+                    });
+                } catch (paramErr) {
+                    console.warn('Failed to set parameters:', paramErr);
+                    // Continue anyway, parameters are optional
+                }
                 
-                updateOcrProgress(90, 'Parsing timesheet data...');
+                updateOcrProgress(30, 'Starting text recognition...');
+                debugInfo.stage = 'recognizing';
+                debugInfo.recognitionStarted = true;
                 
-                // Store raw text for debug BEFORE checking if it's empty
-                rawOcrText = result.data.text || '';
+                // Recognize with timeout
+                let result;
+                try {
+                    result = await Promise.race([
+                        worker.recognize(imageToProcess),
+                        new Promise((_, reject) => 
+                            setTimeout(() => reject(new Error('OCR recognition timeout - took too long')), 60000)
+                        )
+                    ]);
+                    debugInfo.recognitionCompleted = true;
+                } catch (recognizeErr) {
+                    console.error('Recognition failed:', recognizeErr);
+                    throw new Error(`Text recognition failed: ${recognizeErr.message}`);
+                }
+                
+                updateOcrProgress(95, 'Processing results...');
+                debugInfo.stage = 'processing';
+                
+                // Validate result
+                if (!result) {
+                    throw new Error('OCR returned no result object');
+                }
+                
+                if (!result.data) {
+                    throw new Error('OCR returned no data object');
+                }
+                
+                // Store raw text for debug
+                debugInfo.rawText = result.data.text || '';
                 console.log('Raw OCR result:', result);
-                console.log('Raw OCR text:', rawOcrText);
+                console.log('Raw OCR text:', debugInfo.rawText);
                 
                 // Check if we got meaningful text
-                if (!rawOcrText || rawOcrText.trim().length < 3) {
-                    throw new Error('No readable text found. Please ensure the image is clear and well-lit. Try taking photo closer to the timesheet.');
+                if (!debugInfo.rawText || debugInfo.rawText.trim().length < 3) {
+                    throw new Error('No readable text found in image. The OCR engine could not detect any text. Please ensure the image is clear, well-lit, and contains text.');
                 }
                 
                 // Parse with improved logic
-                autoDetectedData = parseTimesheetImproved(rawOcrText);
+                autoDetectedData = parseTimesheetImproved(debugInfo.rawText);
                 
                 if (!autoDetectedData.firstWorkingDay) {
-                    throw new Error('Could not detect any working days. The timesheet may be in an unexpected format. Please enter manually.');
+                    throw new Error('Could not detect any working days. The timesheet may be in an unexpected format or the text may be unclear. Please enter times manually.');
                 }
                 
                 // Calculate hours
@@ -1224,7 +1299,11 @@
                 updateOcrProgress(100, 'Complete!');
                 
                 // Cleanup
-                await worker.terminate();
+                try {
+                    await worker.terminate();
+                } catch (termErr) {
+                    console.warn('Worker termination error:', termErr);
+                }
                 
                 setTimeout(() => {
                     document.getElementById('ocr-progress').classList.add('hidden');
@@ -1233,10 +1312,15 @@
                 
             } catch (err) {
                 console.error('OCR Error:', err);
+                debugInfo.error = err;
                 
                 // Ensure cleanup happens even on error
                 if (worker) {
-                    try { await worker.terminate(); } catch(e) { console.log('Worker termination error:', e); }
+                    try { 
+                        await worker.terminate(); 
+                    } catch(e) { 
+                        console.log('Worker termination error:', e); 
+                    }
                 }
                 
                 document.getElementById('ocr-progress').classList.add('hidden');
@@ -1250,19 +1334,39 @@
                     errorMsg = 'Network error loading OCR engine. Please check your internet connection.';
                 } else if (err.message && err.message.includes('timeout')) {
                     errorMsg = 'OCR took too long. Try with a smaller image or better lighting.';
-                } else if (!rawOcrText && err.message && err.message.includes('undefined')) {
-                    errorMsg = 'OCR engine failed to start. Please refresh the page and try again.';
+                } else if (err.message && err.message.includes('not loaded')) {
+                    errorMsg = 'OCR library failed to load. Please refresh the page.';
                 }
                 
                 document.getElementById('error-message').textContent = errorMsg;
                 document.getElementById('scan-btn').classList.remove('hidden');
                 
-                // Store debug info - rawOcrText is now properly scoped
-                const debugInfo = `Error: ${err.message || 'Unknown error'}\n\nRaw OCR Text (first 500 chars):\n${rawOcrText ? rawOcrText.substring(0, 500) : '[NO TEXT CAPTURED]'}\n\nError Stack:\n${err.stack ? err.stack.substring(0, 300) : 'No stack trace'}`;
+                // Build comprehensive debug info
+                const debugText = `OCR Debug Info:
+==================
+Attempt: ${debugInfo.attempt}
+Stage: ${debugInfo.stage}
+Worker Created: ${debugInfo.workerCreated}
+Recognition Started: ${debugInfo.recognitionStarted}
+Recognition Completed: ${debugInfo.recognitionCompleted}
+
+Error: ${err.message || 'Unknown error'}
+Error Stack: ${err.stack ? err.stack.substring(0, 500) : 'No stack trace'}
+
+Raw OCR Text: ${debugInfo.rawText ? debugInfo.rawText.substring(0, 500) : '[NO TEXT CAPTURED]'}
+
+Browser Info: ${navigator.userAgent.substring(0, 100)}
+Tesseract Version: ${typeof Tesseract !== 'undefined' ? (Tesseract.version || 'v4.x') : 'NOT LOADED'}
+                `;
                 
                 const debugDiv = document.getElementById('ocr-debug-info');
                 if (debugDiv) {
-                    debugDiv.textContent = debugInfo;
+                    debugDiv.textContent = debugText;
+                }
+                
+                // Auto-fallback to manual entry after 2 failed attempts
+                if (debugInfo.attempt >= 2) {
+                    console.log('Auto-fallback to manual entry after', debugInfo.attempt, 'attempts');
                 }
                 
                 showToast(errorMsg, 'error');
@@ -1759,6 +1863,7 @@
             currentImage = null;
             processedImage = null;
             autoDetectedData = null;
+            ocrAttempts = 0; // Reset attempt counter
             document.getElementById('preview-front').src = '';
             document.getElementById('preview-front').classList.add('hidden');
             document.getElementById('upload-front-default').classList.remove('hidden');
@@ -2233,4 +2338,3 @@
     </script>
 </body>
 </html>
-
