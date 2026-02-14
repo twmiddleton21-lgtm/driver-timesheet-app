@@ -1,0 +1,8 @@
+{
+  "version": "1.0.0",
+  "downloadUrl": "https://yourusername.github.io/driver-timesheet-app/index.html",
+  "changelog": "Initial release - Driver timesheet tracking with local storage",
+  "force": false,
+  "minVersion": "1.0.0",
+  "releaseDate": "2024-01-15"
+}
