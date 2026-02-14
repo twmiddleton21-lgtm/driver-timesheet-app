@@ -393,8 +393,9 @@
                 </div>
 
                 <div class="bg-white dark:bg-dark-card rounded-2xl p-4 shadow-sm border border-gray-100 dark:border-gray-700 mb-4">
-                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Select Week Starting</label>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Select Week Starting (Sunday)</label>
                     <input type="date" id="scan-date-select" class="w-full p-3 bg-gray-100 dark:bg-dark-surface rounded-xl border-2 border-transparent focus:border-primary outline-none">
+                    <p class="text-xs text-gray-500 mt-2" id="selected-week-info">Week of: --</p>
                 </div>
 
                 <div class="space-y-3">
@@ -700,7 +701,6 @@
 
     <script>
         // ==================== CONFIG ====================
-        // UPDATED: Changed from placeholder to actual GitHub username
         const APP_VERSION = '1.0.0';
         const UPDATE_URL = 'https://raw.githubusercontent.com/twmiddleton21-lgtm/driver-timesheet-app/main/version.json';
         
@@ -710,6 +710,46 @@
         let currentUploads = { front: null, back: null, fuel: null, check: null };
         let isOnline = navigator.onLine;
         let autoUpdateEnabled = true;
+
+        // ==================== DATE UTILITIES (iOS Compatible) ====================
+        
+        // Get Sunday of current week (week start)
+        function getWeekStart(date) {
+            const d = new Date(date);
+            const day = d.getDay();
+            const diff = d.getDate() - day; // adjust when day is Sunday
+            return new Date(d.setDate(diff));
+        }
+        
+        // Format date as YYYY-MM-DD for input fields (iOS compatible)
+        function formatDateForInput(date) {
+            const d = new Date(date);
+            const year = d.getFullYear();
+            const month = String(d.getMonth() + 1).padStart(2, '0');
+            const day = String(d.getDate()).padStart(2, '0');
+            return `${year}-${month}-${day}`;
+        }
+        
+        // Parse date string safely for iOS
+        function parseDate(dateString) {
+            // Handle both YYYY-MM-DD and other formats
+            if (typeof dateString === 'string' && dateString.includes('-')) {
+                const parts = dateString.split('-');
+                if (parts.length === 3) {
+                    // Create date in local timezone to avoid off-by-one errors
+                    return new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
+                }
+            }
+            return new Date(dateString);
+        }
+        
+        // Format date range for display
+        function formatWeekRange(startDate, endDate) {
+            const options = { month: 'short', day: 'numeric' };
+            const startStr = startDate.toLocaleDateString('en-US', options);
+            const endStr = endDate.toLocaleDateString('en-US', { ...options, year: 'numeric' });
+            return `${startStr} - ${endStr}`;
+        }
 
         // ==================== AUTO-UPDATE ON LAUNCH ====================
         document.addEventListener('DOMContentLoaded', () => {
@@ -1042,19 +1082,40 @@
             updateStats();
             renderRecent();
             
-            // Set default scan date to current week (Sunday)
+            // Set default scan date to current week (Sunday) - FIXED for iOS
             const today = new Date();
-            const dayOfWeek = today.getDay(); // 0 = Sunday, 1 = Monday, etc.
-            const diff = today.getDate() - dayOfWeek; // adjust when day is Sunday
-            const weekStart = new Date(today.setDate(diff));
+            const weekStart = getWeekStart(today);
             
-            // Format as YYYY-MM-DD for date input
-            const yyyy = weekStart.getFullYear();
-            const mm = String(weekStart.getMonth() + 1).padStart(2, '0');
-            const dd = String(weekStart.getDate()).padStart(2, '0');
-            document.getElementById('scan-date-select').value = `${yyyy}-${mm}-${dd}`;
+            // Set the date input value
+            const dateInput = document.getElementById('scan-date-select');
+            dateInput.value = formatDateForInput(weekStart);
+            
+            // Update the week display
+            updateScanWeekDisplay();
+            
+            // Add listener for date changes
+            dateInput.addEventListener('change', updateScanWeekDisplay);
             
             showToast(`Welcome, ${user.username}`);
+        }
+
+        function updateScanWeekDisplay() {
+            const dateInput = document.getElementById('scan-date-select');
+            const weekInfo = document.getElementById('selected-week-info');
+            const scanDisplay = document.getElementById('scan-week-display');
+            
+            if (dateInput.value) {
+                const startDate = parseDate(dateInput.value);
+                const endDate = new Date(startDate);
+                endDate.setDate(endDate.getDate() + 6);
+                
+                const rangeText = formatWeekRange(startDate, endDate);
+                weekInfo.textContent = `Week of: ${rangeText}`;
+                scanDisplay.textContent = rangeText;
+            } else {
+                weekInfo.textContent = 'Week of: --';
+                scanDisplay.textContent = 'Current Week';
+            }
         }
 
         function showCreateUser() {
@@ -1125,7 +1186,7 @@
             const weekData = {};
             
             timesheets.forEach(ts => {
-                const date = new Date(ts.weekStart);
+                const date = parseDate(ts.weekStart);
                 if (date.getFullYear() === year && date.getMonth() === month) {
                     weekData[date.getDate()] = ts;
                 }
@@ -1140,7 +1201,7 @@
                 grid.appendChild(createCalendarDay(prevMonthDays - i, true));
             }
             
-            // Current month - FIX: Use proper date comparison for today
+            // Current month
             const today = new Date();
             const todayYear = today.getFullYear();
             const todayMonth = today.getMonth();
@@ -1202,14 +1263,16 @@
         }
 
         function selectEmptyWeek(year, month, day) {
-            const date = new Date(year, month, day);
-            const weekStart = new Date(date.setDate(date.getDate() - date.getDay()));
+            // Create date at noon to avoid timezone issues
+            const date = new Date(year, month, day, 12, 0, 0);
+            const weekStart = getWeekStart(date);
             
-            // Format as YYYY-MM-DD
-            const yyyy = weekStart.getFullYear();
-            const mm = String(weekStart.getMonth() + 1).padStart(2, '0');
-            const dd = String(weekStart.getDate()).padStart(2, '0');
-            document.getElementById('scan-date-select').value = `${yyyy}-${mm}-${dd}`;
+            // Set the date input
+            const dateInput = document.getElementById('scan-date-select');
+            dateInput.value = formatDateForInput(weekStart);
+            
+            // Update display
+            updateScanWeekDisplay();
             
             switchView('scan');
             showToast('Selected week for new upload');
@@ -1258,12 +1321,30 @@
                     document.getElementById('front-status').className = 'text-xs text-green-600 font-medium';
                 }
             };
+            reader.onerror = () => {
+                showToast('Error reading file', 'error');
+            };
             reader.readAsDataURL(file);
             showToast(`${type.charAt(0).toUpperCase() + type.slice(1)} ready`);
         }
 
+        // Helper function to read file as Data URL with Promise
+        function readFileAsDataURL(file) {
+            return new Promise((resolve, reject) => {
+                if (!file) {
+                    reject(new Error('No file provided'));
+                    return;
+                }
+                const reader = new FileReader();
+                reader.onload = (e) => resolve(e.target.result);
+                reader.onerror = (e) => reject(new Error('Failed to read file'));
+                reader.onabort = () => reject(new Error('File reading aborted'));
+                reader.readAsDataURL(file);
+            });
+        }
+
         // FIXED processScan function - prevents getting stuck
-        function processScan() {
+        async function processScan() {
             if (!currentUploads.front) {
                 return showToast('Timesheet front is required', 'error');
             }
@@ -1278,170 +1359,158 @@
             btn.disabled = true;
             btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Processing...';
             
-            // Read the front image first
-            const reader = new FileReader();
-            
-            reader.onerror = function() {
-                showToast('Error reading image. Please try again.', 'error');
+            try {
+                // Read the front image
+                const frontDataUrl = await readFileAsDataURL(currentUploads.front);
+                
+                // Simulate processing delay
+                await new Promise(resolve => setTimeout(resolve, 1500));
+                
+                // Parse date safely for iOS
+                const weekStart = parseDate(weekStartInput);
+                const weekEnd = new Date(weekStart);
+                weekEnd.setDate(weekEnd.getDate() + 6);
+                
+                // Generate realistic driver data
+                const days = [];
+                let totalHours = 0;
+                let longDays = 0;
+                let lowRestDays = 0;
+                
+                for (let i = 0; i < 7; i++) {
+                    const isWorkDay = i < 5 && Math.random() > 0.1;
+                    if (isWorkDay) {
+                        const hours = 8 + Math.random() * 5;
+                        totalHours += hours;
+                        if (hours > 15) longDays++;
+                        
+                        const restHours = 8 + Math.random() * 5;
+                        if (restHours < 9) lowRestDays++;
+                        
+                        days.push({
+                            day: ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][i],
+                            hours: parseFloat(hours.toFixed(2)),
+                            start: `${7 + Math.floor(Math.random() * 3)}:${Math.random() > 0.5 ? '00' : '30'}`,
+                            end: `${15 + Math.floor(Math.random() * 5)}:${Math.random() > 0.5 ? '00' : '30'}`,
+                            rest: `${restHours.toFixed(1)}h`,
+                            flag: hours > 14 ? 'warning' : 'ok'
+                        });
+                    } else {
+                        days.push({
+                            day: ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][i],
+                            hours: 0,
+                            start: '-',
+                            end: '-',
+                            rest: '-',
+                            flag: 'none'
+                        });
+                    }
+                }
+                
+                const timesheet = {
+                    id: Date.now(),
+                    weekStart: weekStartInput, // Keep original string format
+                    weekEnd: formatDateForInput(weekEnd),
+                    weekRange: formatWeekRange(weekStart, weekEnd),
+                    totalHours: parseFloat(totalHours.toFixed(1)),
+                    longDays,
+                    lowRestDays,
+                    images: {
+                        front: frontDataUrl,
+                        back: null,
+                        fuel: null,
+                        check: null
+                    },
+                    days,
+                    uploadedAt: new Date().toISOString()
+                };
+                
+                // Process optional images with timeout protection
+                const processOptional = async (type) => {
+                    if (currentUploads[type]) {
+                        try {
+                            const dataUrl = await Promise.race([
+                                readFileAsDataURL(currentUploads[type]),
+                                new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout')), 5000))
+                            ]);
+                            timesheet.images[type] = dataUrl;
+                        } catch (err) {
+                            console.log(`Failed to process ${type}:`, err);
+                            // Continue without this image
+                        }
+                    }
+                };
+                
+                // Process all optional images in parallel with error handling
+                await Promise.allSettled([
+                    processOptional('back'),
+                    processOptional('fuel'),
+                    processOptional('check')
+                ]);
+                
+                // Save to storage
+                const existing = DB.getTimesheets(currentUser.username);
+                const filtered = existing.filter(t => t.weekStart !== weekStartInput);
+                filtered.push(timesheet);
+                DB.saveTimesheets(currentUser.username, filtered);
+                
+                // Reset form
+                resetScanForm();
+                
+                // Update UI
+                renderCalendar();
+                updateStats();
+                renderRecent();
+                
+                showToast('Timesheet saved successfully!');
+                switchView('dashboard');
+                
+                // Select the new week
+                setTimeout(() => selectWeek(timesheet), 300);
+                
+            } catch (err) {
+                console.error('Processing error:', err);
+                showToast('Error processing timesheet: ' + err.message, 'error');
+            } finally {
+                // ALWAYS reset button state
                 btn.disabled = false;
                 btn.innerHTML = originalText;
-            };
-            
-            reader.onload = function(e) {
-                // Now process inside timeout to simulate extraction
-                setTimeout(() => {
-                    try {
-                        const weekStart = new Date(weekStartInput);
-                        const weekEnd = new Date(weekStart);
-                        weekEnd.setDate(weekEnd.getDate() + 6);
-                        
-                        // Generate realistic driver data
-                        const days = [];
-                        let totalHours = 0;
-                        let longDays = 0;
-                        let lowRestDays = 0;
-                        
-                        for (let i = 0; i < 7; i++) {
-                            const isWorkDay = i < 5 && Math.random() > 0.1;
-                            if (isWorkDay) {
-                                const hours = 8 + Math.random() * 5;
-                                totalHours += hours;
-                                if (hours > 15) longDays++;
-                                
-                                const restHours = 8 + Math.random() * 5;
-                                if (restHours < 9) lowRestDays++;
-                                
-                                days.push({
-                                    day: ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][i],
-                                    hours: parseFloat(hours.toFixed(2)),
-                                    start: `${7 + Math.floor(Math.random() * 3)}:${Math.random() > 0.5 ? '00' : '30'}`,
-                                    end: `${15 + Math.floor(Math.random() * 5)}:${Math.random() > 0.5 ? '00' : '30'}`,
-                                    rest: `${restHours.toFixed(1)}h`,
-                                    flag: hours > 14 ? 'warning' : 'ok'
-                                });
-                            } else {
-                                days.push({
-                                    day: ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][i],
-                                    hours: 0,
-                                    start: '-',
-                                    end: '-',
-                                    rest: '-',
-                                    flag: 'none'
-                                });
-                            }
-                        }
-                        
-                        const timesheet = {
-                            id: Date.now(),
-                            weekStart: weekStartInput,
-                            weekEnd: weekEnd.toISOString().split('T')[0],
-                            weekRange: `${weekStart.toLocaleDateString('en-US', {month:'short', day:'numeric'})} - ${weekEnd.toLocaleDateString('en-US', {month:'short', day:'numeric', year:'numeric'})}`,
-                            totalHours: parseFloat(totalHours.toFixed(1)),
-                            longDays,
-                            lowRestDays,
-                            images: {
-                                front: e.target.result,
-                                back: null,
-                                fuel: null,
-                                check: null
-                            },
-                            days,
-                            uploadedAt: new Date().toISOString()
-                        };
-                        
-                        // Process optional images
-                        const processOptional = (type) => {
-                            return new Promise((resolve) => {
-                                if (currentUploads[type]) {
-                                    const r = new FileReader();
-                                    r.onload = (ev) => {
-                                        timesheet.images[type] = ev.target.result;
-                                        resolve();
-                                    };
-                                    r.onerror = () => resolve();
-                                    r.readAsDataURL(currentUploads[type]);
-                                } else {
-                                    resolve();
-                                }
-                            });
-                        };
-                        
-                        Promise.all([
-                            processOptional('back'),
-                            processOptional('fuel'),
-                            processOptional('check')
-                        ]).then(() => {
-                            // Save to storage
-                            const existing = DB.getTimesheets(currentUser.username);
-                            const filtered = existing.filter(t => t.weekStart !== weekStartInput);
-                            filtered.push(timesheet);
-                            DB.saveTimesheets(currentUser.username, filtered);
-                            
-                            // Reset form
-                            resetScanForm();
-                            
-                            // Update UI
-                            renderCalendar();
-                            updateStats();
-                            renderRecent();
-                            
-                            // Reset button
-                            btn.disabled = false;
-                            btn.innerHTML = originalText;
-                            
-                            showToast('Timesheet saved successfully!');
-                            switchView('dashboard');
-                            
-                            // Select the new week
-                            setTimeout(() => selectWeek(timesheet), 300);
-                        }).catch(err => {
-                            console.error('Error:', err);
-                            // Save anyway
-                            const existing = DB.getTimesheets(currentUser.username);
-                            const filtered = existing.filter(t => t.weekStart !== weekStartInput);
-                            filtered.push(timesheet);
-                            DB.saveTimesheets(currentUser.username, filtered);
-                            
-                            resetScanForm();
-                            renderCalendar();
-                            updateStats();
-                            renderRecent();
-                            
-                            btn.disabled = false;
-                            btn.innerHTML = originalText;
-                            
-                            showToast('Timesheet saved!');
-                            switchView('dashboard');
-                        });
-                        
-                    } catch (err) {
-                        console.error('Processing error:', err);
-                        btn.disabled = false;
-                        btn.innerHTML = originalText;
-                        showToast('Error processing timesheet. Please try again.', 'error');
-                    }
-                }, 1500);
-            };
-            
-            reader.readAsDataURL(currentUploads.front);
+            }
         }
 
         function resetScanForm() {
             currentUploads = { front: null, back: null, fuel: null, check: null };
+            
             ['front', 'back', 'fuel', 'check'].forEach(type => {
                 const img = document.getElementById(`preview-${type}`);
                 const defaultDiv = document.getElementById(`upload-${type}-default`);
                 const input = document.getElementById(`file-${type}`);
                 
-                if (img) img.classList.add('hidden');
-                if (defaultDiv) defaultDiv.classList.remove('hidden');
-                if (input) input.value = '';
+                if (img) {
+                    img.src = '';
+                    img.classList.add('hidden');
+                }
+                if (defaultDiv) {
+                    defaultDiv.classList.remove('hidden');
+                }
+                if (input) {
+                    input.value = '';
+                }
             });
             
             const frontStatus = document.getElementById('front-status');
             if (frontStatus) {
                 frontStatus.textContent = 'Required';
                 frontStatus.className = 'text-xs text-red-500';
+            }
+            
+            // Reset to current week
+            const today = new Date();
+            const weekStart = getWeekStart(today);
+            const dateInput = document.getElementById('scan-date-select');
+            if (dateInput) {
+                dateInput.value = formatDateForInput(weekStart);
+                updateScanWeekDisplay();
             }
         }
 
@@ -1454,11 +1523,11 @@
             const now = new Date();
             if (filter === 'month') {
                 timesheets = timesheets.filter(t => {
-                    const d = new Date(t.weekStart);
+                    const d = parseDate(t.weekStart);
                     return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
                 });
             } else if (filter === 'year') {
-                timesheets = timesheets.filter(t => new Date(t.weekStart).getFullYear() === now.getFullYear());
+                timesheets = timesheets.filter(t => parseDate(t.weekStart).getFullYear() === now.getFullYear());
             }
             
             if (timesheets.length === 0) {
@@ -1599,7 +1668,7 @@
                 title.textContent = 'Delete Month';
                 const months = {};
                 timesheets.forEach(ts => {
-                    const date = new Date(ts.weekStart);
+                    const date = parseDate(ts.weekStart);
                     const key = `${date.getFullYear()}-${date.getMonth()}`;
                     if (!months[key]) months[key] = { year: date.getFullYear(), month: date.getMonth(), count: 0 };
                     months[key].count++;
@@ -1620,7 +1689,7 @@
                 title.textContent = 'Delete Year';
                 const years = {};
                 timesheets.forEach(ts => {
-                    const year = new Date(ts.weekStart).getFullYear();
+                    const year = parseDate(ts.weekStart).getFullYear();
                     if (!years[year]) years[year] = 0;
                     years[year]++;
                 });
@@ -1674,7 +1743,7 @@
             if (confirm(`Delete all data for ${new Date(year, month).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}?`)) {
                 let timesheets = DB.getTimesheets(currentUser.username);
                 timesheets = timesheets.filter(t => {
-                    const d = new Date(t.weekStart);
+                    const d = parseDate(t.weekStart);
                     return !(d.getFullYear() === year && d.getMonth() === month);
                 });
                 DB.saveTimesheets(currentUser.username, timesheets);
@@ -1690,7 +1759,7 @@
         function confirmDeleteYear(year) {
             if (confirm(`Delete ALL data for ${year}? This cannot be undone.`)) {
                 let timesheets = DB.getTimesheets(currentUser.username);
-                timesheets = timesheets.filter(t => new Date(t.weekStart).getFullYear() !== year);
+                timesheets = timesheets.filter(t => parseDate(t.weekStart).getFullYear() !== year);
                 DB.saveTimesheets(currentUser.username, timesheets);
                 
                 renderCalendar();
@@ -1720,12 +1789,12 @@
             const now = new Date();
             
             const monthSheets = timesheets.filter(t => {
-                const d = new Date(t.weekStart);
+                const d = parseDate(t.weekStart);
                 return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
             });
             const monthHours = monthSheets.reduce((sum, t) => sum + t.totalHours, 0);
             
-            const yearSheets = timesheets.filter(t => new Date(t.weekStart).getFullYear() === now.getFullYear());
+            const yearSheets = timesheets.filter(t => parseDate(t.weekStart).getFullYear() === now.getFullYear());
             const yearHours = yearSheets.reduce((sum, t) => sum + t.totalHours, 0);
             
             document.getElementById('stat-month-hours').textContent = monthHours.toFixed(1) + 'h';
