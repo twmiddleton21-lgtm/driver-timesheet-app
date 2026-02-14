@@ -1,5 +1,9 @@
 # Driver Timesheet Pro
+**⚠️ IMPORTANT: This is the code repository. To use the app, click below:**
 
+# [🚀 CLICK HERE TO OPEN APP](https://yourusername.github.io/driver-timesheet-app/)
+
+---
 A self-hosted, offline-capable timesheet tracking app for drivers. All data stored locally on your device.
 
 ## Installation
