@@ -140,6 +140,12 @@
             background: linear-gradient(135deg, #450a0a 0%, #7f1d1d 100%);
             border-color: #dc2626;
         }
+        
+        .storage-info {
+            font-size: 0.75rem;
+            color: #6b7280;
+            margin-top: 0.5rem;
+        }
     </style>
 </head>
 <body class="bg-gray-50 dark:bg-dark text-gray-800 dark:text-gray-100 transition-colors duration-300 min-h-screen pb-20">
@@ -470,6 +476,11 @@
                 <button onclick="processScan()" id="scan-btn" class="w-full bg-primary hover:bg-blue-600 text-white font-bold py-4 rounded-xl shadow-lg shadow-blue-500/30 transition-all transform active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed mt-4">
                     <i class="fas fa-magic mr-2"></i>Extract & Save
                 </button>
+                
+                <p class="storage-info text-center">
+                    <i class="fas fa-info-circle mr-1"></i>
+                    Photos stored locally on device. Storage usage: <span id="storage-usage">calculating...</span>
+                </p>
             </div>
 
             <!-- History View -->
@@ -501,6 +512,20 @@
                             <div class="w-5 h-5 bg-white rounded-full absolute top-0.5 left-0.5 dark:left-6 transition-all shadow-sm"></div>
                         </div>
                     </button>
+                </div>
+
+                <div class="bg-white dark:bg-dark-card rounded-2xl p-4 shadow-sm border border-gray-100 dark:border-gray-700">
+                    <h3 class="font-semibold text-gray-900 dark:text-white mb-3">Storage</h3>
+                    <div class="p-3 bg-gray-100 dark:bg-dark-surface rounded-xl">
+                        <div class="flex justify-between mb-2">
+                            <span class="text-sm text-gray-600 dark:text-gray-400">Photos Storage</span>
+                            <span class="text-sm font-medium" id="settings-storage-usage">--</span>
+                        </div>
+                        <div class="w-full bg-gray-300 dark:bg-gray-600 rounded-full h-2">
+                            <div id="storage-bar" class="bg-primary h-2 rounded-full" style="width: 0%"></div>
+                        </div>
+                        <p class="text-xs text-gray-500 mt-2">Photos stored in device IndexedDB. Text data in localStorage.</p>
+                    </div>
                 </div>
 
                 <div class="bg-white dark:bg-dark-card rounded-2xl p-4 shadow-sm border border-gray-100 dark:border-gray-700">
@@ -585,7 +610,7 @@
 
                 <div class="text-center text-xs text-gray-400 pt-4">
                     <p>Driver Timesheet Pro <span id="footer-version">v1.0.0</span></p>
-                    <p class="mt-1">Auto-Update Enabled • 100% Offline Capable</p>
+                    <p class="mt-1">IndexedDB Storage • 100% Offline Capable</p>
                 </div>
             </div>
         </main>
@@ -710,18 +735,124 @@
         let currentUploads = { front: null, back: null, fuel: null, check: null };
         let isOnline = navigator.onLine;
         let autoUpdateEnabled = true;
+        let imageDB = null;
+
+        // ==================== INDEXEDDB SETUP FOR IMAGES ====================
+        const DB_NAME = 'TimesheetImagesDB';
+        const STORE_NAME = 'images';
+        const DB_VERSION = 1;
+
+        function initImageDB() {
+            return new Promise((resolve, reject) => {
+                const request = indexedDB.open(DB_NAME, DB_VERSION);
+                
+                request.onerror = () => reject(request.error);
+                request.onsuccess = () => {
+                    imageDB = request.result;
+                    resolve(imageDB);
+                };
+                
+                request.onupgradeneeded = (event) => {
+                    const db = event.target.result;
+                    if (!db.objectStoreNames.contains(STORE_NAME)) {
+                        db.createObjectStore(STORE_NAME, { keyPath: 'id' });
+                    }
+                };
+            });
+        }
+
+        async function saveImage(id, dataUrl) {
+            if (!imageDB) await initImageDB();
+            return new Promise((resolve, reject) => {
+                const transaction = imageDB.transaction([STORE_NAME], 'readwrite');
+                const store = transaction.objectStore(STORE_NAME);
+                const request = store.put({ id, data: dataUrl, timestamp: Date.now() });
+                request.onsuccess = () => resolve();
+                request.onerror = () => reject(request.error);
+            });
+        }
+
+        async function getImage(id) {
+            if (!imageDB) await initImageDB();
+            return new Promise((resolve, reject) => {
+                const transaction = imageDB.transaction([STORE_NAME], 'readonly');
+                const store = transaction.objectStore(STORE_NAME);
+                const request = store.get(id);
+                request.onsuccess = () => resolve(request.result ? request.result.data : null);
+                request.onerror = () => reject(request.error);
+            });
+        }
+
+        async function deleteImage(id) {
+            if (!imageDB) await initImageDB();
+            return new Promise((resolve, reject) => {
+                const transaction = imageDB.transaction([STORE_NAME], 'readwrite');
+                const store = transaction.objectStore(STORE_NAME);
+                const request = store.delete(id);
+                request.onsuccess = () => resolve();
+                request.onerror = () => reject(request.error);
+            });
+        }
+
+        async function getStorageUsage() {
+            if (!imageDB) await initImageDB();
+            return new Promise((resolve, reject) => {
+                const transaction = imageDB.transaction([STORE_NAME], 'readonly');
+                const store = transaction.objectStore(STORE_NAME);
+                const request = store.getAll();
+                request.onsuccess = () => {
+                    const items = request.result;
+                    let totalSize = 0;
+                    items.forEach(item => {
+                        if (item.data) totalSize += item.data.length * 2; // Approximate bytes
+                    });
+                    resolve(totalSize);
+                };
+                request.onerror = () => reject(request.error);
+            });
+        }
+
+        async function clearAllImages() {
+            if (!imageDB) await initImageDB();
+            return new Promise((resolve, reject) => {
+                const transaction = imageDB.transaction([STORE_NAME], 'readwrite');
+                const store = transaction.objectStore(STORE_NAME);
+                const request = store.clear();
+                request.onsuccess = () => resolve();
+                request.onerror = () => reject(request.error);
+            });
+        }
+
+        async function updateStorageDisplay() {
+            try {
+                const usage = await getStorageUsage();
+                const mb = (usage / 1024 / 1024).toFixed(2);
+                const display = usage > 0 ? `${mb} MB` : '0 MB';
+                
+                const usageEl = document.getElementById('storage-usage');
+                const settingsUsageEl = document.getElementById('settings-storage-usage');
+                const storageBar = document.getElementById('storage-bar');
+                
+                if (usageEl) usageEl.textContent = display;
+                if (settingsUsageEl) settingsUsageEl.textContent = display;
+                
+                // Estimate max at 500MB for display purposes
+                const percent = Math.min((usage / (500 * 1024 * 1024)) * 100, 100);
+                if (storageBar) storageBar.style.width = percent + '%';
+            } catch (e) {
+                console.log('Storage calculation failed:', e);
+            }
+        }
 
         // ==================== DATE UTILITIES (iOS Compatible) ====================
         
-        // Get Sunday of current week (week start)
         function getWeekStart(date) {
             const d = new Date(date);
             const day = d.getDay();
-            const diff = d.getDate() - day; // adjust when day is Sunday
+            const diff = d.getDate() - day;
             return new Date(d.setDate(diff));
         }
         
-        // Format date as YYYY-MM-DD for input fields (iOS compatible)
         function formatDateForInput(date) {
             const d = new Date(date);
             const year = d.getFullYear();
@@ -730,20 +861,16 @@
             return `${year}-${month}-${day}`;
         }
         
-        // Parse date string safely for iOS
         function parseDate(dateString) {
-            // Handle both YYYY-MM-DD and other formats
             if (typeof dateString === 'string' && dateString.includes('-')) {
                 const parts = dateString.split('-');
                 if (parts.length === 3) {
-                    // Create date in local timezone to avoid off-by-one errors
                     return new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
                 }
             }
             return new Date(dateString);
         }
         
-        // Format date range for display
         function formatWeekRange(startDate, endDate) {
             const options = { month: 'short', day: 'numeric' };
             const startStr = startDate.toLocaleDateString('en-US', options);
@@ -752,18 +879,23 @@
         }
 
         // ==================== AUTO-UPDATE ON LAUNCH ====================
-        document.addEventListener('DOMContentLoaded', () => {
-            // Check if auto-update is enabled
+        document.addEventListener('DOMContentLoaded', async () => {
+            // Initialize IndexedDB first
+            try {
+                await initImageDB();
+                console.log('IndexedDB initialized');
+            } catch (e) {
+                console.error('IndexedDB init failed:', e);
+            }
+            
             autoUpdateEnabled = localStorage.getItem('ts_auto_update') !== 'false';
             
-            // Always check for updates on launch if online and enabled
             if (navigator.onLine && autoUpdateEnabled) {
                 performAutoUpdateCheck();
             } else {
                 initAuth();
             }
             
-            // Setup offline/online listeners
             window.addEventListener('online', () => {
                 isOnline = true;
                 document.getElementById('offline-banner').classList.add('hidden');
@@ -784,7 +916,6 @@
             
             overlay.classList.remove('hidden');
             
-            // Animate progress
             progress.style.width = '30%';
             statusText.textContent = 'Checking connection...';
             
@@ -821,13 +952,11 @@
                 overlay.classList.add('hidden');
                 
                 if (versionInfo.version !== currentVersion) {
-                    // Show update available modal
                     document.getElementById('current-version-display').textContent = 'v' + currentVersion;
                     document.getElementById('new-version-display').textContent = 'v' + versionInfo.version;
                     document.getElementById('update-changelog').textContent = versionInfo.changelog || 'Bug fixes and improvements';
                     document.getElementById('update-available-modal').classList.remove('hidden');
                     
-                    // Store update info
                     window.pendingUpdate = versionInfo;
                 } else {
                     initAuth();
@@ -857,18 +986,15 @@
             installing.classList.remove('hidden');
             
             try {
-                // Simulate download progress
                 progress.style.width = '0%';
                 await new Promise(r => setTimeout(r, 200));
                 progress.style.width = '30%';
                 
-                // Fetch new HTML
                 const response = await fetch(window.pendingUpdate.downloadUrl);
                 const newHtml = await response.text();
                 
                 progress.style.width = '70%';
                 
-                // Store new version
                 localStorage.setItem('ts_app_html', newHtml);
                 localStorage.setItem('ts_app_version', window.pendingUpdate.version);
                 
@@ -891,7 +1017,6 @@
             initAuth();
         }
 
-        // ==================== MANUAL UPDATE CHECK ====================
         async function manualCheckForUpdates() {
             const icon = document.getElementById('manual-update-icon');
             const settingsIcon = document.getElementById('settings-update-icon');
@@ -941,7 +1066,6 @@
             }
         }
 
-        // ==================== APP REMOVAL ====================
         function showRemoveAppConfirm() {
             document.getElementById('remove-app-modal').classList.remove('hidden');
         }
@@ -961,17 +1085,22 @@
             
             removalScreen.classList.remove('hidden');
             
-            // Clear all data
+            // Clear all localStorage
             const allKeys = Object.keys(localStorage);
             const appKeys = allKeys.filter(k => k.startsWith('ts_') || k.includes('timesheet'));
             appKeys.forEach(key => localStorage.removeItem(key));
             
-            // Also clear any cached app HTML
             localStorage.removeItem('ts_app_html');
             localStorage.removeItem('ts_app_version');
             localStorage.removeItem('ts_auto_update');
             
-            // Animate success
+            // Clear all images from IndexedDB
+            try {
+                await clearAllImages();
+            } catch (e) {
+                console.log('Image clearing failed:', e);
+            }
+            
             await new Promise(r => setTimeout(r, 300));
             check.classList.remove('opacity-0');
             check.classList.add('animate-bounce');
@@ -985,7 +1114,6 @@
             await new Promise(r => setTimeout(r, 300));
             instructions.classList.remove('opacity-0');
             
-            // Try to clear caches if available
             if ('caches' in window) {
                 try {
                     const cacheNames = await caches.keys();
@@ -995,7 +1123,6 @@
                 }
             }
             
-            // Unregister service workers
             if ('serviceWorker' in navigator) {
                 try {
                     const registrations = await navigator.serviceWorker.getRegistrations();
@@ -1018,13 +1145,11 @@
 
         // ==================== AUTH ====================
         function initAuth() {
-            // Show version
             const version = localStorage.getItem('ts_app_version') || APP_VERSION;
             document.getElementById('version-display').textContent = 'v' + version;
             document.getElementById('settings-version').textContent = 'v' + version;
             document.getElementById('footer-version').textContent = 'v' + version;
             
-            // Update auto-update toggle UI
             const autoUpdate = localStorage.getItem('ts_auto_update') !== 'false';
             const toggle = document.getElementById('auto-update-toggle');
             const knob = document.getElementById('auto-update-knob');
@@ -1081,19 +1206,16 @@
             renderCalendar();
             updateStats();
             renderRecent();
+            updateStorageDisplay();
             
-            // Set default scan date to current week (Sunday) - FIXED for iOS
             const today = new Date();
             const weekStart = getWeekStart(today);
             
-            // Set the date input value
             const dateInput = document.getElementById('scan-date-select');
             dateInput.value = formatDateForInput(weekStart);
             
-            // Update the week display
             updateScanWeekDisplay();
             
-            // Add listener for date changes
             dateInput.addEventListener('change', updateScanWeekDisplay);
             
             showToast(`Welcome, ${user.username}`);
@@ -1195,13 +1317,11 @@
             const grid = document.getElementById('calendar-grid');
             grid.innerHTML = '';
             
-            // Previous month padding
             const prevMonthDays = new Date(year, month, 0).getDate();
             for (let i = startPadding - 1; i >= 0; i--) {
                 grid.appendChild(createCalendarDay(prevMonthDays - i, true));
             }
             
-            // Current month
             const today = new Date();
             const todayYear = today.getFullYear();
             const todayMonth = today.getMonth();
@@ -1221,7 +1341,6 @@
                 grid.appendChild(cell);
             }
             
-            // Next month padding
             const remaining = (7 - ((startPadding + daysInMonth) % 7)) % 7;
             for (let day = 1; day <= remaining; day++) {
                 grid.appendChild(createCalendarDay(day, true));
@@ -1263,15 +1382,12 @@
         }
 
         function selectEmptyWeek(year, month, day) {
-            // Create date at noon to avoid timezone issues
             const date = new Date(year, month, day, 12, 0, 0);
             const weekStart = getWeekStart(date);
             
-            // Set the date input
             const dateInput = document.getElementById('scan-date-select');
             dateInput.value = formatDateForInput(weekStart);
             
-            // Update display
             updateScanWeekDisplay();
             
             switchView('scan');
@@ -1308,6 +1424,11 @@
         }
 
         function processFile(file, type) {
+            // Check file size (warn if > 5MB)
+            if (file.size > 5 * 1024 * 1024) {
+                showToast('Large image may take time to process', 'warning');
+            }
+            
             currentUploads[type] = file;
             const reader = new FileReader();
             reader.onload = (e) => {
@@ -1328,7 +1449,6 @@
             showToast(`${type.charAt(0).toUpperCase() + type.slice(1)} ready`);
         }
 
-        // Helper function to read file as Data URL with Promise
         function readFileAsDataURL(file) {
             return new Promise((resolve, reject) => {
                 if (!file) {
@@ -1343,7 +1463,7 @@
             });
         }
 
-        // FIXED processScan function - prevents getting stuck
+        // FIXED processScan function with IndexedDB storage
         async function processScan() {
             if (!currentUploads.front) {
                 return showToast('Timesheet front is required', 'error');
@@ -1360,18 +1480,53 @@
             btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Processing...';
             
             try {
-                // Read the front image
+                // Generate unique IDs for images
+                const timesheetId = Date.now().toString();
+                const imageIds = {
+                    front: `${timesheetId}_front`,
+                    back: currentUploads.back ? `${timesheetId}_back` : null,
+                    fuel: currentUploads.fuel ? `${timesheetId}_fuel` : null,
+                    check: currentUploads.check ? `${timesheetId}_check` : null
+                };
+                
+                // Read and save front image to IndexedDB
                 const frontDataUrl = await readFileAsDataURL(currentUploads.front);
+                await saveImage(imageIds.front, frontDataUrl);
                 
                 // Simulate processing delay
-                await new Promise(resolve => setTimeout(resolve, 1500));
+                await new Promise(resolve => setTimeout(resolve, 800));
                 
-                // Parse date safely for iOS
+                // Process optional images
+                const processOptional = async (type) => {
+                    if (currentUploads[type] && imageIds[type]) {
+                        try {
+                            const dataUrl = await Promise.race([
+                                readFileAsDataURL(currentUploads[type]),
+                                new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout')), 10000))
+                            ]);
+                            await saveImage(imageIds[type], dataUrl);
+                            return true;
+                        } catch (err) {
+                            console.log(`Failed to process ${type}:`, err);
+                            return false;
+                        }
+                    }
+                    return false;
+                };
+                
+                // Process all optional images
+                await Promise.allSettled([
+                    processOptional('back'),
+                    processOptional('fuel'),
+                    processOptional('check')
+                ]);
+                
+                // Parse date
                 const weekStart = parseDate(weekStartInput);
                 const weekEnd = new Date(weekStart);
                 weekEnd.setDate(weekEnd.getDate() + 6);
                 
-                // Generate realistic driver data
+                // Generate driver data
                 const days = [];
                 let totalHours = 0;
                 let longDays = 0;
@@ -1407,48 +1562,26 @@
                     }
                 }
                 
+                // Save timesheet data (without images) to localStorage
                 const timesheet = {
-                    id: Date.now(),
-                    weekStart: weekStartInput, // Keep original string format
+                    id: parseInt(timesheetId),
+                    weekStart: weekStartInput,
                     weekEnd: formatDateForInput(weekEnd),
                     weekRange: formatWeekRange(weekStart, weekEnd),
                     totalHours: parseFloat(totalHours.toFixed(1)),
                     longDays,
                     lowRestDays,
-                    images: {
-                        front: frontDataUrl,
-                        back: null,
-                        fuel: null,
-                        check: null
+                    // Store only image IDs, not the actual data
+                    imageIds: {
+                        front: imageIds.front,
+                        back: imageIds.back,
+                        fuel: imageIds.fuel,
+                        check: imageIds.check
                     },
                     days,
                     uploadedAt: new Date().toISOString()
                 };
                 
-                // Process optional images with timeout protection
-                const processOptional = async (type) => {
-                    if (currentUploads[type]) {
-                        try {
-                            const dataUrl = await Promise.race([
-                                readFileAsDataURL(currentUploads[type]),
-                                new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout')), 5000))
-                            ]);
-                            timesheet.images[type] = dataUrl;
-                        } catch (err) {
-                            console.log(`Failed to process ${type}:`, err);
-                            // Continue without this image
-                        }
-                    }
-                };
-                
-                // Process all optional images in parallel with error handling
-                await Promise.allSettled([
-                    processOptional('back'),
-                    processOptional('fuel'),
-                    processOptional('check')
-                ]);
-                
-                // Save to storage
                 const existing = DB.getTimesheets(currentUser.username);
                 const filtered = existing.filter(t => t.weekStart !== weekStartInput);
                 filtered.push(timesheet);
@@ -1461,18 +1594,17 @@
                 renderCalendar();
                 updateStats();
                 renderRecent();
+                updateStorageDisplay();
                 
                 showToast('Timesheet saved successfully!');
                 switchView('dashboard');
                 
-                // Select the new week
                 setTimeout(() => selectWeek(timesheet), 300);
                 
             } catch (err) {
                 console.error('Processing error:', err);
-                showToast('Error processing timesheet: ' + err.message, 'error');
+                showToast('Error: ' + err.message, 'error');
             } finally {
-                // ALWAYS reset button state
                 btn.disabled = false;
                 btn.innerHTML = originalText;
             }
@@ -1504,7 +1636,6 @@
                 frontStatus.className = 'text-xs text-red-500';
             }
             
-            // Reset to current week
             const today = new Date();
             const weekStart = getWeekStart(today);
             const dateInput = document.getElementById('scan-date-select');
@@ -1547,8 +1678,8 @@
                         </div>
                     </div>
                     <div class="flex gap-2">
-                        ${ts.images.fuel ? '<i class="fas fa-gas-pump text-xs text-gray-400"></i>' : ''}
-                        ${ts.images.check ? '<i class="fas fa-clipboard-check text-xs text-gray-400"></i>' : ''}
+                        ${ts.imageIds.fuel ? '<i class="fas fa-gas-pump text-xs text-gray-400"></i>' : ''}
+                        ${ts.imageIds.check ? '<i class="fas fa-clipboard-check text-xs text-gray-400"></i>' : ''}
                         <i class="fas fa-chevron-right text-gray-400"></i>
                     </div>
                 </div>
@@ -1574,16 +1705,34 @@
             if (ts) openWeekDetails(ts);
         }
 
-        function openWeekDetails(ts) {
+        async function openWeekDetails(ts) {
             document.getElementById('week-modal-title').textContent = ts.weekRange;
             const content = document.getElementById('week-modal-content');
             
+            // Load images from IndexedDB
+            const loadImage = async (id) => {
+                if (!id) return null;
+                try {
+                    return await getImage(id);
+                } catch (e) {
+                    console.log('Failed to load image:', e);
+                    return null;
+                }
+            };
+            
+            const [frontImg, backImg, fuelImg, checkImg] = await Promise.all([
+                loadImage(ts.imageIds.front),
+                loadImage(ts.imageIds.back),
+                loadImage(ts.imageIds.fuel),
+                loadImage(ts.imageIds.check)
+            ]);
+            
             content.innerHTML = `
                 <div class="grid grid-cols-2 gap-2">
-                    ${ts.images.front ? `<div class="relative aspect-square rounded-xl overflow-hidden bg-gray-100 dark:bg-dark-surface"><img src="${ts.images.front}" class="w-full h-full object-cover" onclick="viewImage('${ts.images.front}')"><span class="absolute top-2 left-2 bg-black/50 text-white text-xs px-2 py-1 rounded">Front</span></div>` : ''}
-                    ${ts.images.back ? `<div class="relative aspect-square rounded-xl overflow-hidden bg-gray-100 dark:bg-dark-surface"><img src="${ts.images.back}" class="w-full h-full object-cover" onclick="viewImage('${ts.images.back}')"><span class="absolute top-2 left-2 bg-black/50 text-white text-xs px-2 py-1 rounded">Back</span></div>` : ''}
-                    ${ts.images.fuel ? `<div class="relative aspect-square rounded-xl overflow-hidden bg-gray-100 dark:bg-dark-surface"><img src="${ts.images.fuel}" class="w-full h-full object-cover" onclick="viewImage('${ts.images.fuel}')"><span class="absolute top-2 left-2 bg-black/50 text-white text-xs px-2 py-1 rounded">Fuel</span></div>` : ''}
-                    ${ts.images.check ? `<div class="relative aspect-square rounded-xl overflow-hidden bg-gray-100 dark:bg-dark-surface"><img src="${ts.images.check}" class="w-full h-full object-cover" onclick="viewImage('${ts.images.check}')"><span class="absolute top-2 left-2 bg-black/50 text-white text-xs px-2 py-1 rounded">Check</span></div>` : ''}
+                    ${frontImg ? `<div class="relative aspect-square rounded-xl overflow-hidden bg-gray-100 dark:bg-dark-surface"><img src="${frontImg}" class="w-full h-full object-cover" onclick="viewImage('${frontImg}')"><span class="absolute top-2 left-2 bg-black/50 text-white text-xs px-2 py-1 rounded">Front</span></div>` : ''}
+                    ${backImg ? `<div class="relative aspect-square rounded-xl overflow-hidden bg-gray-100 dark:bg-dark-surface"><img src="${backImg}" class="w-full h-full object-cover" onclick="viewImage('${backImg}')"><span class="absolute top-2 left-2 bg-black/50 text-white text-xs px-2 py-1 rounded">Back</span></div>` : ''}
+                    ${fuelImg ? `<div class="relative aspect-square rounded-xl overflow-hidden bg-gray-100 dark:bg-dark-surface"><img src="${fuelImg}" class="w-full h-full object-cover" onclick="viewImage('${fuelImg}')"><span class="absolute top-2 left-2 bg-black/50 text-white text-xs px-2 py-1 rounded">Fuel</span></div>` : ''}
+                    ${checkImg ? `<div class="relative aspect-square rounded-xl overflow-hidden bg-gray-100 dark:bg-dark-surface"><img src="${checkImg}" class="w-full h-full object-cover" onclick="viewImage('${checkImg}')"><span class="absolute top-2 left-2 bg-black/50 text-white text-xs px-2 py-1 rounded">Check</span></div>` : ''}
                 </div>
                 
                 <div class="grid grid-cols-3 gap-3">
@@ -1720,16 +1869,30 @@
             }
         }
 
-        function deleteWeek(weekStart) {
-            let timesheets = DB.getTimesheets(currentUser.username);
-            timesheets = timesheets.filter(t => t.weekStart !== weekStart);
-            DB.saveTimesheets(currentUser.username, timesheets);
+        async function deleteWeek(weekStart) {
+            const timesheets = DB.getTimesheets(currentUser.username);
+            const ts = timesheets.find(t => t.weekStart === weekStart);
+            
+            if (ts && ts.imageIds) {
+                // Delete associated images from IndexedDB
+                const deletePromises = [];
+                if (ts.imageIds.front) deletePromises.push(deleteImage(ts.imageIds.front));
+                if (ts.imageIds.back) deletePromises.push(deleteImage(ts.imageIds.back));
+                if (ts.imageIds.fuel) deletePromises.push(deleteImage(ts.imageIds.fuel));
+                if (ts.imageIds.check) deletePromises.push(deleteImage(ts.imageIds.check));
+                
+                await Promise.allSettled(deletePromises);
+            }
+            
+            let updatedTimesheets = timesheets.filter(t => t.weekStart !== weekStart);
+            DB.saveTimesheets(currentUser.username, updatedTimesheets);
             
             renderCalendar();
             updateStats();
             renderRecent();
             renderHistory();
             closeWeekModal();
+            updateStorageDisplay();
             
             if (selectedWeekStart === weekStart) {
                 document.getElementById('week-preview').classList.add('hidden');
@@ -1741,43 +1904,89 @@
 
         function confirmDeleteMonth(year, month) {
             if (confirm(`Delete all data for ${new Date(year, month).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}?`)) {
-                let timesheets = DB.getTimesheets(currentUser.username);
-                timesheets = timesheets.filter(t => {
-                    const d = parseDate(t.weekStart);
-                    return !(d.getFullYear() === year && d.getMonth() === month);
-                });
-                DB.saveTimesheets(currentUser.username, timesheets);
-                
-                renderCalendar();
-                updateStats();
-                renderRecent();
+                deleteMonthData(year, month);
                 closeDeleteModal();
-                showToast('Month deleted');
             }
+        }
+
+        async function deleteMonthData(year, month) {
+            const timesheets = DB.getTimesheets(currentUser.username);
+            const toDelete = timesheets.filter(t => {
+                const d = parseDate(t.weekStart);
+                return d.getFullYear() === year && d.getMonth() === month;
+            });
+            
+            // Delete images
+            for (const ts of toDelete) {
+                if (ts.imageIds) {
+                    const deletePromises = [];
+                    if (ts.imageIds.front) deletePromises.push(deleteImage(ts.imageIds.front));
+                    if (ts.imageIds.back) deletePromises.push(deleteImage(ts.imageIds.back));
+                    if (ts.imageIds.fuel) deletePromises.push(deleteImage(ts.imageIds.fuel));
+                    if (ts.imageIds.check) deletePromises.push(deleteImage(ts.imageIds.check));
+                    await Promise.allSettled(deletePromises);
+                }
+            }
+            
+            const remaining = timesheets.filter(t => {
+                const d = parseDate(t.weekStart);
+                return !(d.getFullYear() === year && d.getMonth() === month);
+            });
+            
+            DB.saveTimesheets(currentUser.username, remaining);
+            
+            renderCalendar();
+            updateStats();
+            renderRecent();
+            updateStorageDisplay();
+            showToast('Month deleted');
         }
 
         function confirmDeleteYear(year) {
             if (confirm(`Delete ALL data for ${year}? This cannot be undone.`)) {
-                let timesheets = DB.getTimesheets(currentUser.username);
-                timesheets = timesheets.filter(t => parseDate(t.weekStart).getFullYear() !== year);
-                DB.saveTimesheets(currentUser.username, timesheets);
-                
-                renderCalendar();
-                updateStats();
-                renderRecent();
+                deleteYearData(year);
                 closeDeleteModal();
-                showToast('Year deleted');
             }
         }
 
-        function deleteAllData() {
+        async function deleteYearData(year) {
+            const timesheets = DB.getTimesheets(currentUser.username);
+            const toDelete = timesheets.filter(t => parseDate(t.weekStart).getFullYear() === year);
+            
+            // Delete images
+            for (const ts of toDelete) {
+                if (ts.imageIds) {
+                    const deletePromises = [];
+                    if (ts.imageIds.front) deletePromises.push(deleteImage(ts.imageIds.front));
+                    if (ts.imageIds.back) deletePromises.push(deleteImage(ts.imageIds.back));
+                    if (ts.imageIds.fuel) deletePromises.push(deleteImage(ts.imageIds.fuel));
+                    if (ts.imageIds.check) deletePromises.push(deleteImage(ts.imageIds.check));
+                    await Promise.allSettled(deletePromises);
+                }
+            }
+            
+            const remaining = timesheets.filter(t => parseDate(t.weekStart).getFullYear() !== year);
+            DB.saveTimesheets(currentUser.username, remaining);
+            
+            renderCalendar();
+            updateStats();
+            renderRecent();
+            updateStorageDisplay();
+            showToast('Year deleted');
+        }
+
+        async function deleteAllData() {
             if (confirm('DELETE ALL TIMESHEET DATA?\n\nThis will remove every timesheet for this user. This action cannot be undone.')) {
                 if (confirm('Are you absolutely sure? Press OK to permanently delete all timesheet data.')) {
+                    // Clear all images first
+                    await clearAllImages();
+                    
                     DB.saveTimesheets(currentUser.username, []);
                     renderCalendar();
                     updateStats();
                     renderRecent();
                     document.getElementById('week-preview').classList.add('hidden');
+                    updateStorageDisplay();
                     showToast('All timesheet data deleted');
                 }
             }
@@ -1842,6 +2051,9 @@
             if (viewName === 'dashboard') {
                 renderCalendar();
                 updateStats();
+            }
+            if (viewName === 'scan') {
+                updateStorageDisplay();
             }
         }
 
