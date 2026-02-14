@@ -701,9 +701,8 @@
     <script>
         // ==================== CONFIG ====================
         const APP_VERSION = '1.0.0';
-        // CHANGE THIS to your actual update server
-        const UPDATE_URL = 'https://raw.githubusercontent.com/yourusername/timesheet-app/main/version.json';
-        // For testing, you can use a local file or disable updates
+        // CHANGE THIS to your actual GitHub Pages URL
+        const UPDATE_URL = 'https://raw.githubusercontent.com/yourusername/driver-timesheet-app/main/version.json';
         
         let currentUser = null;
         let currentMonth = new Date();
@@ -728,11 +727,13 @@
             window.addEventListener('online', () => {
                 isOnline = true;
                 document.getElementById('offline-banner').classList.add('hidden');
+                document.getElementById('connection-status').innerHTML = '<i class="fas fa-wifi text-green-500"></i> Online';
             });
             
             window.addEventListener('offline', () => {
                 isOnline = false;
                 document.getElementById('offline-banner').classList.remove('hidden');
+                document.getElementById('connection-status').innerHTML = '<i class="fas fa-wifi-slash text-gray-400"></i> Offline';
             });
         });
 
@@ -1041,9 +1042,17 @@
             updateStats();
             renderRecent();
             
+            // Set default scan date to current week (Sunday)
             const today = new Date();
-            const weekStart = new Date(today.setDate(today.getDate() - today.getDay()));
-            document.getElementById('scan-date-select').valueAsDate = weekStart;
+            const dayOfWeek = today.getDay(); // 0 = Sunday, 1 = Monday, etc.
+            const diff = today.getDate() - dayOfWeek; // adjust when day is Sunday
+            const weekStart = new Date(today.setDate(diff));
+            
+            // Format as YYYY-MM-DD for date input
+            const yyyy = weekStart.getFullYear();
+            const mm = String(weekStart.getMonth() + 1).padStart(2, '0');
+            const dd = String(weekStart.getDate()).padStart(2, '0');
+            document.getElementById('scan-date-select').value = `${yyyy}-${mm}-${dd}`;
             
             showToast(`Welcome, ${user.username}`);
         }
@@ -1125,14 +1134,20 @@
             const grid = document.getElementById('calendar-grid');
             grid.innerHTML = '';
             
+            // Previous month padding
             const prevMonthDays = new Date(year, month, 0).getDate();
             for (let i = startPadding - 1; i >= 0; i--) {
                 grid.appendChild(createCalendarDay(prevMonthDays - i, true));
             }
             
+            // Current month - FIX: Use proper date comparison for today
             const today = new Date();
+            const todayYear = today.getFullYear();
+            const todayMonth = today.getMonth();
+            const todayDate = today.getDate();
+            
             for (let day = 1; day <= daysInMonth; day++) {
-                const isToday = today.getDate() === day && today.getMonth() === month && today.getFullYear() === year;
+                const isToday = (day === todayDate && month === todayMonth && year === todayYear);
                 const hasData = weekData[day];
                 const cell = createCalendarDay(day, false, isToday, hasData);
                 
@@ -1145,6 +1160,7 @@
                 grid.appendChild(cell);
             }
             
+            // Next month padding
             const remaining = (7 - ((startPadding + daysInMonth) % 7)) % 7;
             for (let day = 1; day <= remaining; day++) {
                 grid.appendChild(createCalendarDay(day, true));
@@ -1156,7 +1172,7 @@
             div.className = `calendar-day ${isOtherMonth ? 'other-month bg-gray-100 dark:bg-dark-surface text-gray-400' : 'bg-white dark:bg-dark-surface text-gray-900 dark:text-white'} ${isToday ? 'today' : ''} ${data ? 'has-data' : ''}`;
             div.innerHTML = `
                 <span class="text-lg font-bold">${day}</span>
-                ${data ? '<div class="week-indicator" style="background: rgba(255,255,255,0.5); height: 3px; width: 60%; border-radius: 2px; margin-top: 2px;"></div>' : ''}
+                ${data ? '<div style="background: rgba(255,255,255,0.5); height: 3px; width: 60%; border-radius: 2px; margin-top: 2px;"></div>' : ''}
             `;
             return div;
         }
@@ -1188,7 +1204,13 @@
         function selectEmptyWeek(year, month, day) {
             const date = new Date(year, month, day);
             const weekStart = new Date(date.setDate(date.getDate() - date.getDay()));
-            document.getElementById('scan-date-select').valueAsDate = weekStart;
+            
+            // Format as YYYY-MM-DD
+            const yyyy = weekStart.getFullYear();
+            const mm = String(weekStart.getMonth() + 1).padStart(2, '0');
+            const dd = String(weekStart.getDate()).padStart(2, '0');
+            document.getElementById('scan-date-select').value = `${yyyy}-${mm}-${dd}`;
+            
             switchView('scan');
             showToast('Selected week for new upload');
         }
@@ -1240,123 +1262,187 @@
             showToast(`${type.charAt(0).toUpperCase() + type.slice(1)} ready`);
         }
 
+        // FIXED processScan function - prevents getting stuck
         function processScan() {
-            if (!currentUploads.front) return showToast('Timesheet front is required', 'error');
+            if (!currentUploads.front) {
+                return showToast('Timesheet front is required', 'error');
+            }
             
             const weekStartInput = document.getElementById('scan-date-select').value;
-            if (!weekStartInput) return showToast('Please select week date', 'error');
+            if (!weekStartInput) {
+                return showToast('Please select week date', 'error');
+            }
             
             const btn = document.getElementById('scan-btn');
+            const originalText = btn.innerHTML;
             btn.disabled = true;
             btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Processing...';
             
-            setTimeout(() => {
-                const weekStart = new Date(weekStartInput);
-                const weekEnd = new Date(weekStart);
-                weekEnd.setDate(weekEnd.getDate() + 6);
-                
-                const days = [];
-                let totalHours = 0;
-                let longDays = 0;
-                let lowRestDays = 0;
-                
-                for (let i = 0; i < 7; i++) {
-                    const isWorkDay = i < 5 && Math.random() > 0.1;
-                    if (isWorkDay) {
-                        const hours = 8 + Math.random() * 5;
-                        totalHours += hours;
-                        if (hours > 15) longDays++;
+            // Read the front image first
+            const reader = new FileReader();
+            
+            reader.onerror = function() {
+                showToast('Error reading image. Please try again.', 'error');
+                btn.disabled = false;
+                btn.innerHTML = originalText;
+            };
+            
+            reader.onload = function(e) {
+                // Now process inside timeout to simulate extraction
+                setTimeout(() => {
+                    try {
+                        const weekStart = new Date(weekStartInput);
+                        const weekEnd = new Date(weekStart);
+                        weekEnd.setDate(weekEnd.getDate() + 6);
                         
-                        const restHours = 8 + Math.random() * 5;
-                        if (restHours < 9) lowRestDays++;
+                        // Generate realistic driver data
+                        const days = [];
+                        let totalHours = 0;
+                        let longDays = 0;
+                        let lowRestDays = 0;
                         
-                        days.push({
-                            day: ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][i],
-                            hours: parseFloat(hours.toFixed(2)),
-                            start: `${7 + Math.floor(Math.random() * 3)}:${Math.random() > 0.5 ? '00' : '30'}`,
-                            end: `${15 + Math.floor(Math.random() * 5)}:${Math.random() > 0.5 ? '00' : '30'}`,
-                            rest: `${restHours.toFixed(1)}h`,
-                            flag: hours > 14 ? 'warning' : 'ok'
+                        for (let i = 0; i < 7; i++) {
+                            const isWorkDay = i < 5 && Math.random() > 0.1;
+                            if (isWorkDay) {
+                                const hours = 8 + Math.random() * 5;
+                                totalHours += hours;
+                                if (hours > 15) longDays++;
+                                
+                                const restHours = 8 + Math.random() * 5;
+                                if (restHours < 9) lowRestDays++;
+                                
+                                days.push({
+                                    day: ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][i],
+                                    hours: parseFloat(hours.toFixed(2)),
+                                    start: `${7 + Math.floor(Math.random() * 3)}:${Math.random() > 0.5 ? '00' : '30'}`,
+                                    end: `${15 + Math.floor(Math.random() * 5)}:${Math.random() > 0.5 ? '00' : '30'}`,
+                                    rest: `${restHours.toFixed(1)}h`,
+                                    flag: hours > 14 ? 'warning' : 'ok'
+                                });
+                            } else {
+                                days.push({
+                                    day: ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][i],
+                                    hours: 0,
+                                    start: '-',
+                                    end: '-',
+                                    rest: '-',
+                                    flag: 'none'
+                                });
+                            }
+                        }
+                        
+                        const timesheet = {
+                            id: Date.now(),
+                            weekStart: weekStartInput,
+                            weekEnd: weekEnd.toISOString().split('T')[0],
+                            weekRange: `${weekStart.toLocaleDateString('en-US', {month:'short', day:'numeric'})} - ${weekEnd.toLocaleDateString('en-US', {month:'short', day:'numeric', year:'numeric'})}`,
+                            totalHours: parseFloat(totalHours.toFixed(1)),
+                            longDays,
+                            lowRestDays,
+                            images: {
+                                front: e.target.result,
+                                back: null,
+                                fuel: null,
+                                check: null
+                            },
+                            days,
+                            uploadedAt: new Date().toISOString()
+                        };
+                        
+                        // Process optional images
+                        const processOptional = (type) => {
+                            return new Promise((resolve) => {
+                                if (currentUploads[type]) {
+                                    const r = new FileReader();
+                                    r.onload = (ev) => {
+                                        timesheet.images[type] = ev.target.result;
+                                        resolve();
+                                    };
+                                    r.onerror = () => resolve();
+                                    r.readAsDataURL(currentUploads[type]);
+                                } else {
+                                    resolve();
+                                }
+                            });
+                        };
+                        
+                        Promise.all([
+                            processOptional('back'),
+                            processOptional('fuel'),
+                            processOptional('check')
+                        ]).then(() => {
+                            // Save to storage
+                            const existing = DB.getTimesheets(currentUser.username);
+                            const filtered = existing.filter(t => t.weekStart !== weekStartInput);
+                            filtered.push(timesheet);
+                            DB.saveTimesheets(currentUser.username, filtered);
+                            
+                            // Reset form
+                            resetScanForm();
+                            
+                            // Update UI
+                            renderCalendar();
+                            updateStats();
+                            renderRecent();
+                            
+                            // Reset button
+                            btn.disabled = false;
+                            btn.innerHTML = originalText;
+                            
+                            showToast('Timesheet saved successfully!');
+                            switchView('dashboard');
+                            
+                            // Select the new week
+                            setTimeout(() => selectWeek(timesheet), 300);
+                        }).catch(err => {
+                            console.error('Error:', err);
+                            // Save anyway
+                            const existing = DB.getTimesheets(currentUser.username);
+                            const filtered = existing.filter(t => t.weekStart !== weekStartInput);
+                            filtered.push(timesheet);
+                            DB.saveTimesheets(currentUser.username, filtered);
+                            
+                            resetScanForm();
+                            renderCalendar();
+                            updateStats();
+                            renderRecent();
+                            
+                            btn.disabled = false;
+                            btn.innerHTML = originalText;
+                            
+                            showToast('Timesheet saved!');
+                            switchView('dashboard');
                         });
-                    } else {
-                        days.push({
-                            day: ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][i],
-                            hours: 0,
-                            start: '-',
-                            end: '-',
-                            rest: '-',
-                            flag: 'none'
-                        });
-                    }
-                }
-                
-                const reader = new FileReader();
-                reader.onload = (e) => {
-                    const timesheet = {
-                        id: Date.now(),
-                        weekStart: weekStartInput,
-                        weekEnd: weekEnd.toISOString().split('T')[0],
-                        weekRange: `${weekStart.toLocaleDateString('en-US', {month:'short', day:'numeric'})} - ${weekEnd.toLocaleDateString('en-US', {month:'short', day:'numeric', year:'numeric'})}`,
-                        totalHours: parseFloat(totalHours.toFixed(1)),
-                        longDays,
-                        lowRestDays,
-                        images: {
-                            front: e.target.result,
-                            back: null,
-                            fuel: null,
-                            check: null
-                        },
-                        days,
-                        uploadedAt: new Date().toISOString()
-                    };
-                    
-                    const processOptional = (type) => new Promise((resolve) => {
-                        if (currentUploads[type]) {
-                            const r = new FileReader();
-                            r.onload = (ev) => {
-                                timesheet.images[type] = ev.target.result;
-                                resolve();
-                            };
-                            r.readAsDataURL(currentUploads[type]);
-                        } else resolve();
-                    });
-                    
-                    Promise.all([
-                        processOptional('back'),
-                        processOptional('fuel'),
-                        processOptional('check')
-                    ]).then(() => {
-                        const existing = DB.getTimesheets(currentUser.username);
-                        const filtered = existing.filter(t => t.weekStart !== weekStartInput);
-                        filtered.push(timesheet);
-                        DB.saveTimesheets(currentUser.username, filtered);
                         
-                        resetScanForm();
-                        renderCalendar();
-                        updateStats();
-                        renderRecent();
-                        
+                    } catch (err) {
+                        console.error('Processing error:', err);
                         btn.disabled = false;
-                        btn.innerHTML = '<i class="fas fa-magic mr-2"></i>Extract & Save';
-                        
-                        showToast('Timesheet saved!');
-                        switchView('dashboard');
-                        setTimeout(() => selectWeek(timesheet), 300);
-                    });
-                };
-                reader.readAsDataURL(currentUploads.front);
-            }, 1500);
+                        btn.innerHTML = originalText;
+                        showToast('Error processing timesheet. Please try again.', 'error');
+                    }
+                }, 1500);
+            };
+            
+            reader.readAsDataURL(currentUploads.front);
         }
 
         function resetScanForm() {
             currentUploads = { front: null, back: null, fuel: null, check: null };
             ['front', 'back', 'fuel', 'check'].forEach(type => {
-                document.getElementById(`preview-${type}`).classList.add('hidden');
-                document.getElementById(`upload-${type}-default`).classList.remove('hidden');
-                document.getElementById(`file-${type}`).value = '';
+                const img = document.getElementById(`preview-${type}`);
+                const defaultDiv = document.getElementById(`upload-${type}-default`);
+                const input = document.getElementById(`file-${type}`);
+                
+                if (img) img.classList.add('hidden');
+                if (defaultDiv) defaultDiv.classList.remove('hidden');
+                if (input) input.value = '';
             });
-            document.getElementById('front-status').textContent = 'Required';
-            document.getElementById('front-status').className = 'text-xs text-red-500';
+            
+            const frontStatus = document.getElementById('front-status');
+            if (frontStatus) {
+                frontStatus.textContent = 'Required';
+                frontStatus.className = 'text-xs text-red-500';
+            }
         }
 
         // ==================== HISTORY & DETAILS ====================
