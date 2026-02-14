@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="theme-color" content="#3B82F6">
-    <title>Driver Timesheet Pro v2.2</title>
+    <title>Driver Timesheet Pro v2.3</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
@@ -115,6 +115,43 @@
             background: linear-gradient(135deg, #450a0a 0%, #7f1d1d 100%);
             border-color: #dc2626;
         }
+        
+        /* New styles for improved UI */
+        .ocr-debug-info {
+            font-family: 'Courier New', monospace;
+            font-size: 0.75rem;
+            background: #f3f4f6;
+            padding: 8px;
+            border-radius: 6px;
+            margin-top: 8px;
+            max-height: 100px;
+            overflow-y: auto;
+        }
+        
+        .dark .ocr-debug-info {
+            background: #1f2937;
+            color: #d1d5db;
+        }
+        
+        .manual-entry-btn {
+            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+        }
+        
+        .image-preview-container {
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .image-processing-overlay {
+            position: absolute;
+            inset: 0;
+            background: rgba(0,0,0,0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 0.875rem;
+        }
     </style>
 </head>
 <body class="bg-gray-50 dark:bg-dark text-gray-800 dark:text-gray-100 transition-colors duration-300 min-h-screen pb-20">
@@ -128,8 +165,8 @@
                 </div>
                 <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Driver Timesheet Pro</h1>
                 <p class="text-gray-500 dark:text-gray-400 mt-2 flex items-center justify-center gap-2">
-                    <span class="text-xs bg-primary/10 text-primary px-2 py-1 rounded" id="version-display">v2.2.0</span>
-                    <span class="text-xs bg-green-100 text-green-700 px-2 py-1 rounded">Auto-Detect v2</span>
+                    <span class="text-xs bg-primary/10 text-primary px-2 py-1 rounded" id="version-display">v2.3.0</span>
+                    <span class="text-xs bg-green-100 text-green-700 px-2 py-1 rounded">Auto-Detect v3</span>
                 </p>
             </div>
 
@@ -173,9 +210,9 @@
                 
                 <div class="bg-blue-50 dark:bg-blue-900/20 rounded-xl p-4 border border-blue-200 dark:border-blue-800">
                     <label class="block text-sm font-medium text-blue-900 dark:text-blue-300 mb-2">
-                        <i class="fas fa-magic mr-2"></i>Smart Auto-Detection
+                        <i class="fas fa-magic mr-2"></i>Smart Auto-Detection v3
                     </label>
-                    <p class="text-xs text-blue-700 dark:text-blue-400">Automatically scans all days (Sun-Sat) and detects your first AM or PM shift start.</p>
+                    <p class="text-xs text-blue-700 dark:text-blue-400">Enhanced OCR with error correction, flexible time formats, and manual fallback.</p>
                 </div>
                 
                 <div class="flex gap-3">
@@ -272,7 +309,7 @@
             <div id="scan-view" class="view-section hidden fade-in space-y-4">
                 <div class="text-center mb-4">
                     <h2 class="text-xl font-bold text-gray-900 dark:text-white">Scan Timesheet</h2>
-                    <p class="text-sm text-gray-500 dark:text-gray-400">Auto-detects first shift & all times</p>
+                    <p class="text-sm text-gray-500 dark:text-gray-400">Enhanced OCR with error correction</p>
                 </div>
 
                 <!-- Smart Detection Info -->
@@ -282,8 +319,8 @@
                             <i class="fas fa-brain text-green-600"></i>
                         </div>
                         <div>
-                            <p class="text-sm font-bold text-gray-900 dark:text-white">Smart Detection v2.2</p>
-                            <p class="text-xs text-gray-500">Scans Sun-Sat • Detects first AM/PM • Extracts all times</p>
+                            <p class="text-sm font-bold text-gray-900 dark:text-white">Smart Detection v3.0</p>
+                            <p class="text-xs text-gray-500">OCR Error Correction • Flexible Formats • Manual Fallback</p>
                         </div>
                     </div>
                 </div>
@@ -300,7 +337,7 @@
                         <h3 class="font-medium text-gray-900 dark:text-white">Timesheet Image <span class="text-red-500">*</span></h3>
                         <span class="text-xs text-gray-500" id="front-status">Required</span>
                     </div>
-                    <div class="upload-zone rounded-xl p-6 text-center cursor-pointer relative overflow-hidden bg-gray-50 dark:bg-dark-surface" 
+                    <div class="upload-zone rounded-xl p-6 text-center cursor-pointer relative overflow-hidden bg-gray-50 dark:bg-dark-surface image-preview-container" 
                          onclick="document.getElementById('file-front').click()"
                          ondrop="handleDrop(event)" ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)">
                         <input type="file" id="file-front" class="hidden" accept="image/*" capture="environment" onchange="handleFileSelect(event)">
@@ -310,21 +347,48 @@
                             <p class="text-xs text-gray-400 mt-1">Ensure all 7 days are visible</p>
                         </div>
                         <img id="preview-front" class="hidden w-full h-48 object-cover rounded-lg mx-auto">
+                        <div id="image-processing-indicator" class="image-processing-overlay hidden">
+                            <div class="text-center">
+                                <i class="fas fa-spinner fa-spin text-2xl mb-2"></i>
+                                <p>Processing...</p>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Image Quality Tips -->
+                    <div class="mt-3 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+                        <p class="text-xs text-blue-700 dark:text-blue-400">
+                            <i class="fas fa-lightbulb mr-1"></i>
+                            <strong>Tips:</strong> Ensure good lighting, flat paper, and all text is visible. Avoid shadows and glare.
+                        </p>
                     </div>
                 </div>
 
-                <!-- Error Display -->
+                <!-- Error Display with Debug Info -->
                 <div id="ocr-error" class="hidden bg-red-50 dark:bg-red-900/20 rounded-2xl p-4 border border-red-200 dark:border-red-800">
                     <div class="flex items-center gap-3">
                         <i class="fas fa-exclamation-triangle text-red-500 text-xl"></i>
-                        <div>
+                        <div class="flex-1">
                             <p class="text-sm font-bold text-red-800 dark:text-red-300">Extraction Failed</p>
                             <p class="text-xs text-red-600 dark:text-red-400" id="error-message">Please try again or enter manually</p>
                         </div>
                     </div>
-                    <button onclick="retryOCR()" class="mt-3 w-full py-2 bg-red-100 dark:bg-red-900/30 text-red-700 rounded-lg text-sm font-medium">
-                        <i class="fas fa-redo mr-1"></i>Retry Extraction
-                    </button>
+                    
+                    <!-- Debug Info (collapsible) -->
+                    <div class="mt-3">
+                        <button onclick="toggleDebugInfo()" class="text-xs text-red-600 underline mb-2">
+                            <i class="fas fa-bug mr-1"></i>Show Debug Info
+                        </button>
+                        <div id="ocr-debug-info" class="ocr-debug-info hidden"></div>
+                    </div>
+                    
+                    <div class="grid grid-cols-2 gap-2 mt-3">
+                        <button onclick="retryOCR()" class="py-2 bg-red-100 dark:bg-red-900/30 text-red-700 rounded-lg text-sm font-medium">
+                            <i class="fas fa-redo mr-1"></i>Retry OCR
+                        </button>
+                        <button onclick="showManualEntryFallback()" class="py-2 bg-amber-100 dark:bg-amber-900/30 text-amber-700 rounded-lg text-sm font-medium manual-entry-btn text-white">
+                            <i class="fas fa-edit mr-1"></i>Enter Manually
+                        </button>
+                    </div>
                 </div>
 
                 <!-- OCR Progress -->
@@ -445,9 +509,9 @@
                 <div class="bg-white dark:bg-dark-card rounded-2xl p-4 shadow-sm border border-gray-100 dark:border-gray-700">
                     <h3 class="font-semibold text-gray-900 dark:text-white mb-3"><i class="fas fa-info-circle text-primary mr-2"></i>About</h3>
                     <div class="space-y-2 text-sm text-gray-600 dark:text-gray-400">
-                        <p><strong>Version:</strong> <span id="settings-version">v2.2.0</span></p>
-                        <p><strong>Features:</strong> Smart AM/PM Detection, Auto First-Day, Grid Extraction</p>
-                        <p class="text-xs">Scans all 7 days, detects first shift (AM or PM), extracts all times automatically.</p>
+                        <p><strong>Version:</strong> <span id="settings-version">v2.3.0</span></p>
+                        <p><strong>Features:</strong> Enhanced OCR v3, Error Correction, Manual Fallback, Image Preprocessing</p>
+                        <p class="text-xs">Improved text recognition with character correction, flexible time formats, and robust error handling.</p>
                     </div>
                 </div>
 
@@ -614,14 +678,16 @@
 
     <script>
         // ==================== CONFIG ====================
-        const APP_VERSION = '2.2.0';
+        const APP_VERSION = '2.3.0';
         let currentUser = null;
         let currentMonth = new Date();
         let selectedWeekStart = null;
         let currentImage = null;
+        let processedImage = null;
         let imageDB = null;
         let autoDetectedData = null;
         let ocrWorker = null;
+        let rawOcrText = ''; // Store for debug
 
         // ==================== INDEXEDDB ====================
         const DB_NAME = 'TimesheetImagesDB';
@@ -953,7 +1019,42 @@
             if (ts) openWeekDetails(ts);
         }
 
-        // ==================== SCAN & OCR (ROBUST VERSION) ====================
+        // ==================== IMAGE PREPROCESSING ====================
+        async function preprocessImage(imageDataUrl) {
+            return new Promise((resolve) => {
+                const img = new Image();
+                img.onload = () => {
+                    const canvas = document.createElement('canvas');
+                    const ctx = canvas.getContext('2d');
+                    
+                    // Resize if too large (Tesseract works best at 300 DPI equivalent)
+                    const maxWidth = 2000;
+                    let width = img.width;
+                    let height = img.height;
+                    
+                    if (width > maxWidth) {
+                        height = (maxWidth / width) * height;
+                        width = maxWidth;
+                    }
+                    
+                    canvas.width = width;
+                    canvas.height = height;
+                    
+                    // Increase contrast and brightness for better OCR
+                    ctx.filter = 'contrast(1.2) brightness(1.1)';
+                    ctx.drawImage(img, 0, 0, width, height);
+                    
+                    resolve(canvas.toDataURL('image/jpeg', 0.9));
+                };
+                img.onerror = () => {
+                    // If processing fails, return original
+                    resolve(imageDataUrl);
+                };
+                img.src = imageDataUrl;
+            });
+        }
+
+        // ==================== SCAN & OCR (IMPROVED VERSION 2.3) ====================
         function handleDragOver(e) {
             e.preventDefault();
             e.currentTarget.classList.add('active');
@@ -975,7 +1076,7 @@
             if (file) processFile(file);
         }
 
-        function processFile(file) {
+        async function processFile(file) {
             // Validate file
             const MAX_SIZE = 10 * 1024 * 1024; // 10MB
             if (file.size > MAX_SIZE) {
@@ -983,70 +1084,106 @@
                 return;
             }
             
+            // Show processing indicator
+            document.getElementById('image-processing-indicator').classList.remove('hidden');
+            
             const reader = new FileReader();
-            reader.onload = (e) => {
-                currentImage = e.target.result;
-                document.getElementById('preview-front').src = currentImage;
-                document.getElementById('preview-front').classList.remove('hidden');
-                document.getElementById('upload-front-default').classList.add('hidden');
-                document.getElementById('front-status').textContent = 'Ready';
-                document.getElementById('front-status').className = 'text-xs text-green-600 font-medium';
+            reader.onload = async (e) => {
+                try {
+                    currentImage = e.target.result;
+                    
+                    // Preprocess image for better OCR
+                    processedImage = await preprocessImage(currentImage);
+                    
+                    document.getElementById('preview-front').src = processedImage;
+                    document.getElementById('preview-front').classList.remove('hidden');
+                    document.getElementById('upload-front-default').classList.add('hidden');
+                    document.getElementById('front-status').textContent = 'Ready';
+                    document.getElementById('front-status').className = 'text-xs text-green-600 font-medium';
+                } catch (err) {
+                    console.error('Image processing error:', err);
+                    // Fallback to original
+                    processedImage = currentImage;
+                    document.getElementById('preview-front').src = currentImage;
+                    document.getElementById('preview-front').classList.remove('hidden');
+                    document.getElementById('upload-front-default').classList.add('hidden');
+                } finally {
+                    document.getElementById('image-processing-indicator').classList.add('hidden');
+                }
             };
             reader.onerror = () => {
                 showToast('Error reading image', 'error');
+                document.getElementById('image-processing-indicator').classList.add('hidden');
             };
             reader.readAsDataURL(file);
         }
 
-        // ROBUST OCR with error handling
+        // IMPROVED OCR with better error handling and preprocessing
         async function startOCR() {
-            if (!currentImage) return showToast('Please upload timesheet image', 'error');
+            if (!processedImage && !currentImage) return showToast('Please upload timesheet image', 'error');
             
             const weekEnding = document.getElementById('scan-date-select').value;
             if (!weekEnding) return showToast('Please select week ending date', 'error');
+            
+            // Use processed image if available, otherwise original
+            const imageToProcess = processedImage || currentImage;
             
             // Reset error state
             document.getElementById('ocr-error').classList.add('hidden');
             document.getElementById('scan-btn').classList.add('hidden');
             document.getElementById('ocr-progress').classList.remove('hidden');
             
+            let worker = null;
+            
             try {
-                updateOcrProgress(5, 'Initializing OCR...');
+                updateOcrProgress(5, 'Initializing OCR engine...');
                 
-                // Create worker with timeout
-                ocrWorker = await Tesseract.createWorker('eng', 1, {
+                // Create worker with error handling
+                worker = await Tesseract.createWorker('eng', 1, {
                     logger: m => {
                         if (m.status === 'recognizing text') {
                             updateOcrProgress(10 + Math.round(m.progress * 70), 'Reading timesheet...');
                         }
                     },
-                    errorHandler: err => console.error('Worker error:', err)
+                    errorHandler: err => console.error('Tesseract error:', err)
                 });
                 
-                updateOcrProgress(15, 'Processing image...');
+                // Configure for table/timesheet recognition
+                await worker.setParameters({
+                    tessedit_pageseg_mode: '6',  // Treat as single uniform block of text
+                    preserve_interword_spaces: '1',
+                    tessedit_char_whitelist: '0123456789:AMPMSUNMONTUEWEDTHUFRISAT ',
+                });
                 
-                // Set timeout for recognition
+                updateOcrProgress(20, 'Processing image...');
+                
+                // Add timeout to prevent hanging
                 const timeoutPromise = new Promise((_, reject) => 
-                    setTimeout(() => reject(new Error('OCR timeout - took too long')), 60000)
+                    setTimeout(() => reject(new Error('OCR timeout - took too long')), 45000)
                 );
                 
-                const recognizePromise = ocrWorker.recognize(currentImage);
-                
-                // Race between recognition and timeout
+                const recognizePromise = worker.recognize(imageToProcess);
                 const result = await Promise.race([recognizePromise, timeoutPromise]);
                 
-                updateOcrProgress(85, 'Parsing structure...');
+                updateOcrProgress(90, 'Parsing timesheet data...');
                 
-                // Parse with improved auto-detection
-                autoDetectedData = parseTimesheetRobust(result.data.text);
-                
-                if (!autoDetectedData.firstWorkingDay) {
-                    throw new Error('Could not detect any working days. Please check image quality.');
+                // Check if we got meaningful text
+                if (!result.data.text || result.data.text.trim().length < 10) {
+                    throw new Error('No readable text found. Please ensure the image is clear and well-lit.');
                 }
                 
-                updateOcrProgress(95, 'Calculating hours...');
+                // Store raw text for debug
+                rawOcrText = result.data.text;
+                console.log('Raw OCR:', rawOcrText);
                 
-                // Calculate totals
+                // Parse with improved logic
+                autoDetectedData = parseTimesheetImproved(result.data.text);
+                
+                if (!autoDetectedData.firstWorkingDay) {
+                    throw new Error('Could not detect any working days. Please check image quality or enter manually.');
+                }
+                
+                // Calculate hours
                 let totalHours = 0;
                 let workingDays = 0;
                 Object.values(autoDetectedData.days).forEach(day => {
@@ -1065,11 +1202,9 @@
                 
                 updateOcrProgress(100, 'Complete!');
                 
-                // Cleanup worker
-                await ocrWorker.terminate();
-                ocrWorker = null;
+                // Cleanup
+                await worker.terminate();
                 
-                // Show results
                 setTimeout(() => {
                     document.getElementById('ocr-progress').classList.add('hidden');
                     showAutoDetectionResults();
@@ -1078,16 +1213,23 @@
             } catch (err) {
                 console.error('OCR Error:', err);
                 
-                // Cleanup on error
-                if (ocrWorker) {
-                    try { await ocrWorker.terminate(); } catch(e) {}
-                    ocrWorker = null;
+                // Ensure cleanup happens even on error
+                if (worker) {
+                    try { await worker.terminate(); } catch(e) { console.log('Worker termination error:', e); }
                 }
                 
                 document.getElementById('ocr-progress').classList.add('hidden');
                 document.getElementById('ocr-error').classList.remove('hidden');
-                document.getElementById('error-message').textContent = err.message || 'Failed to extract times. Please try again.';
+                document.getElementById('error-message').textContent = err.message || 'Failed to extract times. Please try again or enter manually.';
                 document.getElementById('scan-btn').classList.remove('hidden');
+                
+                // Store debug info
+                const debugInfo = `Error: ${err.message}\n\nRaw OCR Text (first 500 chars):\n${rawOcrText?.substring(0, 500) || 'No text captured'}`;
+                document.getElementById('ocr-debug-info').textContent = debugInfo;
+                
+                if (err.message && err.message.includes('network')) {
+                    showToast('Network error loading OCR engine. Please check connection.', 'error');
+                }
             }
         }
 
@@ -1096,15 +1238,29 @@
             startOCR();
         }
 
+        function toggleDebugInfo() {
+            const debugDiv = document.getElementById('ocr-debug-info');
+            debugDiv.classList.toggle('hidden');
+        }
+
         function updateOcrProgress(percent, stage) {
             document.getElementById('ocr-progress-bar').style.width = percent + '%';
             document.getElementById('ocr-status').textContent = percent + '%';
             document.getElementById('ocr-stage').textContent = stage;
         }
 
-        // IMPROVED: Robust parser that checks ALL days for first shift
-        function parseTimesheetRobust(ocrText) {
-            const lines = ocrText.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+        // IMPROVED: Robust parser with OCR error correction
+        function parseTimesheetImproved(ocrText) {
+            // Clean up common OCR errors
+            let cleanedText = ocrText
+                .replace(/[Oo]/g, '0')  // O -> 0
+                .replace(/[lI]/g, '1')  // l, I -> 1
+                .replace(/[S]/g, '5')   // S -> 5
+                .replace(/[Z]/g, '2')   // Z -> 2
+                .replace(/[\r\n]+/g, '\n')  // Normalize line breaks
+                .toUpperCase();
+            
+            const lines = cleanedText.split('\n').map(l => l.trim()).filter(l => l.length > 0);
             const days = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
             const dayData = {};
             
@@ -1113,86 +1269,84 @@
                 dayData[day] = { 
                     amTime: null, 
                     pmTime: null, 
-                    amLocation: null,
-                    pmLocation: null,
                     hasData: false,
-                    hours: 0
+                    hours: 0,
+                    rawMatches: []
                 };
             });
             
-            // Process each line looking for day patterns
+            // More flexible patterns for day detection
+            const dayPatterns = days.map(day => ({
+                day: day,
+                amRegex: new RegExp(`${day}[\\s_]*AM|${day}AM|${day}.*AM`, 'i'),
+                pmRegex: new RegExp(`${day}[\\s_]*PM|${day}PM|${day}.*PM`, 'i'),
+                genericRegex: new RegExp(`\\b${day}\\b`, 'i')
+            }));
+            
+            // Process each line
             for (let i = 0; i < lines.length; i++) {
-                const line = lines[i].toUpperCase();
+                const line = lines[i];
+                const nextLine = i + 1 < lines.length ? lines[i + 1] : '';
+                const combinedText = line + ' ' + nextLine;
                 
-                // Check for day + AM/PM pattern
-                days.forEach(day => {
-                    const amPattern = new RegExp(`${day}[\\s_]*AM`, 'i');
-                    const pmPattern = new RegExp(`${day}[\\s_]*PM`, 'i');
-                    
-                    if (amPattern.test(line) || line.includes(`${day} AM`)) {
-                        // Look for times in this and next lines
-                        const searchLines = [line];
-                        if (i + 1 < lines.length) searchLines.push(lines[i + 1]);
-                        if (i + 2 < lines.length) searchLines.push(lines[i + 2]);
-                        
-                        const combined = searchLines.join(' ');
-                        const times = extractAllTimes(combined);
-                        const locations = extractLocations(combined);
-                        
-                        if (times.length > 0) {
-                            // AM times are typically 04:00-11:59
-                            const amTimes = times.filter(t => {
-                                const h = parseInt(t.split(':')[0]);
-                                return h >= 4 && h < 12;
-                            });
-                            
-                            if (amTimes.length > 0 && !dayData[day].amTime) {
-                                dayData[day].amTime = amTimes[0];
-                                dayData[day].amLocation = locations[0] || null;
-                                dayData[day].hasData = true;
-                            }
+                dayPatterns.forEach(({ day, amRegex, pmRegex }) => {
+                    // Check for AM shift
+                    if (amRegex.test(line) || (line.includes(day) && line.includes('AM'))) {
+                        const times = extractTimesFlexible(combinedText);
+                        const amTime = findAmTime(times);
+                        if (amTime && !dayData[day].amTime) {
+                            dayData[day].amTime = amTime;
+                            dayData[day].hasData = true;
+                            dayData[day].rawMatches.push(`AM:${amTime}`);
                         }
                     }
                     
-                    if (pmPattern.test(line) || line.includes(`${day} PM`)) {
-                        const searchLines = [line];
-                        if (i + 1 < lines.length) searchLines.push(lines[i + 1]);
-                        if (i + 2 < lines.length) searchLines.push(lines[i + 2]);
-                        
-                        const combined = searchLines.join(' ');
-                        const times = extractAllTimes(combined);
-                        const locations = extractLocations(combined);
-                        
-                        if (times.length > 0) {
-                            // PM times are typically 12:00-23:59
-                            const pmTimes = times.filter(t => {
-                                const h = parseInt(t.split(':')[0]);
-                                return h >= 12 && h <= 23;
-                            });
-                            
-                            if (pmTimes.length > 0 && !dayData[day].pmTime) {
-                                dayData[day].pmTime = pmTimes[0];
-                                dayData[day].pmLocation = locations[0] || null;
-                                dayData[day].hasData = true;
-                            }
+                    // Check for PM shift
+                    if (pmRegex.test(line) || (line.includes(day) && line.includes('PM'))) {
+                        const times = extractTimesFlexible(combinedText);
+                        const pmTime = findPmTime(times);
+                        if (pmTime && !dayData[day].pmTime) {
+                            dayData[day].pmTime = pmTime;
+                            dayData[day].hasData = true;
+                            dayData[day].rawMatches.push(`PM:${pmTime}`);
                         }
                     }
                 });
             }
             
-            // Find first working day by checking all days in order
+            // Fallback: If no explicit AM/PM labels, look for day + time patterns
+            days.forEach(day => {
+                if (!dayData[day].hasData) {
+                    // Search all lines for day name followed by times
+                    for (let i = 0; i < lines.length; i++) {
+                        if (lines[i].includes(day)) {
+                            const times = extractTimesFlexible(lines[i] + ' ' + (lines[i+1] || ''));
+                            if (times.length >= 2 && !dayData[day].hasData) {
+                                dayData[day].amTime = times[0];
+                                dayData[day].pmTime = times[1];
+                                dayData[day].hasData = true;
+                            } else if (times.length === 1 && !dayData[day].hasData) {
+                                // Single time - determine if AM or PM based on value
+                                const hour = parseInt(times[0].split(':')[0]);
+                                if (hour < 12) dayData[day].amTime = times[0];
+                                else dayData[day].pmTime = times[0];
+                                dayData[day].hasData = true;
+                            }
+                        }
+                    }
+                }
+            });
+            
+            // Find first working day
             let firstWorkingDay = null;
             let firstShiftType = null;
             
             for (const day of days) {
                 if (dayData[day].hasData) {
                     firstWorkingDay = day;
-                    // Determine if first shift is AM or PM
-                    if (dayData[day].amTime) {
-                        firstShiftType = 'AM';
-                    } else if (dayData[day].pmTime) {
-                        firstShiftType = 'PM';
-                    }
+                    if (dayData[day].amTime && !dayData[day].pmTime) firstShiftType = 'AM';
+                    else if (!dayData[day].amTime && dayData[day].pmTime) firstShiftType = 'PM';
+                    else firstShiftType = 'BOTH';
                     break;
                 }
             }
@@ -1205,7 +1359,7 @@
             
             let pattern = 'single';
             if (doubleShiftDays >= 2) pattern = 'double';
-            if (doubleShiftDays >= 3) pattern = 'continuous';
+            if (doubleShiftDays >= 4) pattern = 'continuous';
             
             return {
                 days: dayData,
@@ -1213,24 +1367,27 @@
                 firstShiftType: firstShiftType,
                 pattern: pattern,
                 doubleShiftDays: doubleShiftDays,
-                rawText: ocrText
+                rawText: ocrText,
+                cleanedText: cleanedText
             };
         }
 
-        function extractAllTimes(text) {
+        // Flexible time extraction with multiple patterns
+        function extractTimesFlexible(text) {
             const times = [];
             const seen = new Set();
             
-            // Pattern 1: HH:MM or H:MM
+            // Pattern 1: HH:MM (most common)
             const pattern1 = /(\d{1,2})[:.](\d{2})/g;
             let match;
             while ((match = pattern1.exec(text)) !== null) {
-                const hour = parseInt(match[1]);
-                const minute = parseInt(match[2]);
+                let hour = parseInt(match[1]);
+                let minute = parseInt(match[2]);
                 
+                // Validate
                 if (hour >= 0 && hour <= 23 && minute >= 0 && minute <= 59) {
-                    // Skip if looks like a year (20xx)
-                    if (hour === 20 && minute >= 0 && minute <= 30) continue;
+                    // Skip if looks like a year (2000-2030)
+                    if (hour === 20 && minute <= 30) continue;
                     
                     const timeStr = `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
                     if (!seen.has(timeStr)) {
@@ -1240,13 +1397,15 @@
                 }
             }
             
-            // Pattern 2: HHMM (4 digits together)
-            const pattern2 = /[^\d](\d{2})(\d{2})[^\d]/g;
+            // Pattern 2: HHMM (4 digits, common in tables)
+            // Look for spaces around to avoid matching random numbers
+            const pattern2 = /(?:^|\s)(\d{2})(\d{2})(?:\s|$)/g;
             while ((match = pattern2.exec(text)) !== null) {
-                const hour = parseInt(match[1]);
-                const minute = parseInt(match[2]);
+                let hour = parseInt(match[1]);
+                let minute = parseInt(match[2]);
                 
-                if (hour >= 4 && hour <= 23 && minute >= 0 && minute <= 59) {
+                if (hour >= 4 && hour <= 23 && minute >= 0 && minute <= 59 && minute % 5 === 0) {
+                    // Likely a time if minute is multiple of 5 (00, 05, 10, etc.)
                     const timeStr = `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
                     if (!seen.has(timeStr)) {
                         times.push(timeStr);
@@ -1258,16 +1417,20 @@
             return times.sort();
         }
 
-        function extractLocations(text) {
-            const locations = [];
-            const locPatterns = [/Quay/i, /Depot/i, /Spalding/i, /Home/i, /Yard/i, /Base/i];
-            
-            locPatterns.forEach(pattern => {
-                const match = text.match(pattern);
-                if (match) locations.push(match[0]);
-            });
-            
-            return locations;
+        function findAmTime(times) {
+            // AM times are typically 04:00-11:59
+            return times.find(t => {
+                const h = parseInt(t.split(':')[0]);
+                return h >= 4 && h < 12;
+            }) || times[0]; // fallback to first time
+        }
+
+        function findPmTime(times) {
+            // PM times are typically 12:00-23:59, or could be morning times if PM labeled
+            return times.find(t => {
+                const h = parseInt(t.split(':')[0]);
+                return h >= 12 || h < 4; // Afternoon or late night
+            }) || times[times.length - 1]; // fallback to last time
         }
 
         function calculateHoursBetween(startTime, endTime) {
@@ -1353,7 +1516,10 @@
             
             const workingDays = days.filter(day => autoDetectedData.days[day].hasData);
             
-            container.innerHTML = workingDays.map(day => {
+            // If no working days detected, show all days for manual entry
+            const daysToShow = workingDays.length > 0 ? workingDays : days;
+            
+            container.innerHTML = daysToShow.map(day => {
                 const data = autoDetectedData.days[day];
                 const idx = days.indexOf(day);
                 const isFirst = day === autoDetectedData.firstWorkingDay;
@@ -1392,6 +1558,9 @@
             if (field === 'pm') autoDetectedData.days[day].pmTime = value || null;
             if (field === 'hours') autoDetectedData.days[day].hours = parseFloat(value) || 0;
             
+            // Mark as hasData if any value entered
+            if (value) autoDetectedData.days[day].hasData = true;
+            
             // Recalculate
             let total = 0;
             Object.values(autoDetectedData.days).forEach(d => {
@@ -1405,7 +1574,7 @@
             if (confirm('Reset all times to auto-detected values?')) {
                 // Re-parse from raw text
                 if (autoDetectedData && autoDetectedData.rawText) {
-                    autoDetectedData = parseTimesheetRobust(autoDetectedData.rawText);
+                    autoDetectedData = parseTimesheetImproved(autoDetectedData.rawText);
                     
                     // Recalculate
                     let totalHours = 0;
@@ -1421,6 +1590,35 @@
                     showToast('Reset to auto-detected values');
                 }
             }
+        }
+
+        // NEW: Manual entry fallback when OCR fails
+        function showManualEntryFallback() {
+            document.getElementById('ocr-error').classList.add('hidden');
+            document.getElementById('auto-results').classList.remove('hidden');
+            
+            // Create empty template for manual entry
+            autoDetectedData = {
+                days: {
+                    'SUN': {amTime: null, pmTime: null, hasData: false, hours: 0},
+                    'MON': {amTime: null, pmTime: null, hasData: false, hours: 0},
+                    'TUE': {amTime: null, pmTime: null, hasData: false, hours: 0},
+                    'WED': {amTime: null, pmTime: null, hasData: false, hours: 0},
+                    'THU': {amTime: null, pmTime: null, hasData: false, hours: 0},
+                    'FRI': {amTime: null, pmTime: null, hasData: false, hours: 0},
+                    'SAT': {amTime: null, pmTime: null, hasData: false, hours: 0}
+                },
+                firstWorkingDay: null,
+                firstShiftType: null,
+                pattern: 'manual',
+                totalHours: 0,
+                workingDays: 0,
+                rawText: 'MANUAL_ENTRY'
+            };
+            
+            showToast('OCR failed - please enter times manually', 'error');
+            renderDetectionGrid();
+            renderCorrectionTable(); // Show empty table for manual entry
         }
 
         function reprocessImage() {
@@ -1439,12 +1637,13 @@
             
             // Build final data
             const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+            const dayKeys = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
             const dayData = [];
             let totalHours = 0;
             let longDays = 0;
             
             days.forEach((dayName, idx) => {
-                const dayKey = dayName.toUpperCase();
+                const dayKey = dayKeys[idx];
                 const detected = autoDetectedData.days[dayKey];
                 
                 let hours = 0;
@@ -1478,7 +1677,9 @@
             const timesheetId = Date.now().toString();
             const imageIds = { front: `${timesheetId}_front` };
             
-            await saveImage(imageIds.front, currentImage);
+            // Save processed image if available, otherwise original
+            const imageToSave = processedImage || currentImage;
+            await saveImage(imageIds.front, imageToSave);
             
             const timesheet = {
                 id: parseInt(timesheetId),
@@ -1493,7 +1694,8 @@
                 pattern: autoDetectedData.pattern,
                 imageIds,
                 days: dayData,
-                uploadedAt: new Date().toISOString()
+                uploadedAt: new Date().toISOString(),
+                ocrVersion: APP_VERSION
             };
             
             const existing = DB.getTimesheets(currentUser.username);
@@ -1509,19 +1711,27 @@
             updateStats();
             renderRecent();
             
-            showToast(`Saved! ${autoDetectedData.firstWorkingDay} ${autoDetectedData.firstShiftType} start, ${totalHours.toFixed(1)}h total`);
+            const msg = autoDetectedData.firstWorkingDay ? 
+                `Saved! ${autoDetectedData.firstWorkingDay} ${autoDetectedData.firstShiftType} start, ${totalHours.toFixed(1)}h total` :
+                `Saved! ${totalHours.toFixed(1)}h total (manual entry)`;
+            
+            showToast(msg);
             switchView('dashboard');
         }
 
         function resetScanForm() {
             currentImage = null;
+            processedImage = null;
             autoDetectedData = null;
+            rawOcrText = '';
             document.getElementById('preview-front').src = '';
             document.getElementById('preview-front').classList.add('hidden');
             document.getElementById('upload-front-default').classList.remove('hidden');
             document.getElementById('file-front').value = '';
             document.getElementById('front-status').textContent = 'Required';
             document.getElementById('front-status').className = 'text-xs text-gray-500';
+            document.getElementById('ocr-debug-info').textContent = '';
+            document.getElementById('ocr-debug-info').classList.add('hidden');
         }
 
         // ==================== DATA MANAGEMENT ====================
@@ -1831,6 +2041,7 @@
                     <p class="text-sm text-green-800 dark:text-green-300">
                         <i class="fas fa-robot mr-2"></i>Auto-detected • First: ${ts.firstWorkingDay || 'Unknown'} ${ts.firstShiftType || ''}
                         ${ts.pattern ? `• Pattern: ${ts.pattern}` : ''}
+                        ${ts.ocrVersion ? `• v${ts.ocrVersion}` : ''}
                     </p>
                 </div>
                 
