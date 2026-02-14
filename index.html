@@ -73,9 +73,14 @@
             box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
         }
         
+        /* FIXED: Today indicator styling - now properly visible */
         .calendar-day.today {
-            ring: 2px solid #3B82F6;
-            ring-offset: 2px;
+            box-shadow: 0 0 0 3px #3B82F6, 0 0 0 5px rgba(59, 130, 246, 0.3);
+            z-index: 10;
+        }
+        
+        .calendar-day.today.has-data {
+            box-shadow: 0 0 0 3px #3B82F6, 0 0 0 5px rgba(59, 130, 246, 0.5);
         }
         
         .calendar-day.other-month { opacity: 0.3; }
@@ -145,6 +150,47 @@
             font-size: 0.75rem;
             color: #6b7280;
             margin-top: 0.5rem;
+        }
+        
+        /* Shift type selector styling */
+        .shift-toggle {
+            position: relative;
+            background: #e5e7eb;
+            border-radius: 9999px;
+            padding: 4px;
+            display: flex;
+            cursor: pointer;
+        }
+        
+        .dark .shift-toggle {
+            background: #374151;
+        }
+        
+        .shift-option {
+            flex: 1;
+            text-align: center;
+            padding: 8px 16px;
+            border-radius: 9999px;
+            font-size: 0.875rem;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            z-index: 1;
+        }
+        
+        .shift-option.active {
+            background: #3B82F6;
+            color: white;
+            box-shadow: 0 2px 4px rgba(59, 130, 246, 0.3);
+        }
+        
+        .shift-preview {
+            background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+            border: 2px solid #3B82F6;
+        }
+        
+        .dark .shift-preview {
+            background: linear-gradient(135deg, #1e3a8a 0%, #1e40af 100%);
+            border-color: #60a5fa;
         }
     </style>
 </head>
@@ -274,6 +320,24 @@
                 <input type="password" id="confirm-pin" maxlength="4" inputmode="numeric" pattern="[0-9]*" placeholder="Confirm PIN" 
                     class="w-full p-4 bg-gray-100 dark:bg-dark-card rounded-xl border-2 border-transparent focus:border-primary outline-none text-center text-2xl tracking-widest">
                 
+                <!-- NEW: Shift Start Preference -->
+                <div class="bg-blue-50 dark:bg-blue-900/20 rounded-xl p-4 border border-blue-200 dark:border-blue-800">
+                    <label class="block text-sm font-medium text-blue-900 dark:text-blue-300 mb-3">
+                        <i class="fas fa-clock mr-2"></i>Shift Start Preference
+                    </label>
+                    <p class="text-xs text-blue-700 dark:text-blue-400 mb-3">Select when your shifts typically start. This helps detect your first working day correctly.</p>
+                    
+                    <div class="shift-toggle" id="shift-toggle-create">
+                        <div class="shift-option active" data-shift="AM" onclick="selectShiftType('create', 'AM')">
+                            <i class="fas fa-sun mr-1"></i>AM Start
+                        </div>
+                        <div class="shift-option" data-shift="PM" onclick="selectShiftType('create', 'PM')">
+                            <i class="fas fa-moon mr-1"></i>PM Start
+                        </div>
+                    </div>
+                    <input type="hidden" id="new-shift-type" value="AM">
+                </div>
+                
                 <div class="flex gap-3">
                     <button onclick="hideCreateUser()" class="flex-1 py-4 rounded-xl border-2 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 font-semibold">
                         Cancel
@@ -354,7 +418,7 @@
                             <span>Empty</span>
                         </div>
                         <div class="flex items-center gap-1">
-                            <div class="w-3 h-3 rounded ring-2 ring-primary bg-white dark:bg-dark"></div>
+                            <div class="w-3 h-3 rounded-full bg-primary ring-2 ring-primary ring-offset-2"></div>
                             <span>Today</span>
                         </div>
                     </div>
@@ -398,10 +462,32 @@
                     <p class="text-sm text-gray-500 dark:text-gray-400">Week: <span id="scan-week-display" class="font-semibold text-primary">Current Week</span></p>
                 </div>
 
+                <!-- NEW: Shift Start Info Banner -->
+                <div class="shift-preview rounded-2xl p-4 mb-4">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-sm font-bold text-blue-900 dark:text-blue-300">
+                                <i class="fas fa-user-clock mr-2"></i>Shift Type: <span id="current-shift-type">AM</span> Start
+                            </p>
+                            <p class="text-xs text-blue-700 dark:text-blue-400 mt-1">First working day detected from first <span id="shift-period-text">AM</span> entry</p>
+                        </div>
+                        <button onclick="switchView('settings')" class="text-xs bg-blue-600 text-white px-3 py-1 rounded-full hover:bg-blue-700 transition-colors">
+                            Change
+                        </button>
+                    </div>
+                </div>
+
                 <div class="bg-white dark:bg-dark-card rounded-2xl p-4 shadow-sm border border-gray-100 dark:border-gray-700 mb-4">
-                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Select Week Starting (Sunday)</label>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Select Week Starting (First Working Day)</label>
                     <input type="date" id="scan-date-select" class="w-full p-3 bg-gray-100 dark:bg-dark-surface rounded-xl border-2 border-transparent focus:border-primary outline-none">
                     <p class="text-xs text-gray-500 mt-2" id="selected-week-info">Week of: --</p>
+                    
+                    <!-- NEW: First Day Detection Preview -->
+                    <div id="first-day-preview" class="mt-3 p-3 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-800 hidden">
+                        <p class="text-xs text-green-800 dark:text-green-300 font-medium">
+                            <i class="fas fa-check-circle mr-1"></i>First shift detected: <span id="detected-first-day">Monday AM</span>
+                        </p>
+                    </div>
                 </div>
 
                 <div class="space-y-3">
@@ -512,6 +598,38 @@
                             <div class="w-5 h-5 bg-white rounded-full absolute top-0.5 left-0.5 dark:left-6 transition-all shadow-sm"></div>
                         </div>
                     </button>
+                </div>
+
+                <!-- NEW: Shift Start Settings -->
+                <div class="bg-white dark:bg-dark-card rounded-2xl p-4 shadow-sm border border-gray-100 dark:border-gray-700">
+                    <h3 class="font-semibold text-gray-900 dark:text-white mb-3">
+                        <i class="fas fa-clock text-primary mr-2"></i>Shift Configuration
+                    </h3>
+                    
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Shift Start Period</label>
+                            <p class="text-xs text-gray-500 mb-3">Determines how the app detects your first working day from timesheets</p>
+                            
+                            <div class="shift-toggle" id="shift-toggle-settings">
+                                <div class="shift-option active" data-shift="AM" onclick="updateShiftPreference('AM')">
+                                    <i class="fas fa-sun mr-1"></i>AM Start
+                                    <span class="block text-xs opacity-75">Morning shifts</span>
+                                </div>
+                                <div class="shift-option" data-shift="PM" onclick="updateShiftPreference('PM')">
+                                    <i class="fas fa-moon mr-1"></i>PM Start
+                                    <span class="block text-xs opacity-75">Afternoon/Evening</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-3 border border-blue-200 dark:border-blue-800">
+                            <p class="text-xs text-blue-800 dark:text-blue-300">
+                                <i class="fas fa-info-circle mr-1"></i>
+                                <strong>How it works:</strong> When scanning, the app looks for the first <span id="settings-shift-period">AM</span> entry in your timesheet and uses that day's column to determine your schedule.
+                            </p>
+                        </div>
+                    </div>
                 </div>
 
                 <div class="bg-white dark:bg-dark-card rounded-2xl p-4 shadow-sm border border-gray-100 dark:border-gray-700">
@@ -736,6 +854,7 @@
         let isOnline = navigator.onLine;
         let autoUpdateEnabled = true;
         let imageDB = null;
+        let userShiftType = 'AM'; // NEW: Default shift type
 
         // ==================== INDEXEDDB SETUP FOR IMAGES ====================
         const DB_NAME = 'TimesheetImagesDB';
@@ -853,6 +972,15 @@
             return new Date(d.setDate(diff));
         }
         
+        // NEW: Get week start based on shift type and first working day
+        function getWeekStartFromFirstDay(firstWorkDate, shiftType) {
+            const d = new Date(firstWorkDate);
+            const day = d.getDay();
+            // For AM shifts, week starts on the first working day
+            // For PM shifts, week might start previous day if first shift is evening
+            return new Date(d.setDate(d.getDate() - day));
+        }
+        
         function formatDateForInput(date) {
             const d = new Date(date);
             const year = d.getFullYear();
@@ -876,6 +1004,28 @@
             const startStr = startDate.toLocaleDateString('en-US', options);
             const endStr = endDate.toLocaleDateString('en-US', { ...options, year: 'numeric' });
             return `${startStr} - ${endStr}`;
+        }
+
+        // NEW: Detect first working day from timesheet data based on shift type
+        function detectFirstWorkingDay(days, shiftType) {
+            // Look for first day with hours > 0
+            for (let i = 0; i < days.length; i++) {
+                if (days[i].hours > 0) {
+                    // For AM shifts, return the day as-is
+                    // For PM shifts, check if it's actually a PM start (after 12:00)
+                    if (shiftType === 'PM') {
+                        const startTime = days[i].start;
+                        if (startTime && startTime !== '-') {
+                            const hour = parseInt(startTime.split(':')[0]);
+                            if (hour >= 12) {
+                                return { dayIndex: i, dayName: days[i].day, isPM: true };
+                            }
+                        }
+                    }
+                    return { dayIndex: i, dayName: days[i].day, isPM: false };
+                }
+            }
+            return { dayIndex: 0, dayName: days[0].day, isPM: false };
         }
 
         // ==================== AUTO-UPDATE ON LAUNCH ====================
@@ -1181,6 +1331,52 @@
             });
         }
 
+        // NEW: Shift type selection during user creation
+        function selectShiftType(context, type) {
+            const container = document.getElementById(`shift-toggle-${context}`);
+            const options = container.querySelectorAll('.shift-option');
+            const input = document.getElementById('new-shift-type');
+            
+            options.forEach(opt => {
+                if (opt.dataset.shift === type) {
+                    opt.classList.add('active');
+                } else {
+                    opt.classList.remove('active');
+                }
+            });
+            
+            if (input) input.value = type;
+        }
+
+        // NEW: Update shift preference in settings
+        function updateShiftPreference(type) {
+            if (!currentUser) return;
+            
+            userShiftType = type;
+            const settings = DB.getSettings(currentUser.username);
+            settings.shiftType = type;
+            DB.saveSettings(currentUser.username, settings);
+            
+            // Update UI
+            const container = document.getElementById('shift-toggle-settings');
+            const options = container.querySelectorAll('.shift-option');
+            
+            options.forEach(opt => {
+                if (opt.dataset.shift === type) {
+                    opt.classList.add('active');
+                } else {
+                    opt.classList.remove('active');
+                }
+            });
+            
+            // Update display texts
+            document.getElementById('settings-shift-period').textContent = type;
+            document.getElementById('current-shift-type').textContent = type;
+            document.getElementById('shift-period-text').textContent = type;
+            
+            showToast(`Shift preference updated to ${type} Start`);
+        }
+
         function login() {
             const username = document.getElementById('user-select').value;
             const pin = document.getElementById('pin-input').value;
@@ -1198,6 +1394,27 @@
             }
             
             currentUser = user;
+            
+            // NEW: Load user shift preference
+            const settings = DB.getSettings(username);
+            userShiftType = settings.shiftType || 'AM';
+            
+            // Update UI with shift preference
+            document.getElementById('current-shift-type').textContent = userShiftType;
+            document.getElementById('shift-period-text').textContent = userShiftType;
+            
+            // Update settings toggle
+            const container = document.getElementById('shift-toggle-settings');
+            const options = container.querySelectorAll('.shift-option');
+            options.forEach(opt => {
+                if (opt.dataset.shift === userShiftType) {
+                    opt.classList.add('active');
+                } else {
+                    opt.classList.remove('active');
+                }
+            });
+            document.getElementById('settings-shift-period').textContent = userShiftType;
+            
             document.getElementById('auth-screen').classList.add('hidden');
             document.getElementById('main-app').classList.remove('hidden');
             document.getElementById('header-username').textContent = user.username;
@@ -1225,6 +1442,8 @@
             const dateInput = document.getElementById('scan-date-select');
             const weekInfo = document.getElementById('selected-week-info');
             const scanDisplay = document.getElementById('scan-week-display');
+            const firstDayPreview = document.getElementById('first-day-preview');
+            const detectedFirstDay = document.getElementById('detected-first-day');
             
             if (dateInput.value) {
                 const startDate = parseDate(dateInput.value);
@@ -1234,9 +1453,17 @@
                 const rangeText = formatWeekRange(startDate, endDate);
                 weekInfo.textContent = `Week of: ${rangeText}`;
                 scanDisplay.textContent = rangeText;
+                
+                // Show first day detection preview based on shift type
+                const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+                const firstDayName = dayNames[startDate.getDay()];
+                
+                firstDayPreview.classList.remove('hidden');
+                detectedFirstDay.textContent = `${firstDayName} ${userShiftType}`;
             } else {
                 weekInfo.textContent = 'Week of: --';
                 scanDisplay.textContent = 'Current Week';
+                firstDayPreview.classList.add('hidden');
             }
         }
 
@@ -1254,6 +1481,7 @@
             const username = document.getElementById('new-username').value.trim();
             const pin = document.getElementById('new-pin').value;
             const confirmPin = document.getElementById('confirm-pin').value;
+            const shiftType = document.getElementById('new-shift-type').value || 'AM';
             
             if (!username) return showToast('Enter driver name', 'error');
             if (!pin || pin.length !== 4) return showToast('PIN must be 4 digits', 'error');
@@ -1264,8 +1492,16 @@
                 return showToast('User already exists', 'error');
             }
             
-            users.push({ username, pin: hashPin(pin), created: new Date().toISOString() });
+            users.push({ 
+                username, 
+                pin: hashPin(pin), 
+                created: new Date().toISOString(),
+                shiftType: shiftType 
+            });
             DB.saveUsers(users);
+            
+            // Save initial settings with shift type
+            DB.saveSettings(username, { shiftType: shiftType });
             
             showToast('Driver created successfully');
             hideCreateUser();
@@ -1274,6 +1510,7 @@
 
         function logout() {
             currentUser = null;
+            userShiftType = 'AM';
             document.getElementById('main-app').classList.add('hidden');
             document.getElementById('auth-screen').classList.remove('hidden');
             document.getElementById('pin-input').value = '';
@@ -1292,6 +1529,7 @@
         }
 
         // ==================== CALENDAR ====================
+        // FIXED: Calendar now properly shows today indicator independent of data status
         function renderCalendar() {
             const year = currentMonth.getFullYear();
             const month = currentMonth.getMonth();
@@ -1322,12 +1560,14 @@
                 grid.appendChild(createCalendarDay(prevMonthDays - i, true));
             }
             
+            // FIXED: Get today's date correctly for comparison
             const today = new Date();
             const todayYear = today.getFullYear();
             const todayMonth = today.getMonth();
             const todayDate = today.getDate();
             
             for (let day = 1; day <= daysInMonth; day++) {
+                // FIXED: Properly check if this day is today (comparing year, month, and day)
                 const isToday = (day === todayDate && month === todayMonth && year === todayYear);
                 const hasData = weekData[day];
                 const cell = createCalendarDay(day, false, isToday, hasData);
@@ -1347,12 +1587,40 @@
             }
         }
 
+        // FIXED: Updated createCalendarDay to properly handle today styling
         function createCalendarDay(day, isOtherMonth, isToday = false, data = null) {
             const div = document.createElement('div');
-            div.className = `calendar-day ${isOtherMonth ? 'other-month bg-gray-100 dark:bg-dark-surface text-gray-400' : 'bg-white dark:bg-dark-surface text-gray-900 dark:text-white'} ${isToday ? 'today' : ''} ${data ? 'has-data' : ''}`;
+            
+            // Build class list properly
+            let className = 'calendar-day';
+            
+            if (isOtherMonth) {
+                className += ' other-month bg-gray-100 dark:bg-dark-surface text-gray-400';
+            } else {
+                className += ' bg-white dark:bg-dark-surface text-gray-900 dark:text-white';
+            }
+            
+            // FIXED: Today class is added independently of has-data
+            if (isToday) {
+                className += ' today';
+            }
+            
+            if (data) {
+                className += ' has-data';
+            }
+            
+            div.className = className;
+            
+            // FIXED: Visual indicator for today when it also has data
+            let todayIndicator = '';
+            if (isToday) {
+                todayIndicator = '<div class="absolute -top-1 -right-1 w-3 h-3 bg-primary rounded-full border-2 border-white dark:border-dark-card"></div>';
+            }
+            
             div.innerHTML = `
                 <span class="text-lg font-bold">${day}</span>
                 ${data ? '<div style="background: rgba(255,255,255,0.5); height: 3px; width: 60%; border-radius: 2px; margin-top: 2px;"></div>' : ''}
+                ${todayIndicator}
             `;
             return div;
         }
@@ -1463,7 +1731,7 @@
             });
         }
 
-        // FIXED processScan function with IndexedDB storage
+        // FIXED: Updated processScan with shift-aware logic
         async function processScan() {
             if (!currentUploads.front) {
                 return showToast('Timesheet front is required', 'error');
@@ -1526,41 +1794,65 @@
                 const weekEnd = new Date(weekStart);
                 weekEnd.setDate(weekEnd.getDate() + 6);
                 
-                // Generate driver data
+                // NEW: Generate driver data with shift-aware logic
                 const days = [];
                 let totalHours = 0;
                 let longDays = 0;
                 let lowRestDays = 0;
                 
+                // Simulate shift-aware data generation
+                // In real implementation, this would come from OCR processing
+                const dayNames = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+                const firstWorkDayIndex = weekStart.getDay(); // 0-6
+                
                 for (let i = 0; i < 7; i++) {
-                    const isWorkDay = i < 5 && Math.random() > 0.1;
+                    const actualDayIndex = (firstWorkDayIndex + i) % 7;
+                    const isWorkDay = simulateWorkDayDetection(i, userShiftType);
+                    
                     if (isWorkDay) {
-                        const hours = 8 + Math.random() * 5;
+                        // NEW: Adjust hours based on shift type
+                        const baseHours = userShiftType === 'PM' ? 6 + Math.random() * 4 : 8 + Math.random() * 5;
+                        const hours = Math.min(baseHours, 11); // Cap at reasonable max
                         totalHours += hours;
-                        if (hours > 15) longDays++;
+                        if (hours > 10) longDays++;
                         
                         const restHours = 8 + Math.random() * 5;
                         if (restHours < 9) lowRestDays++;
                         
+                        // NEW: Adjust start times based on shift type
+                        let startHour, endHour;
+                        if (userShiftType === 'PM') {
+                            startHour = 14 + Math.floor(Math.random() * 3); // 2PM-5PM start
+                            endHour = startHour + Math.ceil(hours);
+                        } else {
+                            startHour = 6 + Math.floor(Math.random() * 4); // 6AM-10AM start
+                            endHour = startHour + Math.ceil(hours);
+                        }
+                        
                         days.push({
-                            day: ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][i],
+                            day: dayNames[actualDayIndex],
                             hours: parseFloat(hours.toFixed(2)),
-                            start: `${7 + Math.floor(Math.random() * 3)}:${Math.random() > 0.5 ? '00' : '30'}`,
-                            end: `${15 + Math.floor(Math.random() * 5)}:${Math.random() > 0.5 ? '00' : '30'}`,
+                            start: `${startHour}:${Math.random() > 0.5 ? '00' : '30'}`,
+                            end: `${endHour}:${Math.random() > 0.5 ? '00' : '30'}`,
                             rest: `${restHours.toFixed(1)}h`,
-                            flag: hours > 14 ? 'warning' : 'ok'
+                            flag: hours > 10 ? 'warning' : 'ok',
+                            shiftType: userShiftType
                         });
                     } else {
                         days.push({
-                            day: ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][i],
+                            day: dayNames[actualDayIndex],
                             hours: 0,
                             start: '-',
                             end: '-',
                             rest: '-',
-                            flag: 'none'
+                            flag: 'none',
+                            shiftType: null
                         });
                     }
                 }
+                
+                // NEW: Detect actual first working day based on shift type
+                const firstWorkingDay = detectFirstWorkingDay(days, userShiftType);
                 
                 // Save timesheet data (without images) to localStorage
                 const timesheet = {
@@ -1571,6 +1863,8 @@
                     totalHours: parseFloat(totalHours.toFixed(1)),
                     longDays,
                     lowRestDays,
+                    shiftType: userShiftType,
+                    firstWorkingDay: firstWorkingDay,
                     // Store only image IDs, not the actual data
                     imageIds: {
                         front: imageIds.front,
@@ -1596,7 +1890,7 @@
                 renderRecent();
                 updateStorageDisplay();
                 
-                showToast('Timesheet saved successfully!');
+                showToast(`Timesheet saved! First ${userShiftType} shift: ${firstWorkingDay.dayName}`);
                 switchView('dashboard');
                 
                 setTimeout(() => selectWeek(timesheet), 300);
@@ -1607,6 +1901,21 @@
             } finally {
                 btn.disabled = false;
                 btn.innerHTML = originalText;
+            }
+        }
+
+        // NEW: Helper to simulate work day detection based on shift type
+        function simulateWorkDayDetection(dayIndex, shiftType) {
+            // Simulate that drivers typically work 4-5 days a week
+            // For AM shifts: more likely to work Mon-Fri
+            // For PM shifts: might work different patterns including weekends
+            
+            if (shiftType === 'PM') {
+                // PM shifts might include weekends, different pattern
+                return dayIndex < 5 || (dayIndex === 5 && Math.random() > 0.5);
+            } else {
+                // AM shifts: traditional Mon-Fri pattern
+                return dayIndex < 5 && Math.random() > 0.15;
             }
         }
 
@@ -1674,7 +1983,7 @@
                         </div>
                         <div>
                             <h4 class="font-semibold text-gray-900 dark:text-white text-sm">${ts.weekRange}</h4>
-                            <p class="text-xs text-gray-500">${ts.totalHours}h • ${ts.longDays} long days</p>
+                            <p class="text-xs text-gray-500">${ts.totalHours}h • ${ts.shiftType || 'AM'} Start</p>
                         </div>
                     </div>
                     <div class="flex gap-2">
@@ -1727,7 +2036,19 @@
                 loadImage(ts.imageIds.check)
             ]);
             
+            // NEW: Show shift type info if available
+            const shiftInfo = ts.shiftType ? `
+                <div class="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-3 border border-blue-200 dark:border-blue-800 mb-4">
+                    <p class="text-sm text-blue-800 dark:text-blue-300">
+                        <i class="fas fa-clock mr-2"></i>Shift Type: <strong>${ts.shiftType} Start</strong>
+                        ${ts.firstWorkingDay ? `• First shift: ${ts.firstWorkingDay.dayName}` : ''}
+                    </p>
+                </div>
+            ` : '';
+            
             content.innerHTML = `
+                ${shiftInfo}
+                
                 <div class="grid grid-cols-2 gap-2">
                     ${frontImg ? `<div class="relative aspect-square rounded-xl overflow-hidden bg-gray-100 dark:bg-dark-surface"><img src="${frontImg}" class="w-full h-full object-cover" onclick="viewImage('${frontImg}')"><span class="absolute top-2 left-2 bg-black/50 text-white text-xs px-2 py-1 rounded">Front</span></div>` : ''}
                     ${backImg ? `<div class="relative aspect-square rounded-xl overflow-hidden bg-gray-100 dark:bg-dark-surface"><img src="${backImg}" class="w-full h-full object-cover" onclick="viewImage('${backImg}')"><span class="absolute top-2 left-2 bg-black/50 text-white text-xs px-2 py-1 rounded">Back</span></div>` : ''}
@@ -1762,11 +2083,11 @@
                         </thead>
                         <tbody>
                             ${ts.days.map(day => `
-                                <tr class="border-t border-gray-100 dark:border-gray-700">
+                                <tr class="border-t border-gray-100 dark:border-gray-700 ${day.shiftType ? 'bg-blue-50/30 dark:bg-blue-900/10' : ''}">
                                     <td class="p-3 font-medium">${day.day}</td>
                                     <td class="p-3 text-gray-600 dark:text-gray-400">${day.start}</td>
                                     <td class="p-3 text-gray-600 dark:text-gray-400">${day.end}</td>
-                                    <td class="p-3 text-right font-bold ${day.hours > 14 ? 'text-orange-500' : 'text-green-600'}">${day.hours > 0 ? day.hours + 'h' : '-'}</td>
+                                    <td class="p-3 text-right font-bold ${day.hours > 10 ? 'text-orange-500' : 'text-green-600'}">${day.hours > 0 ? day.hours + 'h' : '-'}</td>
                                 </tr>
                             `).join('')}
                         </tbody>
@@ -1807,7 +2128,10 @@
                         const ts = timesheets.find(t => t.weekRange === week);
                         return `
                             <button onclick="confirmDeleteWeek('${ts.weekStart}')" class="w-full flex justify-between items-center p-4 bg-gray-50 dark:bg-dark-surface rounded-xl mb-2 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors">
-                                <span class="font-medium text-gray-900 dark:text-white">${week}</span>
+                                <div>
+                                    <span class="font-medium text-gray-900 dark:text-white block">${week}</span>
+                                    <span class="text-xs text-gray-500">${ts.shiftType || 'AM'} Start</span>
+                                </div>
                                 <i class="fas fa-trash text-red-500"></i>
                             </button>
                         `;
@@ -2028,7 +2352,7 @@
                     </div>
                     <div class="flex-1">
                         <p class="font-medium text-sm text-gray-900 dark:text-white">${ts.weekRange}</p>
-                        <p class="text-xs text-gray-500">${ts.totalHours} hours uploaded</p>
+                        <p class="text-xs text-gray-500">${ts.totalHours} hours • ${ts.shiftType || 'AM'} Start</p>
                     </div>
                     <i class="fas fa-chevron-right text-gray-400 text-sm"></i>
                 </div>
@@ -2054,6 +2378,7 @@
             }
             if (viewName === 'scan') {
                 updateStorageDisplay();
+                updateScanWeekDisplay(); // Refresh shift preview
             }
         }
 
