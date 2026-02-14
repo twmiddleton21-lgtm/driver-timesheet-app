@@ -1,9 +1,10 @@
 {
-  "version": "1.0.0",
+  "version": "1.0.2",
   "downloadUrl": "https:///twmiddleton21-lgtm.github.io/driver-timesheet-app/index.html",
   "changelog": "Initial release - Driver timesheet tracking with local storage",
   "force": false,
   "minVersion": "1.0.0",
-  "releaseDate": "2024-01-15"
+  "releaseDate": "2026-02-14"
 
 }
+
