@@ -4,14 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="theme-color" content="#3B82F6">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="default">
-    <title>Driver Timesheet Pro</title>
-    
-    <link rel="manifest" href="data:application/json;base64,eyJuYW1lIjoiRHJpdmVyIFRpbWVzaGVldCBQcm8iLCJzaG9ydF9uYW1lIjoiVGltZXNoZWV0Iiwic3RhcnRfdXJsIjoiLiIsImRpc3BsYXkiOiJzdGFuZGFsb25lIiwiYmFja2dyb3VuZF9jb2xvciI6IiNmZmZmZmYiLCJ0aGVtZV9jb2xvciI6IiMzYjgyZjYifQ==">
+    <title>Driver Timesheet Pro v2.1</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@4/dist/tesseract.min.js"></script>
     
     <script>
         tailwind.config = {
@@ -35,21 +32,10 @@
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
         
-        * {
-            -webkit-tap-highlight-color: transparent;
-            -webkit-touch-callout: none;
-        }
+        * { -webkit-tap-highlight-color: transparent; -webkit-touch-callout: none; }
+        body { font-family: 'Inter', sans-serif; overscroll-behavior: none; }
         
-        body { 
-            font-family: 'Inter', sans-serif; 
-            overscroll-behavior: none;
-        }
-        
-        .calendar-grid {
-            display: grid;
-            grid-template-columns: repeat(7, 1fr);
-            gap: 8px;
-        }
+        .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 8px; }
         
         .calendar-day {
             aspect-ratio: 1;
@@ -66,200 +52,87 @@
         }
         
         .calendar-day:active { transform: scale(0.95); }
-        
-        .calendar-day.has-data {
-            background: linear-gradient(135deg, #10B981 0%, #059669 100%);
-            color: white;
-            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
-        }
-        
-        /* FIXED: Today indicator styling - now properly visible */
-        .calendar-day.today {
-            box-shadow: 0 0 0 3px #3B82F6, 0 0 0 5px rgba(59, 130, 246, 0.3);
-            z-index: 10;
-        }
-        
-        .calendar-day.today.has-data {
-            box-shadow: 0 0 0 3px #3B82F6, 0 0 0 5px rgba(59, 130, 246, 0.5);
-        }
-        
+        .calendar-day.has-data { background: linear-gradient(135deg, #10B981 0%, #059669 100%); color: white; box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3); }
+        .calendar-day.today { box-shadow: 0 0 0 3px #3B82F6, 0 0 0 5px rgba(59, 130, 246, 0.3); z-index: 10; }
+        .calendar-day.today.has-data { box-shadow: 0 0 0 3px #3B82F6, 0 0 0 5px rgba(59, 130, 246, 0.5); }
         .calendar-day.other-month { opacity: 0.3; }
         
-        .upload-zone {
-            transition: all 0.3s ease;
-            border: 2px dashed #cbd5e1;
-        }
-        
-        .upload-zone.active {
-            border-color: #3B82F6;
-            background-color: rgba(59, 130, 246, 0.05);
-            transform: scale(1.02);
-        }
+        .upload-zone { transition: all 0.3s ease; border: 2px dashed #cbd5e1; }
+        .upload-zone.active { border-color: #3B82F6; background-color: rgba(59, 130, 246, 0.05); transform: scale(1.02); }
         
         .nav-item { transition: all 0.3s ease; }
         .nav-item.active { color: #3B82F6; }
         .nav-item.active i { transform: translateY(-2px); }
         
         .fade-in { animation: fadeIn 0.3s ease-out; }
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        
+        .extraction-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 4px;
+            font-size: 0.7rem;
         }
         
-        .slide-up { animation: slideUp 0.3s ease-out; }
-        @keyframes slideUp {
-            from { transform: translateY(100%); }
-            to { transform: translateY(0); }
-        }
-        
-        .touch-btn { min-height: 44px; min-width: 44px; }
-        
-        .update-badge {
-            animation: bounce 2s infinite;
-        }
-        
-        @keyframes bounce {
-            0%, 100% { transform: translateY(0); }
-            50% { transform: translateY(-5px); }
-        }
-        
-        .checking-pulse {
-            animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-        }
-        
-        @keyframes pulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: .5; }
-        }
-        
-        .progress-bar {
-            transition: width 0.3s ease;
-        }
-        
-        .destruction-zone {
-            background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
-            border: 2px solid #ef4444;
-        }
-        
-        .dark .destruction-zone {
-            background: linear-gradient(135deg, #450a0a 0%, #7f1d1d 100%);
-            border-color: #dc2626;
-        }
-        
-        .storage-info {
-            font-size: 0.75rem;
-            color: #6b7280;
-            margin-top: 0.5rem;
-        }
-        
-        /* Shift type selector styling */
-        .shift-toggle {
-            position: relative;
-            background: #e5e7eb;
-            border-radius: 9999px;
-            padding: 4px;
-            display: flex;
-            cursor: pointer;
-        }
-        
-        .dark .shift-toggle {
-            background: #374151;
-        }
-        
-        .shift-option {
-            flex: 1;
+        .day-cell {
+            border: 1px solid #e5e7eb;
+            border-radius: 6px;
+            padding: 6px 2px;
             text-align: center;
-            padding: 8px 16px;
-            border-radius: 9999px;
-            font-size: 0.875rem;
-            font-weight: 500;
-            transition: all 0.3s ease;
-            z-index: 1;
+            min-height: 50px;
+            background: white;
         }
         
-        .shift-option.active {
-            background: #3B82F6;
+        .day-cell.has-am { background: #fef3c7; border-color: #f59e0b; }
+        .day-cell.has-pm { background: #e0e7ff; border-color: #6366f1; }
+        .day-cell.has-both { background: linear-gradient(135deg, #fef3c7 0%, #e0e7ff 100%); border-color: #8b5cf6; }
+        .day-cell.first-day { box-shadow: 0 0 0 2px #10B981; }
+        .day-cell.auto-detected::after {
+            content: 'AUTO';
+            position: absolute;
+            top: -4px;
+            right: -4px;
+            background: #10B981;
             color: white;
-            box-shadow: 0 2px 4px rgba(59, 130, 246, 0.3);
+            font-size: 0.5rem;
+            padding: 1px 3px;
+            border-radius: 2px;
         }
         
-        .shift-preview {
-            background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
-            border: 2px solid #3B82F6;
+        .time-display {
+            font-family: 'Courier New', monospace;
+            font-weight: bold;
+            font-size: 0.65rem;
         }
         
-        .dark .shift-preview {
-            background: linear-gradient(135deg, #1e3a8a 0%, #1e40af 100%);
-            border-color: #60a5fa;
+        .shift-badge {
+            display: inline-block;
+            padding: 1px 4px;
+            border-radius: 3px;
+            font-size: 0.6rem;
+            font-weight: bold;
+            margin-top: 2px;
         }
+        .shift-am { background: #f59e0b; color: white; }
+        .shift-pm { background: #6366f1; color: white; }
+        
+        .correction-row {
+            display: grid;
+            grid-template-columns: 40px 1fr 1fr 60px;
+            gap: 8px;
+            align-items: center;
+            padding: 8px;
+            background: #f9fafb;
+            border-radius: 8px;
+            margin-bottom: 4px;
+        }
+        
+        .confidence-high { color: #10B981; }
+        .confidence-medium { color: #F59E0B; }
+        .confidence-low { color: #EF4444; }
     </style>
 </head>
 <body class="bg-gray-50 dark:bg-dark text-gray-800 dark:text-gray-100 transition-colors duration-300 min-h-screen pb-20">
-
-    <!-- Auto-Update Check Overlay (Shown on app launch) -->
-    <div id="auto-update-overlay" class="fixed inset-0 z-[70] bg-white dark:bg-dark hidden flex flex-col items-center justify-center p-6">
-        <div class="w-full max-w-sm text-center">
-            <div class="w-24 h-24 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-6 checking-pulse">
-                <i class="fas fa-cloud-download-alt text-4xl text-primary"></i>
-            </div>
-            <h2 class="text-2xl font-bold mb-2">Checking for Updates</h2>
-            <p class="text-gray-500 dark:text-gray-400 mb-6">Please wait while we check for the latest version...</p>
-            
-            <div class="w-full bg-gray-200 dark:bg-dark-surface rounded-full h-2 mb-4 overflow-hidden">
-                <div id="update-progress" class="progress-bar bg-primary h-full w-0"></div>
-            </div>
-            
-            <p class="text-sm text-gray-400" id="update-status-text">Connecting...</p>
-            
-            <button onclick="skipAutoUpdate()" class="mt-6 text-sm text-gray-500 hover:text-primary underline">
-                Skip and continue offline
-            </button>
-        </div>
-    </div>
-
-    <!-- Update Available Modal -->
-    <div id="update-available-modal" class="fixed inset-0 z-[70] bg-black/80 backdrop-blur-sm hidden flex items-center justify-center p-4">
-        <div class="bg-white dark:bg-dark-card rounded-2xl p-6 max-w-sm w-full text-center modal-enter">
-            <div class="w-16 h-16 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
-                <i class="fas fa-sparkles text-2xl text-green-600"></i>
-            </div>
-            <h3 class="text-xl font-bold mb-2">Update Available!</h3>
-            <p class="text-gray-500 dark:text-gray-400 text-sm mb-2">A new version is ready to install</p>
-            <div class="bg-gray-100 dark:bg-dark-surface rounded-lg p-3 mb-4 text-left">
-                <p class="text-xs text-gray-500 mb-1">Current: <span id="current-version-display" class="font-mono">v1.0.0</span></p>
-                <p class="text-xs text-primary font-medium">New: <span id="new-version-display" class="font-mono">v1.0.1</span></p>
-                <p class="text-xs text-gray-600 dark:text-gray-400 mt-2" id="update-changelog">Bug fixes and improvements</p>
-            </div>
-            <div class="space-y-2">
-                <button onclick="installUpdateNow()" id="install-update-btn" class="w-full bg-primary hover:bg-blue-600 text-white font-semibold py-3 rounded-xl">
-                    <i class="fas fa-download mr-2"></i>Install Update Now
-                </button>
-                <button onclick="remindLater()" class="w-full text-gray-500 py-2 text-sm">
-                    Remind me later
-                </button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Installing Update Overlay -->
-    <div id="installing-overlay" class="fixed inset-0 z-[80] bg-primary hidden flex flex-col items-center justify-center p-6 text-white">
-        <div class="w-full max-w-sm text-center">
-            <div class="w-20 h-20 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-6">
-                <i class="fas fa-circle-notch fa-spin text-4xl"></i>
-            </div>
-            <h2 class="text-2xl font-bold mb-2">Installing Update</h2>
-            <p class="text-white/80 mb-6">Downloading latest version...</p>
-            <div class="w-full bg-white/20 rounded-full h-2 overflow-hidden">
-                <div id="install-progress" class="bg-white h-full w-0 progress-bar"></div>
-            </div>
-            <p class="text-sm text-white/60 mt-4">Don't close the app</p>
-        </div>
-    </div>
-
-    <!-- Offline Banner -->
-    <div id="offline-banner" class="hidden fixed top-0 left-0 right-0 z-50 bg-amber-500 text-white text-center py-2 text-sm font-medium">
-        <i class="fas fa-wifi-slash mr-2"></i>Offline Mode
-    </div>
 
     <!-- Auth Screen -->
     <div id="auth-screen" class="fixed inset-0 z-50 bg-white dark:bg-dark flex flex-col items-center justify-center p-6">
@@ -270,8 +143,8 @@
                 </div>
                 <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Driver Timesheet Pro</h1>
                 <p class="text-gray-500 dark:text-gray-400 mt-2 flex items-center justify-center gap-2">
-                    <span class="text-xs bg-primary/10 text-primary px-2 py-1 rounded" id="version-display">v1.0.0</span>
-                    <span id="connection-status"><i class="fas fa-wifi text-green-500"></i> Online</span>
+                    <span class="text-xs bg-primary/10 text-primary px-2 py-1 rounded" id="version-display">v2.1.0</span>
+                    <span class="text-xs bg-green-100 text-green-700 px-2 py-1 rounded">Auto-Detection Enabled</span>
                 </p>
             </div>
 
@@ -284,7 +157,7 @@
                 </div>
                 
                 <div id="pin-section" class="hidden">
-                    <input type="password" id="pin-input" maxlength="4" inputmode="numeric" pattern="[0-9]*" 
+                    <input type="password" id="pin-input" maxlength="4" inputmode="numeric" 
                         class="w-full p-4 bg-gray-100 dark:bg-dark-card rounded-xl border-2 border-transparent focus:border-primary outline-none text-center text-2xl tracking-widest" 
                         placeholder="••••">
                 </div>
@@ -294,12 +167,8 @@
                 </button>
 
                 <div class="relative my-6">
-                    <div class="absolute inset-0 flex items-center">
-                        <div class="w-full border-t border-gray-300 dark:border-gray-600"></div>
-                    </div>
-                    <div class="relative flex justify-center text-sm">
-                        <span class="px-2 bg-white dark:bg-dark text-gray-500">Admin Only</span>
-                    </div>
+                    <div class="absolute inset-0 flex items-center"><div class="w-full border-t border-gray-300 dark:border-gray-600"></div></div>
+                    <div class="relative flex justify-center text-sm"><span class="px-2 bg-white dark:bg-dark text-gray-500">Admin Only</span></div>
                 </div>
 
                 <button onclick="showCreateUser()" class="w-full border-2 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 font-semibold py-4 rounded-xl hover:bg-gray-50 dark:hover:bg-dark-card transition-all">
@@ -311,40 +180,22 @@
             <div id="create-user-form" class="hidden space-y-4">
                 <h2 class="text-xl font-bold text-center mb-4">Create New Driver</h2>
                 
-                <input type="text" id="new-username" placeholder="Driver Name" 
-                    class="w-full p-4 bg-gray-100 dark:bg-dark-card rounded-xl border-2 border-transparent focus:border-primary outline-none">
+                <input type="text" id="new-username" placeholder="Driver Name" class="w-full p-4 bg-gray-100 dark:bg-dark-card rounded-xl border-2 border-transparent focus:border-primary outline-none">
                 
-                <input type="password" id="new-pin" maxlength="4" inputmode="numeric" pattern="[0-9]*" placeholder="Create 4-digit PIN" 
-                    class="w-full p-4 bg-gray-100 dark:bg-dark-card rounded-xl border-2 border-transparent focus:border-primary outline-none text-center text-2xl tracking-widest">
+                <input type="password" id="new-pin" maxlength="4" inputmode="numeric" placeholder="Create 4-digit PIN" class="w-full p-4 bg-gray-100 dark:bg-dark-card rounded-xl border-2 border-transparent focus:border-primary outline-none text-center text-2xl tracking-widest">
                 
-                <input type="password" id="confirm-pin" maxlength="4" inputmode="numeric" pattern="[0-9]*" placeholder="Confirm PIN" 
-                    class="w-full p-4 bg-gray-100 dark:bg-dark-card rounded-xl border-2 border-transparent focus:border-primary outline-none text-center text-2xl tracking-widest">
+                <input type="password" id="confirm-pin" maxlength="4" inputmode="numeric" placeholder="Confirm PIN" class="w-full p-4 bg-gray-100 dark:bg-dark-card rounded-xl border-2 border-transparent focus:border-primary outline-none text-center text-2xl tracking-widest">
                 
-                <!-- NEW: Shift Start Preference -->
                 <div class="bg-blue-50 dark:bg-blue-900/20 rounded-xl p-4 border border-blue-200 dark:border-blue-800">
-                    <label class="block text-sm font-medium text-blue-900 dark:text-blue-300 mb-3">
-                        <i class="fas fa-clock mr-2"></i>Shift Start Preference
+                    <label class="block text-sm font-medium text-blue-900 dark:text-blue-300 mb-2">
+                        <i class="fas fa-magic mr-2"></i>Auto-Detection Mode
                     </label>
-                    <p class="text-xs text-blue-700 dark:text-blue-400 mb-3">Select when your shifts typically start. This helps detect your first working day correctly.</p>
-                    
-                    <div class="shift-toggle" id="shift-toggle-create">
-                        <div class="shift-option active" data-shift="AM" onclick="selectShiftType('create', 'AM')">
-                            <i class="fas fa-sun mr-1"></i>AM Start
-                        </div>
-                        <div class="shift-option" data-shift="PM" onclick="selectShiftType('create', 'PM')">
-                            <i class="fas fa-moon mr-1"></i>PM Start
-                        </div>
-                    </div>
-                    <input type="hidden" id="new-shift-type" value="AM">
+                    <p class="text-xs text-blue-700 dark:text-blue-400 mb-3">The app will automatically detect your first working day and times from the timesheet image.</p>
                 </div>
                 
                 <div class="flex gap-3">
-                    <button onclick="hideCreateUser()" class="flex-1 py-4 rounded-xl border-2 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 font-semibold">
-                        Cancel
-                    </button>
-                    <button onclick="createUser()" class="flex-1 bg-primary hover:bg-blue-600 text-white font-semibold py-4 rounded-xl shadow-lg">
-                        Create
-                    </button>
+                    <button onclick="hideCreateUser()" class="flex-1 py-4 rounded-xl border-2 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 font-semibold">Cancel</button>
+                    <button onclick="createUser()" class="flex-1 bg-primary hover:bg-blue-600 text-white font-semibold py-4 rounded-xl shadow-lg">Create</button>
                 </div>
             </div>
         </div>
@@ -361,30 +212,19 @@
                     </div>
                     <div>
                         <h1 class="text-lg font-bold text-gray-900 dark:text-white leading-tight" id="header-username">Driver</h1>
-                        <p class="text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1">
-                            <span id="sync-status"><i class="fas fa-shield-alt text-green-500"></i> Local Storage</span>
-                        </p>
+                        <p class="text-xs text-gray-500 dark:text-gray-400" id="sync-status"><i class="fas fa-shield-alt text-green-500"></i> Local Storage</p>
                     </div>
                 </div>
-                <div class="flex items-center gap-2">
-                    <button onclick="manualCheckForUpdates()" class="touch-btn flex items-center justify-center text-gray-500 hover:text-primary transition-colors relative" title="Check for updates">
-                        <i class="fas fa-sync-alt" id="manual-update-icon"></i>
-                        <span id="header-update-badge" class="hidden absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full update-badge"></span>
-                    </button>
-                    <button onclick="logout()" class="touch-btn flex items-center justify-center text-gray-500 hover:text-red-500 transition-colors">
-                        <i class="fas fa-sign-out-alt text-xl"></i>
-                    </button>
-                </div>
+                <button onclick="logout()" class="touch-btn flex items-center justify-center text-gray-500 hover:text-red-500 transition-colors">
+                    <i class="fas fa-sign-out-alt text-xl"></i>
+                </button>
             </div>
         </header>
 
-        <!-- Main Content -->
         <main class="px-4 py-4 max-w-lg mx-auto">
             
             <!-- Dashboard View -->
             <div id="dashboard-view" class="view-section fade-in space-y-4">
-                
-                <!-- Large Calendar Widget -->
                 <div class="bg-white dark:bg-dark-card rounded-2xl p-4 shadow-sm border border-gray-100 dark:border-gray-700">
                     <div class="flex items-center justify-between mb-4">
                         <button onclick="changeMonth(-1)" class="touch-btn w-10 h-10 flex items-center justify-center rounded-full hover:bg-gray-100 dark:hover:bg-dark-surface transition-colors">
@@ -409,22 +249,12 @@
                     <div id="calendar-grid" class="calendar-grid"></div>
                     
                     <div class="flex items-center justify-center gap-4 mt-4 text-xs text-gray-500 dark:text-gray-400">
-                        <div class="flex items-center gap-1">
-                            <div class="w-3 h-3 rounded bg-green-500"></div>
-                            <span>Complete</span>
-                        </div>
-                        <div class="flex items-center gap-1">
-                            <div class="w-3 h-3 rounded bg-gray-300 dark:bg-gray-600"></div>
-                            <span>Empty</span>
-                        </div>
-                        <div class="flex items-center gap-1">
-                            <div class="w-3 h-3 rounded-full bg-primary ring-2 ring-primary ring-offset-2"></div>
-                            <span>Today</span>
-                        </div>
+                        <div class="flex items-center gap-1"><div class="w-3 h-3 rounded bg-green-500"></div><span>Complete</span></div>
+                        <div class="flex items-center gap-1"><div class="w-3 h-3 rounded bg-gray-300 dark:bg-gray-600"></div><span>Empty</span></div>
+                        <div class="flex items-center gap-1"><div class="w-3 h-3 rounded-full bg-primary ring-2 ring-primary ring-offset-2"></div><span>Today</span></div>
                     </div>
                 </div>
 
-                <!-- Selected Week Preview -->
                 <div id="week-preview" class="bg-white dark:bg-dark-card rounded-2xl p-4 shadow-sm border border-gray-100 dark:border-gray-700 hidden">
                     <div class="flex items-center justify-between mb-3">
                         <h3 class="font-bold text-gray-900 dark:text-white" id="preview-week-range">Week of Feb 5-11</h3>
@@ -436,7 +266,6 @@
                     </button>
                 </div>
 
-                <!-- Quick Stats -->
                 <div class="grid grid-cols-2 gap-3">
                     <div class="bg-white dark:bg-dark-card rounded-2xl p-4 shadow-sm border border-gray-100 dark:border-gray-700">
                         <p class="text-xs text-gray-500 dark:text-gray-400 mb-1">This Month</p>
@@ -448,137 +277,150 @@
                     </div>
                 </div>
 
-                <!-- Recent Activity -->
                 <div>
                     <h3 class="font-semibold text-gray-900 dark:text-white mb-3">Recent Uploads</h3>
                     <div id="recent-list" class="space-y-2"></div>
                 </div>
             </div>
 
-            <!-- Scan View -->
+            <!-- Scan View with Auto-Detection -->
             <div id="scan-view" class="view-section hidden fade-in space-y-4">
                 <div class="text-center mb-4">
                     <h2 class="text-xl font-bold text-gray-900 dark:text-white">Scan Timesheet</h2>
-                    <p class="text-sm text-gray-500 dark:text-gray-400">Week: <span id="scan-week-display" class="font-semibold text-primary">Current Week</span></p>
+                    <p class="text-sm text-gray-500 dark:text-gray-400">Auto-detects days & times from image</p>
                 </div>
 
-                <!-- NEW: Shift Start Info Banner -->
-                <div class="shift-preview rounded-2xl p-4 mb-4">
-                    <div class="flex items-center justify-between">
-                        <div>
-                            <p class="text-sm font-bold text-blue-900 dark:text-blue-300">
-                                <i class="fas fa-user-clock mr-2"></i>Shift Type: <span id="current-shift-type">AM</span> Start
-                            </p>
-                            <p class="text-xs text-blue-700 dark:text-blue-400 mt-1">First working day detected from first <span id="shift-period-text">AM</span> entry</p>
+                <!-- Auto-Detection Status -->
+                <div class="bg-gradient-to-r from-green-50 to-blue-50 dark:from-green-900/20 dark:to-blue-900/20 rounded-2xl p-4 border border-green-200 dark:border-green-800">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center">
+                            <i class="fas fa-robot text-green-600"></i>
                         </div>
-                        <button onclick="switchView('settings')" class="text-xs bg-blue-600 text-white px-3 py-1 rounded-full hover:bg-blue-700 transition-colors">
-                            Change
-                        </button>
+                        <div>
+                            <p class="text-sm font-bold text-gray-900 dark:text-white">Smart Auto-Detection</p>
+                            <p class="text-xs text-gray-500">Automatically finds first working day and extracts all times</p>
+                        </div>
                     </div>
                 </div>
 
                 <div class="bg-white dark:bg-dark-card rounded-2xl p-4 shadow-sm border border-gray-100 dark:border-gray-700 mb-4">
-                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Select Week Starting (First Working Day)</label>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Week Ending Date (Saturday)</label>
                     <input type="date" id="scan-date-select" class="w-full p-3 bg-gray-100 dark:bg-dark-surface rounded-xl border-2 border-transparent focus:border-primary outline-none">
-                    <p class="text-xs text-gray-500 mt-2" id="selected-week-info">Week of: --</p>
-                    
-                    <!-- NEW: First Day Detection Preview -->
-                    <div id="first-day-preview" class="mt-3 p-3 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-800 hidden">
-                        <p class="text-xs text-green-800 dark:text-green-300 font-medium">
-                            <i class="fas fa-check-circle mr-1"></i>First shift detected: <span id="detected-first-day">Monday AM</span>
-                        </p>
+                    <p class="text-xs text-gray-500 mt-2" id="selected-week-info">Select the Saturday date from your timesheet</p>
+                </div>
+
+                <!-- Upload Zone -->
+                <div class="bg-white dark:bg-dark-card rounded-2xl p-4 shadow-sm border border-gray-100 dark:border-gray-700">
+                    <div class="flex items-center justify-between mb-3">
+                        <h3 class="font-medium text-gray-900 dark:text-white">Timesheet Image <span class="text-red-500">*</span></h3>
+                        <span class="text-xs text-gray-500" id="front-status">Required</span>
+                    </div>
+                    <div class="upload-zone rounded-xl p-6 text-center cursor-pointer relative overflow-hidden bg-gray-50 dark:bg-dark-surface" 
+                         onclick="document.getElementById('file-front').click()"
+                         ondrop="handleDrop(event)" ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)">
+                        <input type="file" id="file-front" class="hidden" accept="image/*" capture="environment" onchange="handleFileSelect(event)">
+                        <div id="upload-front-default">
+                            <i class="fas fa-camera text-3xl text-gray-400 mb-2"></i>
+                            <p class="text-sm text-gray-600 dark:text-gray-400">Tap to take photo or browse</p>
+                            <p class="text-xs text-gray-400 mt-1">Position timesheet flat, good lighting</p>
+                        </div>
+                        <img id="preview-front" class="hidden w-full h-48 object-cover rounded-lg mx-auto">
                     </div>
                 </div>
 
-                <div class="space-y-3">
+                <!-- OCR Progress -->
+                <div id="ocr-progress" class="hidden bg-white dark:bg-dark-card rounded-2xl p-4 shadow-sm border border-gray-100 dark:border-gray-700">
+                    <div class="flex items-center justify-between mb-2">
+                        <span class="text-sm font-medium text-gray-700 dark:text-gray-300">Analyzing timesheet...</span>
+                        <span class="text-sm text-primary" id="ocr-status">0%</span>
+                    </div>
+                    <div class="w-full bg-gray-200 dark:bg-dark-surface rounded-full h-2">
+                        <div id="ocr-progress-bar" class="bg-primary h-2 rounded-full transition-all" style="width: 0%"></div>
+                    </div>
+                    <div class="flex items-center gap-2 mt-2 text-xs text-gray-500">
+                        <i class="fas fa-spinner fa-spin" id="ocr-spinner"></i>
+                        <span id="ocr-stage">Initializing...</span>
+                    </div>
+                </div>
+
+                <!-- Auto-Detection Results -->
+                <div id="auto-results" class="hidden space-y-4">
+                    
+                    <!-- Detection Summary -->
+                    <div class="bg-green-50 dark:bg-green-900/20 rounded-2xl p-4 border border-green-200 dark:border-green-800">
+                        <div class="flex items-center justify-between mb-2">
+                            <h3 class="font-bold text-green-800 dark:text-green-300">
+                                <i class="fas fa-check-circle mr-2"></i>Auto-Detection Complete
+                            </h3>
+                            <span class="text-xs bg-green-200 dark:bg-green-800 text-green-800 dark:text-green-200 px-2 py-1 rounded-full" id="confidence-badge">High Confidence</span>
+                        </div>
+                        <div class="grid grid-cols-2 gap-2 text-sm">
+                            <div>
+                                <span class="text-gray-500 dark:text-gray-400">First Day:</span>
+                                <span class="font-bold text-gray-900 dark:text-white ml-1" id="result-first-day">Thursday</span>
+                            </div>
+                            <div>
+                                <span class="text-gray-500 dark:text-gray-400">Total Days:</span>
+                                <span class="font-bold text-gray-900 dark:text-white ml-1" id="result-total-days">3 days</span>
+                            </div>
+                            <div>
+                                <span class="text-gray-500 dark:text-gray-400">Pattern:</span>
+                                <span class="font-bold text-gray-900 dark:text-white ml-1" id="result-pattern">Double Shifts</span>
+                            </div>
+                            <div>
+                                <span class="text-gray-500 dark:text-gray-400">Total Hours:</span>
+                                <span class="font-bold text-gray-900 dark:text-white ml-1" id="result-total-hours">~38h</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Visual Grid -->
+                    <div class="bg-white dark:bg-dark-card rounded-2xl p-4 shadow-sm border border-gray-100 dark:border-gray-700">
+                        <h3 class="font-bold text-gray-900 dark:text-white mb-3 text-sm">Detected Schedule</h3>
+                        <div class="extraction-grid relative" id="detection-grid">
+                            <!-- Generated by JS -->
+                        </div>
+                        <div class="flex gap-4 mt-3 text-xs justify-center">
+                            <div class="flex items-center gap-1"><div class="w-3 h-3 bg-amber-200 rounded"></div><span>AM Start</span></div>
+                            <div class="flex items-center gap-1"><div class="w-3 h-3 bg-indigo-200 rounded"></div><span>PM End</span></div>
+                            <div class="flex items-center gap-1"><div class="w-3 h-3 bg-gradient-to-r from-amber-200 to-indigo-200 rounded"></div><span>Both</span></div>
+                        </div>
+                    </div>
+
+                    <!-- Time Correction Table -->
                     <div class="bg-white dark:bg-dark-card rounded-2xl p-4 shadow-sm border border-gray-100 dark:border-gray-700">
                         <div class="flex items-center justify-between mb-3">
-                            <h3 class="font-medium text-gray-900 dark:text-white">Timesheet Front <span class="text-red-500">*</span></h3>
-                            <span class="text-xs text-gray-500" id="front-status">Required</span>
+                            <h3 class="font-bold text-gray-900 dark:text-white text-sm">Extracted Times</h3>
+                            <button onclick="resetToAuto()" class="text-xs text-primary hover:underline">Reset to Auto</button>
                         </div>
-                        <div class="upload-zone rounded-xl p-6 text-center cursor-pointer relative overflow-hidden bg-gray-50 dark:bg-dark-surface" 
-                             onclick="document.getElementById('file-front').click()"
-                             ondrop="handleDrop(event, 'front')" 
-                             ondragover="handleDragOver(event)" 
-                             ondragleave="handleDragLeave(event)">
-                            <input type="file" id="file-front" class="hidden" accept="image/*" capture="environment" onchange="handleFileSelect(event, 'front')">
-                            <div id="upload-front-default">
-                                <i class="fas fa-camera text-3xl text-gray-400 mb-2"></i>
-                                <p class="text-sm text-gray-600 dark:text-gray-400">Tap to take photo or browse</p>
-                            </div>
-                            <img id="preview-front" class="hidden w-full h-48 object-cover rounded-lg mx-auto">
+                        <div id="correction-table" class="space-y-2">
+                            <!-- Generated by JS -->
                         </div>
                     </div>
 
-                    <div class="bg-white dark:bg-dark-card rounded-2xl p-4 shadow-sm border border-gray-100 dark:border-gray-700">
-                        <h3 class="font-medium text-gray-900 dark:text-white mb-3">Timesheet Back <span class="text-gray-400 text-sm">(Optional)</span></h3>
-                        <div class="upload-zone rounded-xl p-6 text-center cursor-pointer relative overflow-hidden bg-gray-50 dark:bg-dark-surface" 
-                             onclick="document.getElementById('file-back').click()"
-                             ondrop="handleDrop(event, 'back')" 
-                             ondragover="handleDragOver(event)" 
-                             ondragleave="handleDragLeave(event)">
-                            <input type="file" id="file-back" class="hidden" accept="image/*" capture="environment" onchange="handleFileSelect(event, 'back')">
-                            <div id="upload-back-default">
-                                <i class="fas fa-file-image text-3xl text-gray-400 mb-2"></i>
-                                <p class="text-sm text-gray-600 dark:text-gray-400">Tap to upload</p>
-                            </div>
-                            <img id="preview-back" class="hidden w-full h-48 object-cover rounded-lg mx-auto">
-                        </div>
-                    </div>
-
-                    <div class="bg-white dark:bg-dark-card rounded-2xl p-4 shadow-sm border border-gray-100 dark:border-gray-700">
-                        <h3 class="font-medium text-gray-900 dark:text-white mb-3">Fuel Sheet <span class="text-gray-400 text-sm">(Optional)</span></h3>
-                        <div class="upload-zone rounded-xl p-6 text-center cursor-pointer relative overflow-hidden bg-gray-50 dark:bg-dark-surface" 
-                             onclick="document.getElementById('file-fuel').click()"
-                             ondrop="handleDrop(event, 'fuel')" 
-                             ondragover="handleDragOver(event)" 
-                             ondragleave="handleDragLeave(event)">
-                            <input type="file" id="file-fuel" class="hidden" accept="image/*" capture="environment" onchange="handleFileSelect(event, 'fuel')">
-                            <div id="upload-fuel-default">
-                                <i class="fas fa-gas-pump text-3xl text-gray-400 mb-2"></i>
-                                <p class="text-sm text-gray-600 dark:text-gray-400">Tap to upload</p>
-                            </div>
-                            <img id="preview-fuel" class="hidden w-full h-48 object-cover rounded-lg mx-auto">
-                        </div>
-                    </div>
-
-                    <div class="bg-white dark:bg-dark-card rounded-2xl p-4 shadow-sm border border-gray-100 dark:border-gray-700">
-                        <h3 class="font-medium text-gray-900 dark:text-white mb-3">Vehicle Check <span class="text-gray-400 text-sm">(Optional)</span></h3>
-                        <div class="upload-zone rounded-xl p-6 text-center cursor-pointer relative overflow-hidden bg-gray-50 dark:bg-dark-surface" 
-                             onclick="document.getElementById('file-check').click()"
-                             ondrop="handleDrop(event, 'check')" 
-                             ondragover="handleDragOver(event)" 
-                             ondragleave="handleDragLeave(event)">
-                            <input type="file" id="file-check" class="hidden" accept="image/*" capture="environment" onchange="handleFileSelect(event, 'check')">
-                            <div id="upload-check-default">
-                                <i class="fas fa-clipboard-check text-3xl text-gray-400 mb-2"></i>
-                                <p class="text-sm text-gray-600 dark:text-gray-400">Tap to upload</p>
-                            </div>
-                            <img id="preview-check" class="hidden w-full h-48 object-cover rounded-lg mx-auto">
-                        </div>
+                    <!-- Action Buttons -->
+                    <div class="flex gap-3">
+                        <button onclick="reprocessImage()" class="flex-1 py-3 border-2 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-xl font-semibold hover:bg-gray-50 dark:hover:bg-dark-surface transition-colors">
+                            <i class="fas fa-redo mr-2"></i>Re-scan
+                        </button>
+                        <button onclick="confirmAndSave()" class="flex-1 py-3 bg-primary text-white rounded-xl font-semibold hover:bg-blue-600 shadow-lg shadow-blue-500/30 transition-colors">
+                            <i class="fas fa-save mr-2"></i>Save Timesheet
+                        </button>
                     </div>
                 </div>
 
-                <button onclick="processScan()" id="scan-btn" class="w-full bg-primary hover:bg-blue-600 text-white font-bold py-4 rounded-xl shadow-lg shadow-blue-500/30 transition-all transform active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed mt-4">
-                    <i class="fas fa-magic mr-2"></i>Extract & Save
+                <button onclick="startOCR()" id="scan-btn" class="w-full bg-primary hover:bg-blue-600 text-white font-bold py-4 rounded-xl shadow-lg shadow-blue-500/30 transition-all transform active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed mt-4">
+                    <i class="fas fa-magic mr-2"></i>Auto-Extract Times
                 </button>
-                
-                <p class="storage-info text-center">
-                    <i class="fas fa-info-circle mr-1"></i>
-                    Photos stored locally on device. Storage usage: <span id="storage-usage">calculating...</span>
-                </p>
             </div>
 
             <!-- History View -->
             <div id="history-view" class="view-section hidden fade-in">
                 <h2 class="text-xl font-bold text-gray-900 dark:text-white mb-4">All Timesheets</h2>
-                
                 <div class="flex gap-2 mb-4 overflow-x-auto pb-2">
                     <button onclick="filterHistory('all')" class="filter-btn active px-4 py-2 rounded-full bg-primary text-white text-sm font-medium whitespace-nowrap" data-filter="all">All</button>
                     <button onclick="filterHistory('month')" class="filter-btn px-4 py-2 rounded-full bg-gray-200 dark:bg-dark-surface text-gray-700 dark:text-gray-300 text-sm font-medium whitespace-nowrap" data-filter="month">This Month</button>
-                    <button onclick="filterHistory('year')" class="filter-btn px-4 py-2 rounded-full bg-gray-200 dark:bg-dark-surface text-gray-700 dark:text-gray-300 text-sm font-medium whitespace-nowrap" data-filter="year">This Year</button>
                 </div>
-
                 <div id="history-list" class="space-y-3"></div>
             </div>
 
@@ -600,136 +442,18 @@
                     </button>
                 </div>
 
-                <!-- NEW: Shift Start Settings -->
                 <div class="bg-white dark:bg-dark-card rounded-2xl p-4 shadow-sm border border-gray-100 dark:border-gray-700">
-                    <h3 class="font-semibold text-gray-900 dark:text-white mb-3">
-                        <i class="fas fa-clock text-primary mr-2"></i>Shift Configuration
-                    </h3>
-                    
-                    <div class="space-y-4">
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Shift Start Period</label>
-                            <p class="text-xs text-gray-500 mb-3">Determines how the app detects your first working day from timesheets</p>
-                            
-                            <div class="shift-toggle" id="shift-toggle-settings">
-                                <div class="shift-option active" data-shift="AM" onclick="updateShiftPreference('AM')">
-                                    <i class="fas fa-sun mr-1"></i>AM Start
-                                    <span class="block text-xs opacity-75">Morning shifts</span>
-                                </div>
-                                <div class="shift-option" data-shift="PM" onclick="updateShiftPreference('PM')">
-                                    <i class="fas fa-moon mr-1"></i>PM Start
-                                    <span class="block text-xs opacity-75">Afternoon/Evening</span>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <div class="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-3 border border-blue-200 dark:border-blue-800">
-                            <p class="text-xs text-blue-800 dark:text-blue-300">
-                                <i class="fas fa-info-circle mr-1"></i>
-                                <strong>How it works:</strong> When scanning, the app looks for the first <span id="settings-shift-period">AM</span> entry in your timesheet and uses that day's column to determine your schedule.
-                            </p>
-                        </div>
+                    <h3 class="font-semibold text-gray-900 dark:text-white mb-3"><i class="fas fa-info-circle text-primary mr-2"></i>About</h3>
+                    <div class="space-y-2 text-sm text-gray-600 dark:text-gray-400">
+                        <p><strong>Version:</strong> <span id="settings-version">v2.1.0</span></p>
+                        <p><strong>Auto-Detection:</strong> Enabled</p>
+                        <p class="text-xs">Automatically detects grid structure, first working day, and extracts AM/PM times from Spalding Depot timesheets.</p>
                     </div>
                 </div>
 
-                <div class="bg-white dark:bg-dark-card rounded-2xl p-4 shadow-sm border border-gray-100 dark:border-gray-700">
-                    <h3 class="font-semibold text-gray-900 dark:text-white mb-3">Storage</h3>
-                    <div class="p-3 bg-gray-100 dark:bg-dark-surface rounded-xl">
-                        <div class="flex justify-between mb-2">
-                            <span class="text-sm text-gray-600 dark:text-gray-400">Photos Storage</span>
-                            <span class="text-sm font-medium" id="settings-storage-usage">--</span>
-                        </div>
-                        <div class="w-full bg-gray-300 dark:bg-gray-600 rounded-full h-2">
-                            <div id="storage-bar" class="bg-primary h-2 rounded-full" style="width: 0%"></div>
-                        </div>
-                        <p class="text-xs text-gray-500 mt-2">Photos stored in device IndexedDB. Text data in localStorage.</p>
-                    </div>
-                </div>
-
-                <div class="bg-white dark:bg-dark-card rounded-2xl p-4 shadow-sm border border-gray-100 dark:border-gray-700">
-                    <h3 class="font-semibold text-gray-900 dark:text-white mb-3">App Updates</h3>
-                    <div class="flex items-center justify-between p-3 bg-gray-100 dark:bg-dark-surface rounded-xl mb-2">
-                        <div>
-                            <p class="font-medium text-gray-900 dark:text-white">Current Version</p>
-                            <p class="text-xs text-gray-500" id="settings-version">v1.0.0</p>
-                        </div>
-                        <button onclick="manualCheckForUpdates()" class="text-primary text-sm font-medium flex items-center gap-1">
-                            <i class="fas fa-sync-alt" id="settings-update-icon"></i> Check
-                        </button>
-                    </div>
-                    <div class="flex items-center justify-between p-3 bg-gray-100 dark:bg-dark-surface rounded-xl">
-                        <div>
-                            <p class="font-medium text-gray-900 dark:text-white">Auto-Update</p>
-                            <p class="text-xs text-gray-500">Check on app launch</p>
-                        </div>
-                        <button onclick="toggleAutoUpdate()" class="w-12 h-6 bg-primary rounded-full relative transition-colors" id="auto-update-toggle">
-                            <div class="w-5 h-5 bg-white rounded-full absolute top-0.5 right-0.5 transition-all shadow-sm" id="auto-update-knob"></div>
-                        </button>
-                    </div>
-                </div>
-
-                <div class="bg-white dark:bg-dark-card rounded-2xl p-4 shadow-sm border border-gray-100 dark:border-gray-700">
-                    <h3 class="font-semibold text-gray-900 dark:text-white mb-3">Data Management</h3>
-                    
-                    <div class="space-y-2">
-                        <button onclick="showDeleteOptions('week')" class="w-full flex items-center justify-between p-3 bg-gray-100 dark:bg-dark-surface rounded-xl hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors text-left">
-                            <div>
-                                <p class="font-medium text-gray-900 dark:text-white">Delete Specific Week</p>
-                                <p class="text-xs text-gray-500">Remove one week's data</p>
-                            </div>
-                            <i class="fas fa-chevron-right text-gray-400"></i>
-                        </button>
-
-                        <button onclick="showDeleteOptions('month')" class="w-full flex items-center justify-between p-3 bg-gray-100 dark:bg-dark-surface rounded-xl hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors text-left">
-                            <div>
-                                <p class="font-medium text-gray-900 dark:text-white">Delete Month</p>
-                                <p class="text-xs text-gray-500">Remove all data for a month</p>
-                            </div>
-                            <i class="fas fa-chevron-right text-gray-400"></i>
-                        </button>
-
-                        <button onclick="showDeleteOptions('year')" class="w-full flex items-center justify-between p-3 bg-gray-100 dark:bg-dark-surface rounded-xl hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors text-left">
-                            <div>
-                                <p class="font-medium text-gray-900 dark:text-white">Delete Year</p>
-                                <p class="text-xs text-gray-500">Remove entire year</p>
-                            </div>
-                            <i class="fas fa-chevron-right text-gray-400"></i>
-                        </button>
-
-                        <button onclick="deleteAllData()" class="w-full p-3 bg-red-100 dark:bg-red-900/30 text-red-600 rounded-xl font-medium hover:bg-red-200 dark:hover:bg-red-900/50 transition-colors mt-2">
-                            <i class="fas fa-trash-alt mr-2"></i>Delete All Timesheet Data
-                        </button>
-                    </div>
-                </div>
-
-                <!-- APP REMOVAL SECTION -->
-                <div class="destruction-zone rounded-2xl p-4">
-                    <h3 class="font-semibold text-red-600 dark:text-red-400 mb-2 flex items-center gap-2">
-                        <i class="fas fa-exclamation-triangle"></i> Danger Zone
-                    </h3>
-                    <p class="text-sm text-red-600/80 dark:text-red-400/80 mb-4">
-                        This will permanently delete your account, all stored data, and remove the app from this device.
-                    </p>
-                    <button onclick="showRemoveAppConfirm()" class="w-full p-4 bg-red-600 hover:bg-red-700 text-white rounded-xl font-bold transition-all transform active:scale-95 shadow-lg shadow-red-500/30 flex items-center justify-center gap-2">
-                        <i class="fas fa-ban"></i>
-                        Remove App Completely
-                    </button>
-                </div>
-
-                <div class="bg-blue-50 dark:bg-blue-900/20 rounded-2xl p-4 border border-blue-200 dark:border-blue-800">
-                    <div class="flex items-start gap-3">
-                        <i class="fas fa-info-circle text-blue-500 mt-1"></i>
-                        <div>
-                            <p class="font-medium text-blue-900 dark:text-blue-300 text-sm">Local Storage Mode</p>
-                            <p class="text-xs text-blue-700 dark:text-blue-400 mt-1">All data stays on this device. No cloud backup.</p>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="text-center text-xs text-gray-400 pt-4">
-                    <p>Driver Timesheet Pro <span id="footer-version">v1.0.0</span></p>
-                    <p class="mt-1">IndexedDB Storage • 100% Offline Capable</p>
-                </div>
+                <button onclick="deleteAllData()" class="w-full p-3 bg-red-100 dark:bg-red-900/30 text-red-600 rounded-xl font-medium hover:bg-red-200 transition-colors">
+                    <i class="fas fa-trash-alt mr-2"></i>Delete All Timesheet Data
+                </button>
             </div>
         </main>
 
@@ -758,69 +482,7 @@
         </nav>
     </div>
 
-    <!-- Remove App Confirmation Modal -->
-    <div id="remove-app-modal" class="fixed inset-0 z-[100] bg-black/90 hidden flex items-center justify-center p-4">
-        <div class="bg-white dark:bg-dark-card rounded-2xl p-6 max-w-sm w-full text-center border-2 border-red-500">
-            <div class="w-16 h-16 bg-red-100 dark:bg-red-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
-                <i class="fas fa-exclamation-triangle text-3xl text-red-600"></i>
-            </div>
-            <h3 class="text-xl font-bold text-red-600 mb-2">Remove App?</h3>
-            <p class="text-gray-600 dark:text-gray-400 text-sm mb-4">
-                This will permanently delete:
-            </p>
-            <ul class="text-left text-sm text-gray-600 dark:text-gray-400 mb-6 space-y-2 bg-gray-100 dark:bg-dark-surface rounded-lg p-4">
-                <li class="flex items-center gap-2"><i class="fas fa-user text-red-500"></i> Your user account</li>
-                <li class="flex items-center gap-2"><i class="fas fa-database text-red-500"></i> All timesheet data</li>
-                <li class="flex items-center gap-2"><i class="fas fa-image text-red-500"></i> All uploaded photos</li>
-                <li class="flex items-center gap-2"><i class="fas fa-cog text-red-500"></i> App settings</li>
-            </ul>
-            <p class="text-xs text-red-500 font-medium mb-4">This action cannot be undone!</p>
-            
-            <div class="space-y-2">
-                <button onclick="executeRemoveApp()" class="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-3 rounded-xl">
-                    Yes, Remove Everything
-                </button>
-                <button onclick="hideRemoveAppModal()" class="w-full text-gray-500 py-2 text-sm">
-                    Cancel - Keep My Data
-                </button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Final Removal Screen -->
-    <div id="final-removal-screen" class="fixed inset-0 z-[100] bg-red-600 hidden flex flex-col items-center justify-center p-6 text-white">
-        <div class="text-center">
-            <i class="fas fa-check-circle text-6xl mb-6 opacity-0" id="removal-check"></i>
-            <h2 class="text-3xl font-bold mb-4 opacity-0" id="removal-title">App Removed</h2>
-            <p class="text-white/80 mb-8 opacity-0" id="removal-text">All data has been deleted from this device.</p>
-            <div class="opacity-0" id="removal-instructions">
-                <p class="text-sm text-white/60 mb-4">To complete removal:</p>
-                <div class="bg-white/10 rounded-xl p-4 text-left text-sm space-y-2">
-                    <p>1. Close this browser tab</p>
-                    <p>2. Remove from Home Screen:</p>
-                    <p class="pl-4 text-white/80">• iOS: Long press icon → Remove App</p>
-                    <p class="pl-4 text-white/80">• Android: Drag to "Uninstall"</p>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Modals -->
-    <div id="delete-modal" class="fixed inset-0 z-50 hidden">
-        <div class="absolute inset-0 bg-black/50 backdrop-blur-sm" onclick="closeDeleteModal()"></div>
-        <div class="absolute bottom-0 left-0 right-0 md:inset-0 md:flex md:items-center md:justify-center p-4">
-            <div class="bg-white dark:bg-dark-card w-full md:max-w-md md:rounded-2xl rounded-t-2xl shadow-2xl slide-up max-h-[80vh] overflow-y-auto">
-                <div class="p-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
-                    <h3 class="text-lg font-bold text-gray-900 dark:text-white" id="delete-modal-title">Delete Data</h3>
-                    <button onclick="closeDeleteModal()" class="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 dark:hover:bg-dark-surface">
-                        <i class="fas fa-times text-gray-500"></i>
-                    </button>
-                </div>
-                <div class="p-4" id="delete-options-content"></div>
-            </div>
-        </div>
-    </div>
-
+    <!-- Week Details Modal -->
     <div id="week-modal" class="fixed inset-0 z-50 hidden">
         <div class="absolute inset-0 bg-black/50 backdrop-blur-sm" onclick="closeWeekModal()"></div>
         <div class="absolute inset-x-0 bottom-0 md:inset-0 md:flex md:items-center md:justify-center p-4">
@@ -844,33 +506,24 @@
 
     <script>
         // ==================== CONFIG ====================
-        const APP_VERSION = '1.0.0';
-        const UPDATE_URL = 'https://raw.githubusercontent.com/twmiddleton21-lgtm/driver-timesheet-app/main/version.json';
-        
+        const APP_VERSION = '2.1.0';
         let currentUser = null;
         let currentMonth = new Date();
         let selectedWeekStart = null;
-        let currentUploads = { front: null, back: null, fuel: null, check: null };
-        let isOnline = navigator.onLine;
-        let autoUpdateEnabled = true;
+        let currentImage = null;
         let imageDB = null;
-        let userShiftType = 'AM'; // NEW: Default shift type
+        let extractedData = null;
+        let autoDetectedData = null;
 
-        // ==================== INDEXEDDB SETUP FOR IMAGES ====================
+        // ==================== INDEXEDDB ====================
         const DB_NAME = 'TimesheetImagesDB';
         const STORE_NAME = 'images';
-        const DB_VERSION = 1;
-
+        
         function initImageDB() {
             return new Promise((resolve, reject) => {
-                const request = indexedDB.open(DB_NAME, DB_VERSION);
-                
+                const request = indexedDB.open(DB_NAME, 1);
                 request.onerror = () => reject(request.error);
-                request.onsuccess = () => {
-                    imageDB = request.result;
-                    resolve(imageDB);
-                };
-                
+                request.onsuccess = () => { imageDB = request.result; resolve(imageDB); };
                 request.onupgradeneeded = (event) => {
                     const db = event.target.result;
                     if (!db.objectStoreNames.contains(STORE_NAME)) {
@@ -902,91 +555,10 @@
             });
         }
 
-        async function deleteImage(id) {
-            if (!imageDB) await initImageDB();
-            return new Promise((resolve, reject) => {
-                const transaction = imageDB.transaction([STORE_NAME], 'readwrite');
-                const store = transaction.objectStore(STORE_NAME);
-                const request = store.delete(id);
-                request.onsuccess = () => resolve();
-                request.onerror = () => reject(request.error);
-            });
-        }
-
-        async function getStorageUsage() {
-            if (!imageDB) await initImageDB();
-            return new Promise((resolve, reject) => {
-                const transaction = imageDB.transaction([STORE_NAME], 'readonly');
-                const store = transaction.objectStore(STORE_NAME);
-                const request = store.getAll();
-                request.onsuccess = () => {
-                    const items = request.result;
-                    let totalSize = 0;
-                    items.forEach(item => {
-                        if (item.data) totalSize += item.data.length * 2; // Approximate bytes
-                    });
-                    resolve(totalSize);
-                };
-                request.onerror = () => reject(request.error);
-            });
-        }
-
-        async function clearAllImages() {
-            if (!imageDB) await initImageDB();
-            return new Promise((resolve, reject) => {
-                const transaction = imageDB.transaction([STORE_NAME], 'readwrite');
-                const store = transaction.objectStore(STORE_NAME);
-                const request = store.clear();
-                request.onsuccess = () => resolve();
-                request.onerror = () => reject(request.error);
-            });
-        }
-
-        async function updateStorageDisplay() {
-            try {
-                const usage = await getStorageUsage();
-                const mb = (usage / 1024 / 1024).toFixed(2);
-                const display = usage > 0 ? `${mb} MB` : '0 MB';
-                
-                const usageEl = document.getElementById('storage-usage');
-                const settingsUsageEl = document.getElementById('settings-storage-usage');
-                const storageBar = document.getElementById('storage-bar');
-                
-                if (usageEl) usageEl.textContent = display;
-                if (settingsUsageEl) settingsUsageEl.textContent = display;
-                
-                // Estimate max at 500MB for display purposes
-                const percent = Math.min((usage / (500 * 1024 * 1024)) * 100, 100);
-                if (storageBar) storageBar.style.width = percent + '%';
-            } catch (e) {
-                console.log('Storage calculation failed:', e);
-            }
-        }
-
-        // ==================== DATE UTILITIES (iOS Compatible) ====================
-        
-        function getWeekStart(date) {
-            const d = new Date(date);
-            const day = d.getDay();
-            const diff = d.getDate() - day;
-            return new Date(d.setDate(diff));
-        }
-        
-        // NEW: Get week start based on shift type and first working day
-        function getWeekStartFromFirstDay(firstWorkDate, shiftType) {
-            const d = new Date(firstWorkDate);
-            const day = d.getDay();
-            // For AM shifts, week starts on the first working day
-            // For PM shifts, week might start previous day if first shift is evening
-            return new Date(d.setDate(d.getDate() - day));
-        }
-        
+        // ==================== DATE UTILITIES ====================
         function formatDateForInput(date) {
             const d = new Date(date);
-            const year = d.getFullYear();
-            const month = String(d.getMonth() + 1).padStart(2, '0');
-            const day = String(d.getDate()).padStart(2, '0');
-            return `${year}-${month}-${day}`;
+            return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
         }
         
         function parseDate(dateString) {
@@ -1001,286 +573,7 @@
         
         function formatWeekRange(startDate, endDate) {
             const options = { month: 'short', day: 'numeric' };
-            const startStr = startDate.toLocaleDateString('en-US', options);
-            const endStr = endDate.toLocaleDateString('en-US', { ...options, year: 'numeric' });
-            return `${startStr} - ${endStr}`;
-        }
-
-        // NEW: Detect first working day from timesheet data based on shift type
-        function detectFirstWorkingDay(days, shiftType) {
-            // Look for first day with hours > 0
-            for (let i = 0; i < days.length; i++) {
-                if (days[i].hours > 0) {
-                    // For AM shifts, return the day as-is
-                    // For PM shifts, check if it's actually a PM start (after 12:00)
-                    if (shiftType === 'PM') {
-                        const startTime = days[i].start;
-                        if (startTime && startTime !== '-') {
-                            const hour = parseInt(startTime.split(':')[0]);
-                            if (hour >= 12) {
-                                return { dayIndex: i, dayName: days[i].day, isPM: true };
-                            }
-                        }
-                    }
-                    return { dayIndex: i, dayName: days[i].day, isPM: false };
-                }
-            }
-            return { dayIndex: 0, dayName: days[0].day, isPM: false };
-        }
-
-        // ==================== AUTO-UPDATE ON LAUNCH ====================
-        document.addEventListener('DOMContentLoaded', async () => {
-            // Initialize IndexedDB first
-            try {
-                await initImageDB();
-                console.log('IndexedDB initialized');
-            } catch (e) {
-                console.error('IndexedDB init failed:', e);
-            }
-            
-            autoUpdateEnabled = localStorage.getItem('ts_auto_update') !== 'false';
-            
-            if (navigator.onLine && autoUpdateEnabled) {
-                performAutoUpdateCheck();
-            } else {
-                initAuth();
-            }
-            
-            window.addEventListener('online', () => {
-                isOnline = true;
-                document.getElementById('offline-banner').classList.add('hidden');
-                document.getElementById('connection-status').innerHTML = '<i class="fas fa-wifi text-green-500"></i> Online';
-            });
-            
-            window.addEventListener('offline', () => {
-                isOnline = false;
-                document.getElementById('offline-banner').classList.remove('hidden');
-                document.getElementById('connection-status').innerHTML = '<i class="fas fa-wifi-slash text-gray-400"></i> Offline';
-            });
-        });
-
-        async function performAutoUpdateCheck() {
-            const overlay = document.getElementById('auto-update-overlay');
-            const progress = document.getElementById('update-progress');
-            const statusText = document.getElementById('update-status-text');
-            
-            overlay.classList.remove('hidden');
-            
-            progress.style.width = '30%';
-            statusText.textContent = 'Checking connection...';
-            
-            await new Promise(r => setTimeout(r, 500));
-            
-            if (!navigator.onLine) {
-                statusText.textContent = 'Offline - skipping update check';
-                progress.style.width = '100%';
-                await new Promise(r => setTimeout(r, 500));
-                overlay.classList.add('hidden');
-                initAuth();
-                return;
-            }
-            
-            progress.style.width = '60%';
-            statusText.textContent = 'Checking for updates...';
-            
-            try {
-                const response = await fetch(UPDATE_URL + '?t=' + Date.now(), {
-                    method: 'GET',
-                    cache: 'no-cache',
-                    headers: { 'Accept': 'application/json' }
-                });
-                
-                if (!response.ok) throw new Error('Update check failed');
-                
-                const versionInfo = await response.json();
-                const currentVersion = localStorage.getItem('ts_app_version') || APP_VERSION;
-                
-                progress.style.width = '100%';
-                statusText.textContent = 'Complete!';
-                
-                await new Promise(r => setTimeout(r, 300));
-                overlay.classList.add('hidden');
-                
-                if (versionInfo.version !== currentVersion) {
-                    document.getElementById('current-version-display').textContent = 'v' + currentVersion;
-                    document.getElementById('new-version-display').textContent = 'v' + versionInfo.version;
-                    document.getElementById('update-changelog').textContent = versionInfo.changelog || 'Bug fixes and improvements';
-                    document.getElementById('update-available-modal').classList.remove('hidden');
-                    
-                    window.pendingUpdate = versionInfo;
-                } else {
-                    initAuth();
-                }
-                
-            } catch (err) {
-                console.log('Auto-update check failed:', err);
-                progress.style.width = '100%';
-                statusText.textContent = 'Update check failed - continuing...';
-                await new Promise(r => setTimeout(r, 800));
-                overlay.classList.add('hidden');
-                initAuth();
-            }
-        }
-
-        function skipAutoUpdate() {
-            document.getElementById('auto-update-overlay').classList.add('hidden');
-            initAuth();
-        }
-
-        async function installUpdateNow() {
-            const modal = document.getElementById('update-available-modal');
-            const installing = document.getElementById('installing-overlay');
-            const progress = document.getElementById('install-progress');
-            
-            modal.classList.add('hidden');
-            installing.classList.remove('hidden');
-            
-            try {
-                progress.style.width = '0%';
-                await new Promise(r => setTimeout(r, 200));
-                progress.style.width = '30%';
-                
-                const response = await fetch(window.pendingUpdate.downloadUrl);
-                const newHtml = await response.text();
-                
-                progress.style.width = '70%';
-                
-                localStorage.setItem('ts_app_html', newHtml);
-                localStorage.setItem('ts_app_version', window.pendingUpdate.version);
-                
-                progress.style.width = '100%';
-                
-                showToast('Update installed! Reloading...');
-                setTimeout(() => {
-                    window.location.reload();
-                }, 1000);
-                
-            } catch (err) {
-                showToast('Update failed - try again later', 'error');
-                installing.classList.add('hidden');
-                initAuth();
-            }
-        }
-
-        function remindLater() {
-            document.getElementById('update-available-modal').classList.add('hidden');
-            initAuth();
-        }
-
-        async function manualCheckForUpdates() {
-            const icon = document.getElementById('manual-update-icon');
-            const settingsIcon = document.getElementById('settings-update-icon');
-            
-            icon.classList.add('fa-spin');
-            settingsIcon.classList.add('fa-spin');
-            
-            try {
-                const response = await fetch(UPDATE_URL + '?t=' + Date.now());
-                const versionInfo = await response.json();
-                const currentVersion = localStorage.getItem('ts_app_version') || APP_VERSION;
-                
-                if (versionInfo.version !== currentVersion) {
-                    window.pendingUpdate = versionInfo;
-                    document.getElementById('current-version-display').textContent = 'v' + currentVersion;
-                    document.getElementById('new-version-display').textContent = 'v' + versionInfo.version;
-                    document.getElementById('update-changelog').textContent = versionInfo.changelog || 'Bug fixes and improvements';
-                    document.getElementById('update-available-modal').classList.remove('hidden');
-                } else {
-                    showToast('App is up to date!');
-                }
-            } catch (err) {
-                showToast('Could not check for updates', 'error');
-            } finally {
-                icon.classList.remove('fa-spin');
-                settingsIcon.classList.remove('fa-spin');
-            }
-        }
-
-        function toggleAutoUpdate() {
-            autoUpdateEnabled = !autoUpdateEnabled;
-            localStorage.setItem('ts_auto_update', autoUpdateEnabled);
-            
-            const toggle = document.getElementById('auto-update-toggle');
-            const knob = document.getElementById('auto-update-knob');
-            
-            if (autoUpdateEnabled) {
-                toggle.classList.remove('bg-gray-300', 'dark:bg-gray-600');
-                toggle.classList.add('bg-primary');
-                knob.style.right = '2px';
-                knob.style.left = 'auto';
-            } else {
-                toggle.classList.add('bg-gray-300', 'dark:bg-gray-600');
-                toggle.classList.remove('bg-primary');
-                knob.style.right = 'auto';
-                knob.style.left = '2px';
-            }
-        }
-
-        function showRemoveAppConfirm() {
-            document.getElementById('remove-app-modal').classList.remove('hidden');
-        }
-
-        function hideRemoveAppModal() {
-            document.getElementById('remove-app-modal').classList.add('hidden');
-        }
-
-        async function executeRemoveApp() {
-            hideRemoveAppModal();
-            
-            const removalScreen = document.getElementById('final-removal-screen');
-            const check = document.getElementById('removal-check');
-            const title = document.getElementById('removal-title');
-            const text = document.getElementById('removal-text');
-            const instructions = document.getElementById('removal-instructions');
-            
-            removalScreen.classList.remove('hidden');
-            
-            // Clear all localStorage
-            const allKeys = Object.keys(localStorage);
-            const appKeys = allKeys.filter(k => k.startsWith('ts_') || k.includes('timesheet'));
-            appKeys.forEach(key => localStorage.removeItem(key));
-            
-            localStorage.removeItem('ts_app_html');
-            localStorage.removeItem('ts_app_version');
-            localStorage.removeItem('ts_auto_update');
-            
-            // Clear all images from IndexedDB
-            try {
-                await clearAllImages();
-            } catch (e) {
-                console.log('Image clearing failed:', e);
-            }
-            
-            await new Promise(r => setTimeout(r, 300));
-            check.classList.remove('opacity-0');
-            check.classList.add('animate-bounce');
-            
-            await new Promise(r => setTimeout(r, 300));
-            title.classList.remove('opacity-0');
-            
-            await new Promise(r => setTimeout(r, 200));
-            text.classList.remove('opacity-0');
-            
-            await new Promise(r => setTimeout(r, 300));
-            instructions.classList.remove('opacity-0');
-            
-            if ('caches' in window) {
-                try {
-                    const cacheNames = await caches.keys();
-                    await Promise.all(cacheNames.map(name => caches.delete(name)));
-                } catch (e) {
-                    console.log('Cache clearing failed:', e);
-                }
-            }
-            
-            if ('serviceWorker' in navigator) {
-                try {
-                    const registrations = await navigator.serviceWorker.getRegistrations();
-                    await Promise.all(registrations.map(reg => reg.unregister()));
-                } catch (e) {
-                    console.log('SW unregister failed:', e);
-                }
-            }
+            return `${startDate.toLocaleDateString('en-US', options)} - ${endDate.toLocaleDateString('en-US', options)}`;
         }
 
         // ==================== DATA STORE ====================
@@ -1288,33 +581,13 @@
             getUsers: () => JSON.parse(localStorage.getItem('ts_users') || '[]'),
             saveUsers: (users) => localStorage.setItem('ts_users', JSON.stringify(users)),
             getTimesheets: (username) => JSON.parse(localStorage.getItem(`ts_data_${username}`) || '[]'),
-            saveTimesheets: (username, data) => localStorage.setItem(`ts_data_${username}`, JSON.stringify(data)),
-            getSettings: (username) => JSON.parse(localStorage.getItem(`ts_settings_${username}`) || '{}'),
-            saveSettings: (username, settings) => localStorage.setItem(`ts_settings_${username}`, JSON.stringify(settings))
+            saveTimesheets: (username, data) => localStorage.setItem(`ts_data_${username}`, JSON.stringify(data))
         };
 
         // ==================== AUTH ====================
         function initAuth() {
-            const version = localStorage.getItem('ts_app_version') || APP_VERSION;
-            document.getElementById('version-display').textContent = 'v' + version;
-            document.getElementById('settings-version').textContent = 'v' + version;
-            document.getElementById('footer-version').textContent = 'v' + version;
-            
-            const autoUpdate = localStorage.getItem('ts_auto_update') !== 'false';
-            const toggle = document.getElementById('auto-update-toggle');
-            const knob = document.getElementById('auto-update-knob');
-            if (!autoUpdate) {
-                toggle.classList.add('bg-gray-300', 'dark:bg-gray-600');
-                toggle.classList.remove('bg-primary');
-                knob.style.left = '2px';
-                knob.style.right = 'auto';
-            }
-            
-            if (!navigator.onLine) {
-                document.getElementById('connection-status').innerHTML = '<i class="fas fa-wifi-slash text-gray-400"></i> Offline';
-                document.getElementById('offline-banner').classList.remove('hidden');
-            }
-            
+            document.getElementById('version-display').textContent = 'v' + APP_VERSION;
+            document.getElementById('settings-version').textContent = 'v' + APP_VERSION;
             const users = DB.getUsers();
             const select = document.getElementById('user-select');
             select.innerHTML = '<option value="">-- Select User --</option>' +
@@ -1327,54 +600,7 @@
             
             select.addEventListener('change', function() {
                 document.getElementById('pin-section').classList.toggle('hidden', !this.value);
-                if (this.value) setTimeout(() => document.getElementById('pin-input').focus(), 100);
             });
-        }
-
-        // NEW: Shift type selection during user creation
-        function selectShiftType(context, type) {
-            const container = document.getElementById(`shift-toggle-${context}`);
-            const options = container.querySelectorAll('.shift-option');
-            const input = document.getElementById('new-shift-type');
-            
-            options.forEach(opt => {
-                if (opt.dataset.shift === type) {
-                    opt.classList.add('active');
-                } else {
-                    opt.classList.remove('active');
-                }
-            });
-            
-            if (input) input.value = type;
-        }
-
-        // NEW: Update shift preference in settings
-        function updateShiftPreference(type) {
-            if (!currentUser) return;
-            
-            userShiftType = type;
-            const settings = DB.getSettings(currentUser.username);
-            settings.shiftType = type;
-            DB.saveSettings(currentUser.username, settings);
-            
-            // Update UI
-            const container = document.getElementById('shift-toggle-settings');
-            const options = container.querySelectorAll('.shift-option');
-            
-            options.forEach(opt => {
-                if (opt.dataset.shift === type) {
-                    opt.classList.add('active');
-                } else {
-                    opt.classList.remove('active');
-                }
-            });
-            
-            // Update display texts
-            document.getElementById('settings-shift-period').textContent = type;
-            document.getElementById('current-shift-type').textContent = type;
-            document.getElementById('shift-period-text').textContent = type;
-            
-            showToast(`Shift preference updated to ${type} Start`);
         }
 
         function login() {
@@ -1394,76 +620,33 @@
             }
             
             currentUser = user;
-            
-            // NEW: Load user shift preference
-            const settings = DB.getSettings(username);
-            userShiftType = settings.shiftType || 'AM';
-            
-            // Update UI with shift preference
-            document.getElementById('current-shift-type').textContent = userShiftType;
-            document.getElementById('shift-period-text').textContent = userShiftType;
-            
-            // Update settings toggle
-            const container = document.getElementById('shift-toggle-settings');
-            const options = container.querySelectorAll('.shift-option');
-            options.forEach(opt => {
-                if (opt.dataset.shift === userShiftType) {
-                    opt.classList.add('active');
-                } else {
-                    opt.classList.remove('active');
-                }
-            });
-            document.getElementById('settings-shift-period').textContent = userShiftType;
-            
             document.getElementById('auth-screen').classList.add('hidden');
             document.getElementById('main-app').classList.remove('hidden');
             document.getElementById('header-username').textContent = user.username;
+            
+            // Set default date to upcoming Saturday
+            const today = new Date();
+            const saturday = new Date(today);
+            saturday.setDate(today.getDate() + (6 - today.getDay()));
+            document.getElementById('scan-date-select').value = formatDateForInput(saturday);
+            updateScanWeekDisplay();
             
             initTheme();
             renderCalendar();
             updateStats();
             renderRecent();
-            updateStorageDisplay();
-            
-            const today = new Date();
-            const weekStart = getWeekStart(today);
-            
-            const dateInput = document.getElementById('scan-date-select');
-            dateInput.value = formatDateForInput(weekStart);
-            
-            updateScanWeekDisplay();
-            
-            dateInput.addEventListener('change', updateScanWeekDisplay);
             
             showToast(`Welcome, ${user.username}`);
         }
 
         function updateScanWeekDisplay() {
             const dateInput = document.getElementById('scan-date-select');
-            const weekInfo = document.getElementById('selected-week-info');
-            const scanDisplay = document.getElementById('scan-week-display');
-            const firstDayPreview = document.getElementById('first-day-preview');
-            const detectedFirstDay = document.getElementById('detected-first-day');
-            
             if (dateInput.value) {
-                const startDate = parseDate(dateInput.value);
-                const endDate = new Date(startDate);
-                endDate.setDate(endDate.getDate() + 6);
-                
-                const rangeText = formatWeekRange(startDate, endDate);
-                weekInfo.textContent = `Week of: ${rangeText}`;
-                scanDisplay.textContent = rangeText;
-                
-                // Show first day detection preview based on shift type
-                const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-                const firstDayName = dayNames[startDate.getDay()];
-                
-                firstDayPreview.classList.remove('hidden');
-                detectedFirstDay.textContent = `${firstDayName} ${userShiftType}`;
-            } else {
-                weekInfo.textContent = 'Week of: --';
-                scanDisplay.textContent = 'Current Week';
-                firstDayPreview.classList.add('hidden');
+                const endDate = parseDate(dateInput.value);
+                const startDate = new Date(endDate);
+                startDate.setDate(startDate.getDate() - 6);
+                document.getElementById('selected-week-info').textContent = 
+                    `Week: ${formatWeekRange(startDate, endDate)}`;
             }
         }
 
@@ -1481,27 +664,16 @@
             const username = document.getElementById('new-username').value.trim();
             const pin = document.getElementById('new-pin').value;
             const confirmPin = document.getElementById('confirm-pin').value;
-            const shiftType = document.getElementById('new-shift-type').value || 'AM';
             
             if (!username) return showToast('Enter driver name', 'error');
             if (!pin || pin.length !== 4) return showToast('PIN must be 4 digits', 'error');
             if (pin !== confirmPin) return showToast('PINs do not match', 'error');
             
             const users = DB.getUsers();
-            if (users.find(u => u.username === username)) {
-                return showToast('User already exists', 'error');
-            }
+            if (users.find(u => u.username === username)) return showToast('User already exists', 'error');
             
-            users.push({ 
-                username, 
-                pin: hashPin(pin), 
-                created: new Date().toISOString(),
-                shiftType: shiftType 
-            });
+            users.push({ username, pin: hashPin(pin), created: new Date().toISOString() });
             DB.saveUsers(users);
-            
-            // Save initial settings with shift type
-            DB.saveSettings(username, { shiftType: shiftType });
             
             showToast('Driver created successfully');
             hideCreateUser();
@@ -1510,7 +682,6 @@
 
         function logout() {
             currentUser = null;
-            userShiftType = 'AM';
             document.getElementById('main-app').classList.add('hidden');
             document.getElementById('auth-screen').classList.remove('hidden');
             document.getElementById('pin-input').value = '';
@@ -1529,7 +700,6 @@
         }
 
         // ==================== CALENDAR ====================
-        // FIXED: Calendar now properly shows today indicator independent of data status
         function renderCalendar() {
             const year = currentMonth.getFullYear();
             const month = currentMonth.getMonth();
@@ -1560,23 +730,18 @@
                 grid.appendChild(createCalendarDay(prevMonthDays - i, true));
             }
             
-            // FIXED: Get today's date correctly for comparison
             const today = new Date();
             const todayYear = today.getFullYear();
             const todayMonth = today.getMonth();
             const todayDate = today.getDate();
             
             for (let day = 1; day <= daysInMonth; day++) {
-                // FIXED: Properly check if this day is today (comparing year, month, and day)
                 const isToday = (day === todayDate && month === todayMonth && year === todayYear);
                 const hasData = weekData[day];
                 const cell = createCalendarDay(day, false, isToday, hasData);
                 
-                if (hasData) {
-                    cell.onclick = () => selectWeek(hasData);
-                } else {
-                    cell.onclick = () => selectEmptyWeek(year, month, day);
-                }
+                if (hasData) cell.onclick = () => selectWeek(hasData);
+                else cell.onclick = () => selectEmptyWeek(year, month, day);
                 
                 grid.appendChild(cell);
             }
@@ -1587,31 +752,18 @@
             }
         }
 
-        // FIXED: Updated createCalendarDay to properly handle today styling
         function createCalendarDay(day, isOtherMonth, isToday = false, data = null) {
             const div = document.createElement('div');
-            
-            // Build class list properly
             let className = 'calendar-day';
             
-            if (isOtherMonth) {
-                className += ' other-month bg-gray-100 dark:bg-dark-surface text-gray-400';
-            } else {
-                className += ' bg-white dark:bg-dark-surface text-gray-900 dark:text-white';
-            }
+            if (isOtherMonth) className += ' other-month bg-gray-100 dark:bg-dark-surface text-gray-400';
+            else className += ' bg-white dark:bg-dark-surface text-gray-900 dark:text-white';
             
-            // FIXED: Today class is added independently of has-data
-            if (isToday) {
-                className += ' today';
-            }
-            
-            if (data) {
-                className += ' has-data';
-            }
+            if (isToday) className += ' today';
+            if (data) className += ' has-data';
             
             div.className = className;
             
-            // FIXED: Visual indicator for today when it also has data
             let todayIndicator = '';
             if (isToday) {
                 todayIndicator = '<div class="absolute -top-1 -right-1 w-3 h-3 bg-primary rounded-full border-2 border-white dark:border-dark-card"></div>';
@@ -1645,19 +797,15 @@
                     <span class="font-bold">${day.hours > 0 ? day.hours : '-'}</span>
                 </div>
             `).join('');
-            
-            preview.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
         }
 
         function selectEmptyWeek(year, month, day) {
             const date = new Date(year, month, day, 12, 0, 0);
-            const weekStart = getWeekStart(date);
+            const saturday = new Date(date);
+            saturday.setDate(date.getDate() + (6 - date.getDay()));
             
-            const dateInput = document.getElementById('scan-date-select');
-            dateInput.value = formatDateForInput(weekStart);
-            
+            document.getElementById('scan-date-select').value = formatDateForInput(saturday);
             updateScanWeekDisplay();
-            
             switchView('scan');
             showToast('Selected week for new upload');
         }
@@ -1669,7 +817,7 @@
             if (ts) openWeekDetails(ts);
         }
 
-        // ==================== SCAN ====================
+        // ==================== SCAN & AUTO-DETECTION ====================
         function handleDragOver(e) {
             e.preventDefault();
             e.currentTarget.classList.add('active');
@@ -1679,282 +827,517 @@
             e.currentTarget.classList.remove('active');
         }
 
-        function handleDrop(e, type) {
+        function handleDrop(e) {
             e.preventDefault();
             e.currentTarget.classList.remove('active');
             const file = e.dataTransfer.files[0];
-            if (file && file.type.startsWith('image/')) processFile(file, type);
+            if (file && file.type.startsWith('image/')) processFile(file);
         }
 
-        function handleFileSelect(e, type) {
+        function handleFileSelect(e) {
             const file = e.target.files[0];
-            if (file) processFile(file, type);
+            if (file) processFile(file);
         }
 
-        function processFile(file, type) {
-            // Check file size (warn if > 5MB)
-            if (file.size > 5 * 1024 * 1024) {
-                showToast('Large image may take time to process', 'warning');
-            }
-            
-            currentUploads[type] = file;
+        function processFile(file) {
             const reader = new FileReader();
             reader.onload = (e) => {
-                const img = document.getElementById(`preview-${type}`);
-                img.src = e.target.result;
-                img.classList.remove('hidden');
-                document.getElementById(`upload-${type}-default`).classList.add('hidden');
-                
-                if (type === 'front') {
-                    document.getElementById('front-status').textContent = 'Uploaded';
-                    document.getElementById('front-status').className = 'text-xs text-green-600 font-medium';
-                }
-            };
-            reader.onerror = () => {
-                showToast('Error reading file', 'error');
+                currentImage = e.target.result;
+                document.getElementById('preview-front').src = currentImage;
+                document.getElementById('preview-front').classList.remove('hidden');
+                document.getElementById('upload-front-default').classList.add('hidden');
+                document.getElementById('front-status').textContent = 'Ready';
+                document.getElementById('front-status').className = 'text-xs text-green-600 font-medium';
             };
             reader.readAsDataURL(file);
-            showToast(`${type.charAt(0).toUpperCase() + type.slice(1)} ready`);
         }
 
-        function readFileAsDataURL(file) {
-            return new Promise((resolve, reject) => {
-                if (!file) {
-                    reject(new Error('No file provided'));
-                    return;
-                }
-                const reader = new FileReader();
-                reader.onload = (e) => resolve(e.target.result);
-                reader.onerror = (e) => reject(new Error('Failed to read file'));
-                reader.onabort = () => reject(new Error('File reading aborted'));
-                reader.readAsDataURL(file);
-            });
-        }
-
-        // FIXED: Updated processScan with shift-aware logic
-        async function processScan() {
-            if (!currentUploads.front) {
-                return showToast('Timesheet front is required', 'error');
-            }
+        // MAIN OCR FUNCTION with Auto-Detection
+        async function startOCR() {
+            if (!currentImage) return showToast('Please upload timesheet image', 'error');
             
-            const weekStartInput = document.getElementById('scan-date-select').value;
-            if (!weekStartInput) {
-                return showToast('Please select week date', 'error');
-            }
+            const weekEnding = document.getElementById('scan-date-select').value;
+            if (!weekEnding) return showToast('Please select week ending date', 'error');
             
-            const btn = document.getElementById('scan-btn');
-            const originalText = btn.innerHTML;
-            btn.disabled = true;
-            btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Processing...';
+            document.getElementById('scan-btn').classList.add('hidden');
+            document.getElementById('ocr-progress').classList.remove('hidden');
             
             try {
-                // Generate unique IDs for images
-                const timesheetId = Date.now().toString();
-                const imageIds = {
-                    front: `${timesheetId}_front`,
-                    back: currentUploads.back ? `${timesheetId}_back` : null,
-                    fuel: currentUploads.fuel ? `${timesheetId}_fuel` : null,
-                    check: currentUploads.check ? `${timesheetId}_check` : null
-                };
+                updateOcrProgress(10, 'Loading OCR engine...');
                 
-                // Read and save front image to IndexedDB
-                const frontDataUrl = await readFileAsDataURL(currentUploads.front);
-                await saveImage(imageIds.front, frontDataUrl);
-                
-                // Simulate processing delay
-                await new Promise(resolve => setTimeout(resolve, 800));
-                
-                // Process optional images
-                const processOptional = async (type) => {
-                    if (currentUploads[type] && imageIds[type]) {
-                        try {
-                            const dataUrl = await Promise.race([
-                                readFileAsDataURL(currentUploads[type]),
-                                new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout')), 10000))
-                            ]);
-                            await saveImage(imageIds[type], dataUrl);
-                            return true;
-                        } catch (err) {
-                            console.log(`Failed to process ${type}:`, err);
-                            return false;
+                const result = await Tesseract.recognize(
+                    currentImage,
+                    'eng',
+                    { 
+                        logger: m => {
+                            if (m.status === 'recognizing text') {
+                                updateOcrProgress(10 + Math.round(m.progress * 60), 'Reading timesheet...');
+                            }
                         }
                     }
-                    return false;
-                };
+                );
                 
-                // Process all optional images
-                await Promise.allSettled([
-                    processOptional('back'),
-                    processOptional('fuel'),
-                    processOptional('check')
-                ]);
+                updateOcrProgress(70, 'Analyzing structure...');
                 
-                // Parse date
-                const weekStart = parseDate(weekStartInput);
-                const weekEnd = new Date(weekStart);
-                weekEnd.setDate(weekEnd.getDate() + 6);
+                // Parse with auto-detection
+                autoDetectedData = parseTimesheetWithAutoDetection(result.data.text);
                 
-                // NEW: Generate driver data with shift-aware logic
-                const days = [];
+                updateOcrProgress(90, 'Calculating hours...');
+                
+                // Calculate totals
                 let totalHours = 0;
-                let longDays = 0;
-                let lowRestDays = 0;
+                let workingDays = 0;
+                autoDetectedData.days.forEach(day => {
+                    if (day.hasData) {
+                        workingDays++;
+                        if (day.amTime && day.pmTime) {
+                            const hours = calculateHoursBetween(day.amTime, day.pmTime);
+                            day.hours = hours;
+                            totalHours += hours;
+                        }
+                    }
+                });
                 
-                // Simulate shift-aware data generation
-                // In real implementation, this would come from OCR processing
-                const dayNames = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
-                const firstWorkDayIndex = weekStart.getDay(); // 0-6
+                autoDetectedData.totalHours = Math.round(totalHours * 10) / 10;
+                autoDetectedData.workingDays = workingDays;
                 
-                for (let i = 0; i < 7; i++) {
-                    const actualDayIndex = (firstWorkDayIndex + i) % 7;
-                    const isWorkDay = simulateWorkDayDetection(i, userShiftType);
+                updateOcrProgress(100, 'Complete!');
+                
+                // Show results
+                setTimeout(() => {
+                    document.getElementById('ocr-progress').classList.add('hidden');
+                    showAutoDetectionResults();
+                }, 500);
+                
+            } catch (err) {
+                console.error('OCR Error:', err);
+                showToast('OCR failed: ' + err.message, 'error');
+                document.getElementById('ocr-progress').classList.add('hidden');
+                document.getElementById('scan-btn').classList.remove('hidden');
+            }
+        }
+
+        function updateOcrProgress(percent, stage) {
+            document.getElementById('ocr-progress-bar').style.width = percent + '%';
+            document.getElementById('ocr-status').textContent = percent + '%';
+            document.getElementById('ocr-stage').textContent = stage;
+        }
+
+        // IMPROVED: Auto-detection parser for Spalding Depot format
+        function parseTimesheetWithAutoDetection(ocrText) {
+            const lines = ocrText.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+            const days = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
+            const dayData = {};
+            
+            // Initialize all days
+            days.forEach(day => {
+                dayData[day] = { 
+                    amTime: null, 
+                    pmTime: null, 
+                    amLocation: null,
+                    pmLocation: null,
+                    hasData: false,
+                    confidence: 'low'
+                };
+            });
+            
+            // Pattern matching for timesheet rows
+            // Look for patterns like "THUR AM", "FRI PM" followed by times
+            
+            let i = 0;
+            while (i < lines.length) {
+                const line = lines[i].toUpperCase();
+                
+                // Check for day + period pattern (e.g., "THUR AM", "FRI PM", "SUN AM")
+                const dayPattern = /(SUN|MON|TUE|WED|THU|FRI|SAT)[\s_]*(AM|PM)/i;
+                const match = line.match(dayPattern);
+                
+                if (match) {
+                    const dayName = match[1].toUpperCase();
+                    const period = match[2].toUpperCase();
                     
-                    if (isWorkDay) {
-                        // NEW: Adjust hours based on shift type
-                        const baseHours = userShiftType === 'PM' ? 6 + Math.random() * 4 : 8 + Math.random() * 5;
-                        const hours = Math.min(baseHours, 11); // Cap at reasonable max
-                        totalHours += hours;
-                        if (hours > 10) longDays++;
+                    // Look ahead for times in this line and next few lines
+                    const searchText = [line];
+                    if (i + 1 < lines.length) searchText.push(lines[i + 1]);
+                    if (i + 2 < lines.length) searchText.push(lines[i + 2]);
+                    
+                    const combinedText = searchText.join(' ');
+                    
+                    // Extract times using multiple patterns
+                    const times = extractAllTimes(combinedText);
+                    const locations = extractLocations(combinedText);
+                    
+                    if (times.length > 0) {
+                        // Sort times - earlier is start, later is end
+                        times.sort();
                         
-                        const restHours = 8 + Math.random() * 5;
-                        if (restHours < 9) lowRestDays++;
-                        
-                        // NEW: Adjust start times based on shift type
-                        let startHour, endHour;
-                        if (userShiftType === 'PM') {
-                            startHour = 14 + Math.floor(Math.random() * 3); // 2PM-5PM start
-                            endHour = startHour + Math.ceil(hours);
-                        } else {
-                            startHour = 6 + Math.floor(Math.random() * 4); // 6AM-10AM start
-                            endHour = startHour + Math.ceil(hours);
+                        if (period === 'AM' && times[0]) {
+                            dayData[dayName].amTime = times[0];
+                            dayData[dayName].amLocation = locations[0] || 'Quay';
+                            dayData[dayName].hasData = true;
+                            dayData[dayName].confidence = 'high';
+                        } else if (period === 'PM' && times[0]) {
+                            dayData[dayName].pmTime = times[0];
+                            dayData[dayName].pmLocation = locations[0] || 'Quay';
+                            dayData[dayName].hasData = true;
+                            dayData[dayName].confidence = 'high';
                         }
                         
-                        days.push({
-                            day: dayNames[actualDayIndex],
-                            hours: parseFloat(hours.toFixed(2)),
-                            start: `${startHour}:${Math.random() > 0.5 ? '00' : '30'}`,
-                            end: `${endHour}:${Math.random() > 0.5 ? '00' : '30'}`,
-                            rest: `${restHours.toFixed(1)}h`,
-                            flag: hours > 10 ? 'warning' : 'ok',
-                            shiftType: userShiftType
-                        });
-                    } else {
-                        days.push({
-                            day: dayNames[actualDayIndex],
-                            hours: 0,
-                            start: '-',
-                            end: '-',
-                            rest: '-',
-                            flag: 'none',
-                            shiftType: null
+                        // If we have both AM and PM for same day, it's a double shift
+                        if (dayData[dayName].amTime && dayData[dayName].pmTime) {
+                            dayData[dayName].shiftType = 'double';
+                        }
+                    }
+                }
+                
+                // Also check for standalone times near day names
+                const looseDayMatch = line.match(/(SUN|MON|TUE|WED|THU|FRI|SAT)/i);
+                if (looseDayMatch && !match) {
+                    const dayName = looseDayMatch[1].toUpperCase();
+                    const times = extractAllTimes(line);
+                    
+                    if (times.length > 0 && !dayData[dayName].hasData) {
+                        // Guess AM/PM based on time value
+                        times.forEach(time => {
+                            const hour = parseInt(time.split(':')[0]);
+                            if (hour >= 4 && hour < 12 && !dayData[dayName].amTime) {
+                                dayData[dayName].amTime = time;
+                                dayData[dayName].hasData = true;
+                            } else if (hour >= 12 && hour <= 23 && !dayData[dayName].pmTime) {
+                                dayData[dayName].pmTime = time;
+                                dayData[dayName].hasData = true;
+                            }
                         });
                     }
                 }
                 
-                // NEW: Detect actual first working day based on shift type
-                const firstWorkingDay = detectFirstWorkingDay(days, userShiftType);
+                i++;
+            }
+            
+            // Find first working day
+            let firstWorkingDay = null;
+            for (const day of days) {
+                if (dayData[day].hasData) {
+                    firstWorkingDay = day;
+                    break;
+                }
+            }
+            
+            // Detect pattern
+            let pattern = 'single';
+            let doubleShiftDays = 0;
+            days.forEach(day => {
+                if (dayData[day].amTime && dayData[day].pmTime) doubleShiftDays++;
+            });
+            
+            if (doubleShiftDays >= 2) pattern = 'double';
+            if (doubleShiftDays >= 3) pattern = 'continuous';
+            
+            return {
+                days: dayData,
+                firstWorkingDay: firstWorkingDay || 'MON',
+                pattern: pattern,
+                doubleShiftDays: doubleShiftDays,
+                rawText: ocrText
+            };
+        }
+
+        function extractAllTimes(text) {
+            const times = [];
+            const seen = new Set();
+            
+            // Pattern 1: HH:MM (24-hour format)
+            const pattern1 = /(\d{1,2})[:.](\d{2})/g;
+            let match;
+            while ((match = pattern1.exec(text)) !== null) {
+                const hour = parseInt(match[1]);
+                const minute = parseInt(match[2]);
                 
-                // Save timesheet data (without images) to localStorage
-                const timesheet = {
-                    id: parseInt(timesheetId),
-                    weekStart: weekStartInput,
-                    weekEnd: formatDateForInput(weekEnd),
-                    weekRange: formatWeekRange(weekStart, weekEnd),
-                    totalHours: parseFloat(totalHours.toFixed(1)),
-                    longDays,
-                    lowRestDays,
-                    shiftType: userShiftType,
-                    firstWorkingDay: firstWorkingDay,
-                    // Store only image IDs, not the actual data
-                    imageIds: {
-                        front: imageIds.front,
-                        back: imageIds.back,
-                        fuel: imageIds.fuel,
-                        check: imageIds.check
-                    },
-                    days,
-                    uploadedAt: new Date().toISOString()
-                };
+                if (hour >= 0 && hour <= 23 && minute >= 0 && minute <= 59) {
+                    // Filter out years (2000-2099)
+                    if (hour >= 20 && minute >= 0 && minute <= 30 && text.includes('20' + match[1])) continue;
+                    
+                    const timeStr = `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
+                    if (!seen.has(timeStr)) {
+                        times.push(timeStr);
+                        seen.add(timeStr);
+                    }
+                }
+            }
+            
+            // Pattern 2: HHMM (4 digits, no separator)
+            const pattern2 = /[^\d](\d{2})(\d{2})[^\d]/g;
+            while ((match = pattern2.exec(text)) !== null) {
+                const hour = parseInt(match[1]);
+                const minute = parseInt(match[2]);
                 
-                const existing = DB.getTimesheets(currentUser.username);
-                const filtered = existing.filter(t => t.weekStart !== weekStartInput);
-                filtered.push(timesheet);
-                DB.saveTimesheets(currentUser.username, filtered);
+                if (hour >= 4 && hour <= 23 && minute >= 0 && minute <= 59) {
+                    const timeStr = `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
+                    if (!seen.has(timeStr)) {
+                        times.push(timeStr);
+                        seen.add(timeStr);
+                    }
+                }
+            }
+            
+            return times.sort();
+        }
+
+        function extractLocations(text) {
+            const locations = [];
+            // Common location patterns
+            const locPatterns = [/Quay/i, /Depot/i, /Spalding/i, /Home/i, /Yard/i];
+            
+            locPatterns.forEach(pattern => {
+                const match = text.match(pattern);
+                if (match) locations.push(match[0]);
+            });
+            
+            return locations;
+        }
+
+        function calculateHoursBetween(startTime, endTime) {
+            const [startHour, startMin] = startTime.split(':').map(Number);
+            const [endHour, endMin] = endTime.split(':').map(Number);
+            
+            let hours = endHour - startHour;
+            let mins = endMin - startMin;
+            
+            if (mins < 0) {
+                hours--;
+                mins += 60;
+            }
+            
+            if (hours < 0) hours += 24; // Overnight shift
+            
+            return hours + (mins / 60);
+        }
+
+        function showAutoDetectionResults() {
+            document.getElementById('auto-results').classList.remove('hidden');
+            
+            // Update summary
+            const dayNames = {
+                'SUN': 'Sunday', 'MON': 'Monday', 'TUE': 'Tuesday',
+                'WED': 'Wednesday', 'THU': 'Thursday', 'FRI': 'Friday', 'SAT': 'Saturday'
+            };
+            
+            document.getElementById('result-first-day').textContent = dayNames[autoDetectedData.firstWorkingDay] || autoDetectedData.firstWorkingDay;
+            document.getElementById('result-total-days').textContent = autoDetectedData.workingDays + ' days';
+            document.getElementById('result-pattern').textContent = 
+                autoDetectedData.pattern === 'double' ? 'Double Shifts' : 
+                autoDetectedData.pattern === 'continuous' ? 'Continuous Double' : 'Single Shifts';
+            document.getElementById('result-total-hours').textContent = '~' + autoDetectedData.totalHours + 'h';
+            
+            // Confidence badge
+            const confidence = autoDetectedData.workingDays >= 3 ? 'High' : 
+                              autoDetectedData.workingDays >= 1 ? 'Medium' : 'Low';
+            const badge = document.getElementById('confidence-badge');
+            badge.textContent = confidence + ' Confidence';
+            badge.className = 'text-xs px-2 py-1 rounded-full ' + 
+                (confidence === 'High' ? 'bg-green-200 text-green-800' :
+                 confidence === 'Medium' ? 'bg-yellow-200 text-yellow-800' :
+                 'bg-red-200 text-red-800');
+            
+            // Render grid
+            renderDetectionGrid();
+            
+            // Render correction table
+            renderCorrectionTable();
+        }
+
+        function renderDetectionGrid() {
+            const grid = document.getElementById('detection-grid');
+            const days = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
+            const dayLabels = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
+            
+            grid.innerHTML = days.map((day, idx) => {
+                const data = autoDetectedData.days[day];
+                const isFirst = day === autoDetectedData.firstWorkingDay;
                 
-                // Reset form
-                resetScanForm();
+                let cellClass = 'day-cell relative';
+                if (data.amTime && data.pmTime) cellClass += ' has-both';
+                else if (data.amTime) cellClass += ' has-am';
+                else if (data.pmTime) cellClass += ' has-pm';
+                if (isFirst) cellClass += ' first-day';
                 
-                // Update UI
-                renderCalendar();
-                updateStats();
-                renderRecent();
-                updateStorageDisplay();
+                return `
+                    <div class="${cellClass}">
+                        <div class="font-bold text-xs mb-1 ${isFirst ? 'text-green-600' : ''}">${dayLabels[idx]}</div>
+                        ${data.amTime ? `<div class="time-display text-amber-700">${data.amTime}</div>` : ''}
+                        ${data.pmTime ? `<div class="time-display text-indigo-700">${data.pmTime}</div>` : ''}
+                        ${!data.amTime && !data.pmTime ? '<div class="text-gray-300">-</div>' : ''}
+                        ${isFirst ? '<div class="absolute -top-1 -left-1 w-4 h-4 bg-green-500 rounded-full flex items-center justify-center text-white text-[8px]">1st</div>' : ''}
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function renderCorrectionTable() {
+            const container = document.getElementById('correction-table');
+            const days = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
+            const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+            
+            const workingDays = days.filter(day => autoDetectedData.days[day].hasData);
+            
+            container.innerHTML = workingDays.map(day => {
+                const data = autoDetectedData.days[day];
+                const idx = days.indexOf(day);
+                const isFirst = day === autoDetectedData.firstWorkingDay;
                 
-                showToast(`Timesheet saved! First ${userShiftType} shift: ${firstWorkingDay.dayName}`);
-                switchView('dashboard');
-                
-                setTimeout(() => selectWeek(timesheet), 300);
-                
-            } catch (err) {
-                console.error('Processing error:', err);
-                showToast('Error: ' + err.message, 'error');
-            } finally {
-                btn.disabled = false;
-                btn.innerHTML = originalText;
+                return `
+                    <div class="correction-row ${isFirst ? 'ring-2 ring-green-400 rounded-lg' : ''}">
+                        <div class="font-bold text-sm ${isFirst ? 'text-green-600' : ''}">${dayNames[idx]}${isFirst ? '*' : ''}</div>
+                        <div>
+                            <label class="text-xs text-gray-500">Start (AM)</label>
+                            <input type="time" class="w-full p-1 text-sm border rounded" 
+                                value="${data.amTime || ''}" 
+                                onchange="updateCorrectedTime('${day}', 'am', this.value)"
+                                placeholder="--:--">
+                        </div>
+                        <div>
+                            <label class="text-xs text-gray-500">End (PM)</label>
+                            <input type="time" class="w-full p-1 text-sm border rounded" 
+                                value="${data.pmTime || ''}" 
+                                onchange="updateCorrectedTime('${day}', 'pm', this.value)"
+                                placeholder="--:--">
+                        </div>
+                        <div>
+                            <label class="text-xs text-gray-500">Hrs</label>
+                            <input type="number" class="w-full p-1 text-sm border rounded text-center" 
+                                value="${data.hours ? data.hours.toFixed(1) : ''}" 
+                                step="0.5" min="0" max="24"
+                                onchange="updateCorrectedTime('${day}', 'hours', this.value)">
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function updateCorrectedTime(day, field, value) {
+            if (!autoDetectedData) return;
+            
+            if (field === 'am') autoDetectedData.days[day].amTime = value;
+            if (field === 'pm') autoDetectedData.days[day].pmTime = value;
+            if (field === 'hours') autoDetectedData.days[day].hours = parseFloat(value) || 0;
+            
+            // Recalculate totals
+            let total = 0;
+            Object.values(autoDetectedData.days).forEach(d => {
+                if (d.hours) total += d.hours;
+            });
+            autoDetectedData.totalHours = Math.round(total * 10) / 10;
+            document.getElementById('result-total-hours').textContent = '~' + autoDetectedData.totalHours + 'h';
+        }
+
+        function resetToAuto() {
+            if (confirm('Reset all times to auto-detected values?')) {
+                renderCorrectionTable();
+                showToast('Reset to auto-detected values');
             }
         }
 
-        // NEW: Helper to simulate work day detection based on shift type
-        function simulateWorkDayDetection(dayIndex, shiftType) {
-            // Simulate that drivers typically work 4-5 days a week
-            // For AM shifts: more likely to work Mon-Fri
-            // For PM shifts: might work different patterns including weekends
+        function reprocessImage() {
+            document.getElementById('auto-results').classList.add('hidden');
+            document.getElementById('scan-btn').classList.remove('hidden');
+            startOCR();
+        }
+
+        async function confirmAndSave() {
+            if (!autoDetectedData) return;
             
-            if (shiftType === 'PM') {
-                // PM shifts might include weekends, different pattern
-                return dayIndex < 5 || (dayIndex === 5 && Math.random() > 0.5);
-            } else {
-                // AM shifts: traditional Mon-Fri pattern
-                return dayIndex < 5 && Math.random() > 0.15;
-            }
+            const weekEnding = document.getElementById('scan-date-select').value;
+            const endDate = parseDate(weekEnding);
+            const startDate = new Date(endDate);
+            startDate.setDate(startDate.getDate() - 6);
+            
+            // Build final data
+            const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+            const dayData = [];
+            let totalHours = 0;
+            let longDays = 0;
+            
+            days.forEach((dayName, idx) => {
+                const dayKey = dayName.toUpperCase();
+                const detected = autoDetectedData.days[dayKey];
+                
+                let hours = 0;
+                let start = '-';
+                let end = '-';
+                
+                if (detected && detected.hasData) {
+                    start = detected.amTime || detected.pmTime || '-';
+                    end = detected.pmTime || detected.amTime || '-';
+                    hours = detected.hours || 0;
+                    
+                    if (hours === 0 && start !== '-' && end !== '-') {
+                        hours = calculateHoursBetween(start, end);
+                    }
+                    
+                    totalHours += hours;
+                    if (hours > 10) longDays++;
+                }
+                
+                dayData.push({
+                    day: dayName,
+                    hours: Math.round(hours * 10) / 10,
+                    start: start,
+                    end: end,
+                    rest: hours > 0 ? '11h' : '-',
+                    flag: hours > 10 ? 'warning' : (hours > 0 ? 'ok' : 'none')
+                });
+            });
+            
+            // Save
+            const timesheetId = Date.now().toString();
+            const imageIds = { front: `${timesheetId}_front` };
+            
+            await saveImage(imageIds.front, currentImage);
+            
+            const timesheet = {
+                id: parseInt(timesheetId),
+                weekStart: formatDateForInput(startDate),
+                weekEnd: weekEnding,
+                weekRange: formatWeekRange(startDate, endDate),
+                totalHours: Math.round(totalHours * 10) / 10,
+                longDays,
+                lowRestDays: 0,
+                firstWorkingDay: autoDetectedData.firstWorkingDay,
+                pattern: autoDetectedData.pattern,
+                imageIds,
+                days: dayData,
+                uploadedAt: new Date().toISOString()
+            };
+            
+            const existing = DB.getTimesheets(currentUser.username);
+            existing.push(timesheet);
+            DB.saveTimesheets(currentUser.username, existing);
+            
+            // Reset UI
+            resetScanForm();
+            document.getElementById('auto-results').classList.add('hidden');
+            document.getElementById('scan-btn').classList.remove('hidden');
+            
+            renderCalendar();
+            updateStats();
+            renderRecent();
+            
+            showToast(`Saved! First day: ${autoDetectedData.firstWorkingDay}, ${totalHours.toFixed(1)} hours`);
+            switchView('dashboard');
         }
 
         function resetScanForm() {
-            currentUploads = { front: null, back: null, fuel: null, check: null };
-            
-            ['front', 'back', 'fuel', 'check'].forEach(type => {
-                const img = document.getElementById(`preview-${type}`);
-                const defaultDiv = document.getElementById(`upload-${type}-default`);
-                const input = document.getElementById(`file-${type}`);
-                
-                if (img) {
-                    img.src = '';
-                    img.classList.add('hidden');
-                }
-                if (defaultDiv) {
-                    defaultDiv.classList.remove('hidden');
-                }
-                if (input) {
-                    input.value = '';
-                }
-            });
-            
-            const frontStatus = document.getElementById('front-status');
-            if (frontStatus) {
-                frontStatus.textContent = 'Required';
-                frontStatus.className = 'text-xs text-red-500';
-            }
-            
-            const today = new Date();
-            const weekStart = getWeekStart(today);
-            const dateInput = document.getElementById('scan-date-select');
-            if (dateInput) {
-                dateInput.value = formatDateForInput(weekStart);
-                updateScanWeekDisplay();
-            }
+            currentImage = null;
+            autoDetectedData = null;
+            document.getElementById('preview-front').src = '';
+            document.getElementById('preview-front').classList.add('hidden');
+            document.getElementById('upload-front-default').classList.remove('hidden');
+            document.getElementById('file-front').value = '';
+            document.getElementById('front-status').textContent = 'Required';
+            document.getElementById('front-status').className = 'text-xs text-gray-500';
         }
 
-        // ==================== HISTORY & DETAILS ====================
+        // ==================== HISTORY & OTHER FUNCTIONS ====================
         function renderHistory(filter = 'all') {
             const list = document.getElementById('history-list');
             let timesheets = DB.getTimesheets(currentUser.username);
@@ -1966,8 +1349,6 @@
                     const d = parseDate(t.weekStart);
                     return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
                 });
-            } else if (filter === 'year') {
-                timesheets = timesheets.filter(t => parseDate(t.weekStart).getFullYear() === now.getFullYear());
             }
             
             if (timesheets.length === 0) {
@@ -1983,14 +1364,10 @@
                         </div>
                         <div>
                             <h4 class="font-semibold text-gray-900 dark:text-white text-sm">${ts.weekRange}</h4>
-                            <p class="text-xs text-gray-500">${ts.totalHours}h • ${ts.shiftType || 'AM'} Start</p>
+                            <p class="text-xs text-gray-500">${ts.totalHours}h • Starts ${ts.firstWorkingDay || '?'}</p>
                         </div>
                     </div>
-                    <div class="flex gap-2">
-                        ${ts.imageIds.fuel ? '<i class="fas fa-gas-pump text-xs text-gray-400"></i>' : ''}
-                        ${ts.imageIds.check ? '<i class="fas fa-clipboard-check text-xs text-gray-400"></i>' : ''}
-                        <i class="fas fa-chevron-right text-gray-400"></i>
-                    </div>
+                    <i class="fas fa-chevron-right text-gray-400"></i>
                 </div>
             `).join('');
         }
@@ -2018,45 +1395,19 @@
             document.getElementById('week-modal-title').textContent = ts.weekRange;
             const content = document.getElementById('week-modal-content');
             
-            // Load images from IndexedDB
-            const loadImage = async (id) => {
-                if (!id) return null;
-                try {
-                    return await getImage(id);
-                } catch (e) {
-                    console.log('Failed to load image:', e);
-                    return null;
-                }
-            };
-            
-            const [frontImg, backImg, fuelImg, checkImg] = await Promise.all([
-                loadImage(ts.imageIds.front),
-                loadImage(ts.imageIds.back),
-                loadImage(ts.imageIds.fuel),
-                loadImage(ts.imageIds.check)
-            ]);
-            
-            // NEW: Show shift type info if available
-            const shiftInfo = ts.shiftType ? `
-                <div class="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-3 border border-blue-200 dark:border-blue-800 mb-4">
-                    <p class="text-sm text-blue-800 dark:text-blue-300">
-                        <i class="fas fa-clock mr-2"></i>Shift Type: <strong>${ts.shiftType} Start</strong>
-                        ${ts.firstWorkingDay ? `• First shift: ${ts.firstWorkingDay.dayName}` : ''}
-                    </p>
-                </div>
-            ` : '';
+            const frontImg = await getImage(ts.imageIds.front);
             
             content.innerHTML = `
-                ${shiftInfo}
+                ${frontImg ? `<div class="mb-4"><img src="${frontImg}" class="w-full rounded-xl"></div>` : ''}
                 
-                <div class="grid grid-cols-2 gap-2">
-                    ${frontImg ? `<div class="relative aspect-square rounded-xl overflow-hidden bg-gray-100 dark:bg-dark-surface"><img src="${frontImg}" class="w-full h-full object-cover" onclick="viewImage('${frontImg}')"><span class="absolute top-2 left-2 bg-black/50 text-white text-xs px-2 py-1 rounded">Front</span></div>` : ''}
-                    ${backImg ? `<div class="relative aspect-square rounded-xl overflow-hidden bg-gray-100 dark:bg-dark-surface"><img src="${backImg}" class="w-full h-full object-cover" onclick="viewImage('${backImg}')"><span class="absolute top-2 left-2 bg-black/50 text-white text-xs px-2 py-1 rounded">Back</span></div>` : ''}
-                    ${fuelImg ? `<div class="relative aspect-square rounded-xl overflow-hidden bg-gray-100 dark:bg-dark-surface"><img src="${fuelImg}" class="w-full h-full object-cover" onclick="viewImage('${fuelImg}')"><span class="absolute top-2 left-2 bg-black/50 text-white text-xs px-2 py-1 rounded">Fuel</span></div>` : ''}
-                    ${checkImg ? `<div class="relative aspect-square rounded-xl overflow-hidden bg-gray-100 dark:bg-dark-surface"><img src="${checkImg}" class="w-full h-full object-cover" onclick="viewImage('${checkImg}')"><span class="absolute top-2 left-2 bg-black/50 text-white text-xs px-2 py-1 rounded">Check</span></div>` : ''}
+                <div class="bg-green-50 dark:bg-green-900/20 rounded-lg p-3 border border-green-200 dark:border-green-800 mb-4">
+                    <p class="text-sm text-green-800 dark:text-green-300">
+                        <i class="fas fa-robot mr-2"></i>Auto-detected • First day: ${ts.firstWorkingDay || 'Unknown'}
+                        ${ts.pattern ? `• Pattern: ${ts.pattern}` : ''}
+                    </p>
                 </div>
                 
-                <div class="grid grid-cols-3 gap-3">
+                <div class="grid grid-cols-3 gap-3 mb-4">
                     <div class="bg-blue-50 dark:bg-blue-900/20 rounded-xl p-3 text-center">
                         <p class="text-2xl font-bold text-blue-600 dark:text-blue-400">${ts.totalHours}h</p>
                         <p class="text-xs text-blue-600 dark:text-blue-400">Total Hours</p>
@@ -2083,7 +1434,7 @@
                         </thead>
                         <tbody>
                             ${ts.days.map(day => `
-                                <tr class="border-t border-gray-100 dark:border-gray-700 ${day.shiftType ? 'bg-blue-50/30 dark:bg-blue-900/10' : ''}">
+                                <tr class="border-t border-gray-100 dark:border-gray-700 ${day.hours > 0 ? 'bg-blue-50/30 dark:bg-blue-900/10' : ''}">
                                     <td class="p-3 font-medium">${day.day}</td>
                                     <td class="p-3 text-gray-600 dark:text-gray-400">${day.start}</td>
                                     <td class="p-3 text-gray-600 dark:text-gray-400">${day.end}</td>
@@ -2094,7 +1445,7 @@
                     </table>
                 </div>
                 
-                <button onclick="deleteWeek('${ts.weekStart}')" class="w-full py-3 bg-red-100 dark:bg-red-900/30 text-red-600 rounded-xl font-medium hover:bg-red-200 transition-colors">
+                <button onclick="deleteWeek('${ts.weekStart}')" class="w-full py-3 bg-red-100 dark:bg-red-900/30 text-red-600 rounded-xl font-medium hover:bg-red-200 transition-colors mt-4">
                     <i class="fas fa-trash mr-2"></i>Delete This Week
                 </button>
             `;
@@ -2106,117 +1457,20 @@
             document.getElementById('week-modal').classList.add('hidden');
         }
 
-        function viewImage(src) {
-            const win = window.open();
-            win.document.write(`<img src="${src}" style="max-width:100%; height:auto;">`);
-        }
-
-        // ==================== DELETE OPTIONS ====================
-        function showDeleteOptions(type) {
-            const modal = document.getElementById('delete-modal');
-            const title = document.getElementById('delete-modal-title');
-            const content = document.getElementById('delete-options-content');
-            
-            const timesheets = DB.getTimesheets(currentUser.username);
-            
-            if (type === 'week') {
-                title.textContent = 'Delete Specific Week';
-                const weeks = [...new Set(timesheets.map(ts => ts.weekRange))];
-                
-                content.innerHTML = weeks.length === 0 ? '<p class="text-gray-500 text-center py-4">No weeks to delete</p>' :
-                    weeks.map(week => {
-                        const ts = timesheets.find(t => t.weekRange === week);
-                        return `
-                            <button onclick="confirmDeleteWeek('${ts.weekStart}')" class="w-full flex justify-between items-center p-4 bg-gray-50 dark:bg-dark-surface rounded-xl mb-2 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors">
-                                <div>
-                                    <span class="font-medium text-gray-900 dark:text-white block">${week}</span>
-                                    <span class="text-xs text-gray-500">${ts.shiftType || 'AM'} Start</span>
-                                </div>
-                                <i class="fas fa-trash text-red-500"></i>
-                            </button>
-                        `;
-                    }).join('');
-                    
-            } else if (type === 'month') {
-                title.textContent = 'Delete Month';
-                const months = {};
-                timesheets.forEach(ts => {
-                    const date = parseDate(ts.weekStart);
-                    const key = `${date.getFullYear()}-${date.getMonth()}`;
-                    if (!months[key]) months[key] = { year: date.getFullYear(), month: date.getMonth(), count: 0 };
-                    months[key].count++;
-                });
-                
-                content.innerHTML = Object.keys(months).length === 0 ? '<p class="text-gray-500 text-center py-4">No data to delete</p>' :
-                    Object.values(months).map(m => `
-                        <button onclick="confirmDeleteMonth(${m.year}, ${m.month})" class="w-full flex justify-between items-center p-4 bg-gray-50 dark:bg-dark-surface rounded-xl mb-2 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors">
-                            <div>
-                                <span class="font-medium text-gray-900 dark:text-white block">${new Date(m.year, m.month).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}</span>
-                                <span class="text-xs text-gray-500">${m.count} weeks</span>
-                            </div>
-                            <i class="fas fa-trash text-red-500"></i>
-                        </button>
-                    `).join('');
-                    
-            } else if (type === 'year') {
-                title.textContent = 'Delete Year';
-                const years = {};
-                timesheets.forEach(ts => {
-                    const year = parseDate(ts.weekStart).getFullYear();
-                    if (!years[year]) years[year] = 0;
-                    years[year]++;
-                });
-                
-                content.innerHTML = Object.keys(years).length === 0 ? '<p class="text-gray-500 text-center py-4">No data to delete</p>' :
-                    Object.entries(years).map(([year, count]) => `
-                        <button onclick="confirmDeleteYear(${year})" class="w-full flex justify-between items-center p-4 bg-gray-50 dark:bg-dark-surface rounded-xl mb-2 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors">
-                            <div>
-                                <span class="font-medium text-gray-900 dark:text-white block text-lg">${year}</span>
-                                <span class="text-xs text-gray-500">${count} weeks</span>
-                            </div>
-                            <i class="fas fa-trash text-red-500"></i>
-                        </button>
-                    `).join('');
-            }
-            
-            modal.classList.remove('hidden');
-        }
-
-        function closeDeleteModal() {
-            document.getElementById('delete-modal').classList.add('hidden');
-        }
-
-        function confirmDeleteWeek(weekStart) {
-            if (confirm('Delete this week permanently?')) {
-                deleteWeek(weekStart);
-                closeDeleteModal();
-            }
-        }
-
         async function deleteWeek(weekStart) {
             const timesheets = DB.getTimesheets(currentUser.username);
             const ts = timesheets.find(t => t.weekStart === weekStart);
             
-            if (ts && ts.imageIds) {
-                // Delete associated images from IndexedDB
-                const deletePromises = [];
-                if (ts.imageIds.front) deletePromises.push(deleteImage(ts.imageIds.front));
-                if (ts.imageIds.back) deletePromises.push(deleteImage(ts.imageIds.back));
-                if (ts.imageIds.fuel) deletePromises.push(deleteImage(ts.imageIds.fuel));
-                if (ts.imageIds.check) deletePromises.push(deleteImage(ts.imageIds.check));
-                
-                await Promise.allSettled(deletePromises);
-            }
+            if (ts && ts.imageIds.front) await deleteImage(ts.imageIds.front);
             
-            let updatedTimesheets = timesheets.filter(t => t.weekStart !== weekStart);
-            DB.saveTimesheets(currentUser.username, updatedTimesheets);
+            const updated = timesheets.filter(t => t.weekStart !== weekStart);
+            DB.saveTimesheets(currentUser.username, updated);
             
             renderCalendar();
             updateStats();
             renderRecent();
             renderHistory();
             closeWeekModal();
-            updateStorageDisplay();
             
             if (selectedWeekStart === weekStart) {
                 document.getElementById('week-preview').classList.add('hidden');
@@ -2226,97 +1480,6 @@
             showToast('Week deleted');
         }
 
-        function confirmDeleteMonth(year, month) {
-            if (confirm(`Delete all data for ${new Date(year, month).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}?`)) {
-                deleteMonthData(year, month);
-                closeDeleteModal();
-            }
-        }
-
-        async function deleteMonthData(year, month) {
-            const timesheets = DB.getTimesheets(currentUser.username);
-            const toDelete = timesheets.filter(t => {
-                const d = parseDate(t.weekStart);
-                return d.getFullYear() === year && d.getMonth() === month;
-            });
-            
-            // Delete images
-            for (const ts of toDelete) {
-                if (ts.imageIds) {
-                    const deletePromises = [];
-                    if (ts.imageIds.front) deletePromises.push(deleteImage(ts.imageIds.front));
-                    if (ts.imageIds.back) deletePromises.push(deleteImage(ts.imageIds.back));
-                    if (ts.imageIds.fuel) deletePromises.push(deleteImage(ts.imageIds.fuel));
-                    if (ts.imageIds.check) deletePromises.push(deleteImage(ts.imageIds.check));
-                    await Promise.allSettled(deletePromises);
-                }
-            }
-            
-            const remaining = timesheets.filter(t => {
-                const d = parseDate(t.weekStart);
-                return !(d.getFullYear() === year && d.getMonth() === month);
-            });
-            
-            DB.saveTimesheets(currentUser.username, remaining);
-            
-            renderCalendar();
-            updateStats();
-            renderRecent();
-            updateStorageDisplay();
-            showToast('Month deleted');
-        }
-
-        function confirmDeleteYear(year) {
-            if (confirm(`Delete ALL data for ${year}? This cannot be undone.`)) {
-                deleteYearData(year);
-                closeDeleteModal();
-            }
-        }
-
-        async function deleteYearData(year) {
-            const timesheets = DB.getTimesheets(currentUser.username);
-            const toDelete = timesheets.filter(t => parseDate(t.weekStart).getFullYear() === year);
-            
-            // Delete images
-            for (const ts of toDelete) {
-                if (ts.imageIds) {
-                    const deletePromises = [];
-                    if (ts.imageIds.front) deletePromises.push(deleteImage(ts.imageIds.front));
-                    if (ts.imageIds.back) deletePromises.push(deleteImage(ts.imageIds.back));
-                    if (ts.imageIds.fuel) deletePromises.push(deleteImage(ts.imageIds.fuel));
-                    if (ts.imageIds.check) deletePromises.push(deleteImage(ts.imageIds.check));
-                    await Promise.allSettled(deletePromises);
-                }
-            }
-            
-            const remaining = timesheets.filter(t => parseDate(t.weekStart).getFullYear() !== year);
-            DB.saveTimesheets(currentUser.username, remaining);
-            
-            renderCalendar();
-            updateStats();
-            renderRecent();
-            updateStorageDisplay();
-            showToast('Year deleted');
-        }
-
-        async function deleteAllData() {
-            if (confirm('DELETE ALL TIMESHEET DATA?\n\nThis will remove every timesheet for this user. This action cannot be undone.')) {
-                if (confirm('Are you absolutely sure? Press OK to permanently delete all timesheet data.')) {
-                    // Clear all images first
-                    await clearAllImages();
-                    
-                    DB.saveTimesheets(currentUser.username, []);
-                    renderCalendar();
-                    updateStats();
-                    renderRecent();
-                    document.getElementById('week-preview').classList.add('hidden');
-                    updateStorageDisplay();
-                    showToast('All timesheet data deleted');
-                }
-            }
-        }
-
-        // ==================== STATS & UI ====================
         function updateStats() {
             const timesheets = DB.getTimesheets(currentUser.username);
             const now = new Date();
@@ -2352,7 +1515,7 @@
                     </div>
                     <div class="flex-1">
                         <p class="font-medium text-sm text-gray-900 dark:text-white">${ts.weekRange}</p>
-                        <p class="text-xs text-gray-500">${ts.totalHours} hours • ${ts.shiftType || 'AM'} Start</p>
+                        <p class="text-xs text-gray-500">${ts.totalHours} hours • ${ts.firstWorkingDay || 'Unknown'} start</p>
                     </div>
                     <i class="fas fa-chevron-right text-gray-400 text-sm"></i>
                 </div>
@@ -2372,14 +1535,7 @@
             activeBtn.classList.remove('text-gray-400');
             
             if (viewName === 'history') renderHistory();
-            if (viewName === 'dashboard') {
-                renderCalendar();
-                updateStats();
-            }
-            if (viewName === 'scan') {
-                updateStorageDisplay();
-                updateScanWeekDisplay(); // Refresh shift preview
-            }
+            if (viewName === 'dashboard') { renderCalendar(); updateStats(); }
         }
 
         function initTheme() {
@@ -2396,13 +1552,26 @@
             document.getElementById('theme-label').textContent = isDark ? 'Light Mode' : 'Dark Mode';
         }
 
+        function deleteAllData() {
+            if (confirm('DELETE ALL TIMESHEET DATA?\n\nThis cannot be undone.')) {
+                if (confirm('Are you absolutely sure?')) {
+                    DB.saveTimesheets(currentUser.username, []);
+                    renderCalendar();
+                    updateStats();
+                    renderRecent();
+                    document.getElementById('week-preview').classList.add('hidden');
+                    showToast('All timesheet data deleted');
+                }
+            }
+        }
+
         function showToast(message, type = 'success') {
             const toast = document.getElementById('toast');
             const msgEl = document.getElementById('toast-message');
             const iconEl = document.getElementById('toast-icon');
             
             msgEl.textContent = message;
-            iconEl.className = type === 'error' ? 'fas fa-exclamation-circle text-red-400' : type === 'warning' ? 'fas fa-exclamation-triangle text-yellow-400' : 'fas fa-check-circle text-green-400';
+            iconEl.className = type === 'error' ? 'fas fa-exclamation-circle text-red-400' : 'fas fa-check-circle text-green-400';
             
             toast.classList.remove('-translate-y-20', 'opacity-0');
             setTimeout(() => toast.classList.add('-translate-y-20', 'opacity-0'), 3000);
@@ -2415,6 +1584,12 @@
             if (now - lastTouchEnd <= 300) e.preventDefault();
             lastTouchEnd = now;
         }, false);
+
+        // Init
+        document.addEventListener('DOMContentLoaded', async () => {
+            await initImageDB();
+            initAuth();
+        });
     </script>
 </body>
 </html>
