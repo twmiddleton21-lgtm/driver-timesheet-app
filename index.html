@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="theme-color" content="#3B82F6">
-    <title>Driver Timesheet Pro v2.7.0</title>
+    <title>Driver Timesheet Pro v2.8.0</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
@@ -121,7 +121,7 @@
             padding: 8px;
             border-radius: 6px;
             margin-top: 8px;
-            max-height: 200px;
+            max-height: 300px;
             overflow-y: auto;
             white-space: pre-wrap;
             word-break: break-all;
@@ -166,6 +166,15 @@
         }
         .col-on { background: #10B981; }
         .col-off { background: #EF4444; }
+        
+        .word-box {
+            position: absolute;
+            border: 1px solid rgba(59, 130, 246, 0.5);
+            background: rgba(59, 130, 246, 0.1);
+            font-size: 8px;
+            color: #3B82F6;
+            pointer-events: none;
+        }
     </style>
 </head>
 <body class="bg-gray-50 dark:bg-dark text-gray-800 dark:text-gray-100 transition-colors duration-300 min-h-screen pb-20">
@@ -179,8 +188,8 @@
                 </div>
                 <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Driver Timesheet Pro</h1>
                 <p class="text-gray-500 dark:text-gray-400 mt-2 flex items-center justify-center gap-2">
-                    <span class="text-xs bg-primary/10 text-primary px-2 py-1 rounded" id="version-display">v2.7.0</span>
-                    <span class="text-xs bg-green-100 text-green-700 px-2 py-1 rounded">Column Parser</span>
+                    <span class="text-xs bg-primary/10 text-primary px-2 py-1 rounded" id="version-display">v2.8.0</span>
+                    <span class="text-xs bg-green-100 text-green-700 px-2 py-1 rounded">Spatial Parser</span>
                 </p>
             </div>
 
@@ -224,9 +233,9 @@
                 
                 <div class="bg-blue-50 dark:bg-blue-900/20 rounded-xl p-4 border border-blue-200 dark:border-blue-800">
                     <label class="block text-sm font-medium text-blue-900 dark:text-blue-300 mb-2">
-                        <i class="fas fa-columns mr-2"></i>Column-Aware Parser
+                        <i class="fas fa-crosshairs mr-2"></i>Spatial Column Parser
                     </label>
-                    <p class="text-xs text-blue-700 dark:text-blue-400">Now detects BOOKING ON (right column) and BOOKING OFF (right column) times. Week ending auto-detected from top-right.</p>
+                    <p class="text-xs text-blue-700 dark:text-blue-400">Uses word coordinates to identify right-hand TIME columns. Week ending detected from top-right region.</p>
                 </div>
                 
                 <div class="flex gap-3">
@@ -323,20 +332,20 @@
             <div id="scan-view" class="view-section hidden fade-in space-y-4">
                 <div class="text-center mb-4">
                     <h2 class="text-xl font-bold text-gray-900 dark:text-white">Scan Timesheet</h2>
-                    <p class="text-sm text-gray-500 dark:text-gray-400">Auto-extracts times from columns</p>
+                    <p class="text-sm text-gray-500 dark:text-gray-400">Spatial column detection</p>
                 </div>
 
                 <!-- Column Structure Info -->
                 <div class="bg-gradient-to-r from-blue-50 to-green-50 dark:from-blue-900/20 dark:to-green-900/20 rounded-2xl p-4 border border-blue-200 dark:border-blue-800">
                     <div class="flex items-center gap-3">
                         <div class="w-10 h-10 bg-blue-100 dark:bg-blue-900/30 rounded-full flex items-center justify-center">
-                            <i class="fas fa-columns text-blue-600"></i>
+                            <i class="fas fa-crosshairs text-blue-600"></i>
                         </div>
                         <div>
-                            <p class="text-sm font-bold text-gray-900 dark:text-white">Column-Aware Detection</p>
+                            <p class="text-sm font-bold text-gray-900 dark:text-white">Spatial Parser v2.8</p>
                             <p class="text-xs text-gray-500">
-                                <span class="column-indicator col-on"></span>BOOKING ON (right col) | 
-                                <span class="column-indicator col-off"></span>BOOKING OFF (right col)
+                                <span class="column-indicator col-on"></span>BOOKING ON → TIME (right)
+                                <span class="column-indicator col-off ml-2"></span>BOOKING OFF → TIME (right)
                             </p>
                         </div>
                     </div>
@@ -531,9 +540,9 @@
                 <div class="bg-white dark:bg-dark-card rounded-2xl p-4 shadow-sm border border-gray-100 dark:border-gray-700">
                     <h3 class="font-semibold text-gray-900 dark:text-white mb-3"><i class="fas fa-info-circle text-primary mr-2"></i>About</h3>
                     <div class="space-y-2 text-sm text-gray-600 dark:text-gray-400">
-                        <p><strong>Version:</strong> <span id="settings-version">v2.7.0</span></p>
-                        <p><strong>OCR Engine:</strong> Tesseract.js v5 with Column Parser</p>
-                        <p class="text-xs">Detects: Top-right week ending + BOOKING ON/OFF right columns.</p>
+                        <p><strong>Version:</strong> <span id="settings-version">v2.8.0</span></p>
+                        <p><strong>OCR Engine:</strong> Tesseract.js v5 with Spatial Parser</p>
+                        <p class="text-xs">Uses word coordinates to identify right-hand TIME columns. Top-right week ending detection.</p>
                     </div>
                 </div>
 
@@ -668,7 +677,7 @@
 
     <script>
         // ==================== CONFIG ====================
-        const APP_VERSION = '2.7.0';
+        const APP_VERSION = '2.8.0';
         let currentUser = null;
         let currentMonth = new Date();
         let selectedWeekStart = null;
@@ -678,6 +687,7 @@
         let autoDetectedData = null;
         let autoDetectedWeekEnding = null;
         let ocrAttempts = 0;
+        let lastOcrResult = null;
 
         // ==================== INDEXEDDB ====================
         const DB_NAME = 'TimesheetImagesDB';
@@ -760,63 +770,6 @@
         function formatWeekRange(startDate, endDate) {
             const options = { month: 'short', day: 'numeric' };
             return `${startDate.toLocaleDateString('en-US', options)} - ${endDate.toLocaleDateString('en-US', options)}`;
-        }
-
-        // Parse week ending date - look for it in top right area
-        function parseWeekEndingDate(ocrText) {
-            // Clean up OCR errors
-            const cleaned = ocrText
-                .replace(/[Oo]/g, '0')
-                .replace(/[lI]/g, '1')
-                .replace(/[S]/g, '5')
-                .replace(/[Z]/g, '2')
-                .toUpperCase();
-            
-            // Pattern 1: WEEK ENDING with various separators and formats
-            // Matches: WEEK ENDING 14-2-26, WEEKENDING 14/02/26, etc.
-            const patterns = [
-                /WEEK\s*ENDING\s*:?\s*(\d{1,2})[-\s_/.](\d{1,2})[-\s_/.]?(\d{2,4})/i,
-                /WEEK\s*END\s*:?\s*(\d{1,2})[-\s_/.](\d{1,2})[-\s_/.]?(\d{2,4})/i,
-                /ENDING\s*:?\s*(\d{1,2})[-\s_/.](\d{1,2})[-\s_/.]?(\d{2,4})/i,
-                /(\d{1,2})[-\s_/.](\d{1,2})[-\s_/.](\d{2,4})(?=\s*(?:PAYROLL|NO|NAME|$))/i
-            ];
-            
-            for (const pattern of patterns) {
-                const match = cleaned.match(pattern);
-                if (match) {
-                    const day = parseInt(match[1]);
-                    const month = parseInt(match[2]) - 1;
-                    let year = match[3] ? parseInt(match[3]) : new Date().getFullYear();
-                    
-                    if (year < 100) {
-                        year = year < 50 ? 2000 + year : 1900 + year;
-                    }
-                    
-                    const date = new Date(year, month, day);
-                    if (date.getDate() === day && date.getMonth() === month && year > 2020 && year < 2030) {
-                        return date;
-                    }
-                }
-            }
-            
-            // Fallback: Look for any date in DD-MM-YY format near top of document
-            const lines = cleaned.split('\n').slice(0, 10); // First 10 lines
-            for (const line of lines) {
-                const dateMatch = line.match(/(\d{1,2})[-\s/.](\d{1,2})[-\s/.](\d{2,4})/);
-                if (dateMatch) {
-                    const day = parseInt(dateMatch[1]);
-                    const month = parseInt(dateMatch[2]) - 1;
-                    let year = parseInt(dateMatch[3]);
-                    if (year < 100) year = 2000 + year;
-                    
-                    const date = new Date(year, month, day);
-                    if (date.getFullYear() > 2020 && date.getFullYear() < 2030) {
-                        return date;
-                    }
-                }
-            }
-            
-            return null;
         }
 
         // ==================== DATA STORE ====================
@@ -1076,7 +1029,7 @@
                         const canvas = document.createElement('canvas');
                         const ctx = canvas.getContext('2d');
                         
-                        const maxWidth = 3000; // Higher res for column detection
+                        const maxWidth = 3000;
                         let width = img.width;
                         let height = img.height;
                         
@@ -1088,11 +1041,9 @@
                         canvas.width = width;
                         canvas.height = height;
                         
-                        // White background
                         ctx.fillStyle = '#FFFFFF';
                         ctx.fillRect(0, 0, width, height);
                         
-                        // High contrast for handwritten text
                         ctx.filter = 'contrast(1.5) brightness(1.0)';
                         ctx.drawImage(img, 0, 0, width, height);
                         
@@ -1180,6 +1131,7 @@
                 stage: 'initializing',
                 error: null,
                 rawText: null,
+                words: [],
                 workerCreated: false,
                 recognitionStarted: false,
                 recognitionCompleted: false
@@ -1216,12 +1168,13 @@
                     throw new Error(`Failed to create OCR worker: ${workerErr.message}`);
                 }
                 
-                updateOcrProgress(30, 'Starting text recognition...');
+                updateOcrProgress(30, 'Starting text recognition with coordinates...');
                 debugInfo.stage = 'recognizing';
                 debugInfo.recognitionStarted = true;
                 
                 let result;
                 try {
+                    // Use TSV output to get word coordinates
                     result = await Promise.race([
                         worker.recognize(imageToProcess),
                         new Promise((_, reject) => 
@@ -1241,13 +1194,19 @@
                 }
                 
                 debugInfo.rawText = result.data.text || '';
+                lastOcrResult = result;
                 
                 if (!debugInfo.rawText || debugInfo.rawText.trim().length < 3) {
                     throw new Error('No readable text found in image.');
                 }
                 
-                // Parse week ending date FIRST
-                autoDetectedWeekEnding = parseWeekEndingDate(debugInfo.rawText);
+                // Store word data if available
+                if (result.data.words) {
+                    debugInfo.words = result.data.words;
+                }
+                
+                // Parse week ending date FIRST using spatial detection
+                autoDetectedWeekEnding = parseWeekEndingSpatial(result.data);
                 
                 if (autoDetectedWeekEnding) {
                     document.getElementById('scan-date-select').value = formatDateForInput(autoDetectedWeekEnding);
@@ -1256,12 +1215,12 @@
                     updateScanWeekDisplay();
                 }
                 
-                // Parse timesheet data with column-aware parser
-                autoDetectedData = parseTimesheetColumns(debugInfo.rawText);
+                // Parse timesheet data with SPATIAL column-aware parser
+                autoDetectedData = parseTimesheetSpatial(result.data);
                 
                 const workingDays = Object.values(autoDetectedData.days).filter(d => d.hasData).length;
                 if (workingDays === 0 && !autoDetectedWeekEnding) {
-                    throw new Error('Could not detect any booking times or week ending date.');
+                    throw new Error('Could not detect any booking times or week ending date. Please ensure the timesheet is clearly visible.');
                 }
                 
                 // Calculate hours
@@ -1323,6 +1282,11 @@ Error: ${err.message || 'Unknown error'}
 Raw OCR Text (first 1500 chars):
 ${debugInfo.rawText ? debugInfo.rawText.substring(0, 1500) : '[NO TEXT CAPTURED]'}
 
+Word Count: ${debugInfo.words ? debugInfo.words.length : 'N/A'}
+${debugInfo.words && debugInfo.words.length > 0 ? 
+    'Sample words: ' + debugInfo.words.slice(0, 5).map(w => `${w.text}(${Math.round(w.bbox.x0)},${Math.round(w.bbox.y0)})`).join(', ') 
+    : ''}
+
 Browser: ${navigator.userAgent.substring(0, 100)}
 Tesseract: ${typeof Tesseract !== 'undefined' ? (Tesseract.version || 'v5.x') : 'NOT LOADED'}
                 `;
@@ -1352,22 +1316,70 @@ Tesseract: ${typeof Tesseract !== 'undefined' ? (Tesseract.version || 'v5.x') : 
             document.getElementById('ocr-stage').textContent = stage;
         }
 
-        // COLUMN-AWARE PARSER: Looks for BOOKING ON/OFF columns and extracts rightmost times
-        function parseTimesheetColumns(ocrText) {
-            // Aggressive cleaning
-            let cleaned = ocrText
-                .replace(/[Oo]/g, '0')
-                .replace(/[lI]/g, '1')
-                .replace(/[S]/g, '5')
-                .replace(/[Z]/g, '2')
-                .replace(/[B]/g, '8')
-                .replace(/[q]/g, '9')
-                .replace(/[\r\n]+/g, '\n')
-                .toUpperCase();
+        // ==================== SPATIAL PARSER ====================
+        
+        // Parse week ending using spatial analysis - look in top-right quadrant
+        function parseWeekEndingSpatial(ocrData) {
+            const text = ocrData.text || '';
+            const lines = text.split('\n');
             
-            const lines = cleaned.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+            // First try: Look at first 5 lines for week ending patterns
+            const topLines = lines.slice(0, 5).join(' ');
             
-            // Initialize days
+            // Pattern matching with various OCR error corrections
+            const patterns = [
+                /WEEK\s*ENDING\s*:?\s*(\d{1,2})[-\s_/.](\d{1,2})[-\s_/.]?(\d{2,4})/i,
+                /WEEK\s*END\s*:?\s*(\d{1,2})[-\s_/.](\d{1,2})[-\s_/.]?(\d{2,4})/i,
+                /ENDING\s*:?\s*(\d{1,2})[-\s_/.](\d{1,2})[-\s_/.]?(\d{2,4})/i,
+                /(\d{1,2})[-\s_/.](\d{1,2})[-\s_/.](\d{2,4})(?=\s*(?:PAYROLL|NO|NAME|$))/i
+            ];
+            
+            for (const pattern of patterns) {
+                const match = topLines.match(pattern);
+                if (match) {
+                    const day = parseInt(match[1]);
+                    const month = parseInt(match[2]) - 1;
+                    let year = match[3] ? parseInt(match[3]) : new Date().getFullYear();
+                    
+                    if (year < 100) {
+                        year = year < 50 ? 2000 + year : 1900 + year;
+                    }
+                    
+                    const date = new Date(year, month, day);
+                    if (date.getDate() === day && date.getMonth() === month && year > 2020 && year < 2030) {
+                        return date;
+                    }
+                }
+            }
+            
+            // Fallback: Look for any date pattern in top-right area using word coordinates
+            if (ocrData.words && ocrData.words.length > 0) {
+                const imgWidth = Math.max(...ocrData.words.map(w => w.bbox.x1));
+                const rightThreshold = imgWidth * 0.6; // Right 40% of image
+                
+                const rightWords = ocrData.words.filter(w => w.bbox.x0 > rightThreshold);
+                const rightText = rightWords.map(w => w.text).join(' ');
+                
+                // Look for date patterns in right side
+                const dateMatch = rightText.match(/(\d{1,2})[-\s/.](\d{1,2})[-\s/.](\d{2,4})/);
+                if (dateMatch) {
+                    const day = parseInt(dateMatch[1]);
+                    const month = parseInt(dateMatch[2]) - 1;
+                    let year = parseInt(dateMatch[3]);
+                    if (year < 100) year = 2000 + year;
+                    
+                    const date = new Date(year, month, day);
+                    if (date.getFullYear() > 2020 && date.getFullYear() < 2030) {
+                        return date;
+                    }
+                }
+            }
+            
+            return null;
+        }
+
+        // Main spatial parser - uses word coordinates to identify columns
+        function parseTimesheetSpatial(ocrData) {
             const days = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
             const dayData = {};
             days.forEach(day => {
@@ -1377,89 +1389,103 @@ Tesseract: ${typeof Tesseract !== 'undefined' ? (Tesseract.version || 'v5.x') : 
                     offTime: null,
                     hasData: false,
                     hours: 0,
-                    rawLines: []
+                    rawWords: []
                 };
             });
             
-            // Find table structure
-            let inTable = false;
-            let tableLines = [];
-            let headerLineIndex = -1;
+            const text = ocrData.text || '';
+            const words = ocrData.words || [];
             
-            // Look for BOOKING ON header to find table start
-            for (let i = 0; i < lines.length; i++) {
-                const line = lines[i];
-                if (line.includes('BOOKING') && line.includes('ON')) {
-                    headerLineIndex = i;
-                    inTable = true;
-                }
-                if (inTable) {
-                    // Stop at week ending or bottom of form
-                    if (line.includes('WEEK ENDING') && !line.includes('DAY')) {
-                        break;
-                    }
-                    tableLines.push({ line, index: i });
-                }
+            // If we have word coordinates, use spatial analysis
+            if (words.length > 0) {
+                return parseWithCoordinates(words, dayData, text);
             }
             
-            // Process table lines to find day rows
-            tableLines.forEach(({ line }) => {
-                // Check if line contains a day
-                const dayMatch = line.match(/\b(SUN|MON|TUE|WED|THU|FRI|SAT)\b/);
-                if (!dayMatch) return;
+            // Fallback to text-only parsing
+            return parseTimesheetTextOnly(text, dayData);
+        }
+
+        function parseWithCoordinates(words, dayData, fullText) {
+            // Find image dimensions
+            const maxX = Math.max(...words.map(w => w.bbox.x1));
+            const maxY = Math.max(...words.map(w => w.bbox.y1));
+            const minX = Math.min(...words.map(w => w.bbox.x0));
+            const minY = Math.min(...words.map(w => w.bbox.y0));
+            
+            const imgWidth = maxX - minX;
+            const imgHeight = maxY - minY;
+            
+            // Define regions based on typical timesheet layout
+            // BOOKING ON: left ~40-60%, BOOKING OFF: left ~60-80%
+            const onLeft = minX + imgWidth * 0.35;
+            const onRight = minX + imgWidth * 0.55;
+            const offLeft = minX + imgWidth * 0.60;
+            const offRight = minX + imgWidth * 0.80;
+            
+            // Find day rows by looking for day names
+            const dayKeywords = {
+                'SUN': ['SUN', 'SUNDAY'],
+                'MON': ['MON', 'MONDAY'],
+                'TUE': ['TUE', 'TUESDAY', 'TUES'],
+                'WED': ['WED', 'WEDNESDAY'],
+                'THU': ['THU', 'THURSDAY', 'THURS'],
+                'FRI': ['FRI', 'FRIDAY'],
+                'SAT': ['SAT', 'SATURDAY']
+            };
+            
+            // Group words by Y position (rows)
+            const rowHeight = imgHeight / 20; // Approximate row height
+            const rows = {};
+            
+            words.forEach(word => {
+                const yCenter = (word.bbox.y0 + word.bbox.y1) / 2;
+                const rowKey = Math.round(yCenter / rowHeight);
                 
-                const day = dayMatch[1];
-                if (!dayData[day]) return;
-                
-                dayData[day].rawLines.push(line);
-                
-                // Extract all times from this line
-                const times = extractTimesFromLine(line);
-                
-                if (times.length >= 2) {
-                    // Assume: first time is ON, second is OFF (from right columns)
-                    dayData[day].onTime = times[0];
-                    dayData[day].offTime = times[1];
-                    dayData[day].hasData = true;
-                } else if (times.length === 1) {
-                    // Single time - need to determine if ON or OFF based on context
-                    // Look at position in line or surrounding text
-                    const onIndex = line.indexOf('ON');
-                    const offIndex = line.indexOf('OFF');
-                    const timeIndex = line.indexOf(times[0]);
-                    
-                    if (onIndex !== -1 && offIndex !== -1 && timeIndex !== -1) {
-                        // If time is closer to OFF, it's OFF time, else ON
-                        if (Math.abs(timeIndex - offIndex) < Math.abs(timeIndex - onIndex)) {
-                            dayData[day].offTime = times[0];
-                        } else {
-                            dayData[day].onTime = times[0];
-                        }
-                        dayData[day].hasData = true;
-                    } else {
-                        // Default to ON time if we can't determine
-                        dayData[day].onTime = times[0];
-                        dayData[day].hasData = true;
-                    }
-                }
+                if (!rows[rowKey]) rows[rowKey] = [];
+                rows[rowKey].push(word);
             });
             
-            // Alternative: Look for lines that start with day and have times
-            lines.forEach(line => {
-                const dayStartMatch = line.match(/^(SUN|MON|TUE|WED|THU|FRI|SAT)[\s:,-]+(.+)/i);
-                if (dayStartMatch) {
-                    const day = dayStartMatch[1].toUpperCase();
-                    const rest = dayStartMatch[2];
+            // Sort rows by Y position
+            const sortedRows = Object.entries(rows).sort((a, b) => parseInt(a[0]) - parseInt(b[0]));
+            
+            // Find which rows contain day names
+            sortedRows.forEach(([rowNum, rowWords]) => {
+                const rowText = rowWords.map(w => w.text.toUpperCase()).join(' ');
+                
+                // Check if this row contains a day
+                let matchedDay = null;
+                for (const [day, keywords] of Object.entries(dayKeywords)) {
+                    if (keywords.some(kw => rowText.includes(kw))) {
+                        matchedDay = day;
+                        break;
+                    }
+                }
+                
+                if (matchedDay && dayData[matchedDay]) {
+                    // Look for times in this row
+                    const onTimeWords = rowWords.filter(w => {
+                        const xCenter = (w.bbox.x0 + w.bbox.x1) / 2;
+                        return xCenter >= onLeft && xCenter <= onRight && isTimeLike(w.text);
+                    });
                     
-                    if (dayData[day] && !dayData[day].hasData) {
-                        const times = extractTimesFromLine(rest);
-                        if (times.length >= 2) {
-                            dayData[day].onTime = times[0];
-                            dayData[day].offTime = times[1];
-                            dayData[day].hasData = true;
-                        } else if (times.length === 1) {
-                            dayData[day].onTime = times[0];
-                            dayData[day].hasData = true;
+                    const offTimeWords = rowWords.filter(w => {
+                        const xCenter = (w.bbox.x0 + w.bbox.x1) / 2;
+                        return xCenter >= offLeft && xCenter <= offRight && isTimeLike(w.text);
+                    });
+                    
+                    if (onTimeWords.length > 0) {
+                        const time = extractTimeFromWord(onTimeWords[0].text);
+                        if (time) {
+                            dayData[matchedDay].onTime = time;
+                            dayData[matchedDay].hasData = true;
+                        }
+                    }
+                    
+                    if (offTimeWords.length > 0) {
+                        const time = extractTimeFromWord(offTimeWords[0].text);
+                        if (time) {
+                            dayData[matchedDay].offTime = time;
+                            dayData[matchedDay].hasData = true;
                         }
                     }
                 }
@@ -1467,7 +1493,7 @@ Tesseract: ${typeof Tesseract !== 'undefined' ? (Tesseract.version || 'v5.x') : 
             
             // Find first working day
             let firstWorkingDay = null;
-            for (const day of days) {
+            for (const day of Object.keys(dayData)) {
                 if (dayData[day].hasData) {
                     firstWorkingDay = day;
                     break;
@@ -1477,12 +1503,106 @@ Tesseract: ${typeof Tesseract !== 'undefined' ? (Tesseract.version || 'v5.x') : 
             return {
                 days: dayData,
                 firstWorkingDay: firstWorkingDay,
-                rawText: ocrText,
-                cleanedText: cleaned
+                rawText: fullText,
+                words: words
             };
         }
 
-        // Extract times from line - handles handwritten formats
+        function parseTimesheetTextOnly(text, dayData) {
+            // Fallback when no coordinates available
+            const lines = text.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+            
+            const dayKeywords = {
+                'SUN': ['SUN', 'SUNDAY'],
+                'MON': ['MON', 'MONDAY'],
+                'TUE': ['TUE', 'TUESDAY', 'TUES'],
+                'WED': ['WED', 'WEDNESDAY'],
+                'THU': ['THU', 'THURSDAY', 'THURS'],
+                'FRI': ['FRI', 'FRIDAY'],
+                'SAT': ['SAT', 'SATURDAY']
+            };
+            
+            lines.forEach(line => {
+                const upperLine = line.toUpperCase();
+                
+                // Find which day this line contains
+                let matchedDay = null;
+                for (const [day, keywords] of Object.entries(dayKeywords)) {
+                    if (keywords.some(kw => upperLine.includes(kw))) {
+                        matchedDay = day;
+                        break;
+                    }
+                }
+                
+                if (matchedDay && dayData[matchedDay]) {
+                    // Extract all times from this line
+                    const times = extractTimesFromLine(line);
+                    
+                    // For text-only, assume first time is ON, second is OFF
+                    if (times.length >= 2) {
+                        dayData[matchedDay].onTime = times[0];
+                        dayData[matchedDay].offTime = times[1];
+                        dayData[matchedDay].hasData = true;
+                    } else if (times.length === 1) {
+                        dayData[matchedDay].onTime = times[0];
+                        dayData[matchedDay].hasData = true;
+                    }
+                }
+            });
+            
+            let firstWorkingDay = null;
+            for (const day of Object.keys(dayData)) {
+                if (dayData[day].hasData) {
+                    firstWorkingDay = day;
+                    break;
+                }
+            }
+            
+            return {
+                days: dayData,
+                firstWorkingDay: firstWorkingDay,
+                rawText: text
+            };
+        }
+
+        function isTimeLike(text) {
+            // Check if text looks like a time
+            const cleaned = text.replace(/[Oo]/g, '0').replace(/[lI]/g, '1');
+            return /\d{1,2}[:.]?\d{2}/.test(cleaned) || /^\d{4}$/.test(cleaned);
+        }
+
+        function extractTimeFromWord(text) {
+            // Clean OCR errors
+            let cleaned = text
+                .replace(/[Oo]/g, '0')
+                .replace(/[lI]/g, '1')
+                .replace(/[S]/g, '5')
+                .replace(/[Z]/g, '2')
+                .replace(/[B]/g, '8');
+            
+            // Try HH:MM format
+            const match1 = cleaned.match(/(\d{1,2})[:.](\d{2})/);
+            if (match1) {
+                const hour = parseInt(match1[1]);
+                const minute = parseInt(match1[2]);
+                if (hour >= 0 && hour <= 23 && minute >= 0 && minute <= 59) {
+                    return `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
+                }
+            }
+            
+            // Try HHMM format
+            const match2 = cleaned.match(/^(\d{2})(\d{2})$/);
+            if (match2) {
+                const hour = parseInt(match2[1]);
+                const minute = parseInt(match2[2]);
+                if (hour >= 0 && hour <= 23 && minute >= 0 && minute <= 59) {
+                    return `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
+                }
+            }
+            
+            return null;
+        }
+
         function extractTimesFromLine(text) {
             const times = [];
             const seen = new Set();
@@ -1495,8 +1615,7 @@ Tesseract: ${typeof Tesseract !== 'undefined' ? (Tesseract.version || 'v5.x') : 
                 let minute = parseInt(match[2]);
                 
                 if (hour >= 0 && hour <= 23 && minute >= 0 && minute <= 59) {
-                    // Skip years
-                    if (hour === 20 && minute < 30) continue;
+                    if (hour === 20 && minute < 30) continue; // Skip years
                     
                     const timeStr = `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
                     if (!seen.has(timeStr)) {
@@ -1513,21 +1632,6 @@ Tesseract: ${typeof Tesseract !== 'undefined' ? (Tesseract.version || 'v5.x') : 
                 let minute = parseInt(match[2]);
                 
                 if (hour >= 4 && hour <= 23 && minute >= 0 && minute <= 59 && minute % 5 === 0) {
-                    const timeStr = `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
-                    if (!seen.has(timeStr)) {
-                        times.push(timeStr);
-                        seen.add(timeStr);
-                    }
-                }
-            }
-            
-            // Pattern 3: Spaced digits (0 7 5 8 -> 07:58)
-            const pattern3 = /(\d)\s*(\d)\s*[:;.,]?\s*(\d)\s*(\d)/g;
-            while ((match = pattern3.exec(text)) !== null) {
-                let hour = parseInt(match[1] + match[2]);
-                let minute = parseInt(match[3] + match[4]);
-                
-                if (hour >= 0 && hour <= 23 && minute >= 0 && minute <= 59) {
                     const timeStr = `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
                     if (!seen.has(timeStr)) {
                         times.push(timeStr);
@@ -1556,11 +1660,6 @@ Tesseract: ${typeof Tesseract !== 'undefined' ? (Tesseract.version || 'v5.x') : 
 
         function showAutoDetectionResults() {
             document.getElementById('auto-results').classList.remove('hidden');
-            
-            const dayNames = {
-                'SUN': 'Sun', 'MON': 'Mon', 'TUE': 'Tue', 'WED': 'Wed',
-                'THU': 'Thu', 'FRI': 'Fri', 'SAT': 'Sat'
-            };
             
             // Update displays
             if (autoDetectedWeekEnding) {
@@ -1628,7 +1727,7 @@ Tesseract: ${typeof Tesseract !== 'undefined' ? (Tesseract.version || 'v5.x') : 
             
             days.forEach((day, idx) => {
                 const data = autoDetectedData.days[day];
-                if (data.hasData || idx === 0) { // Show all days or just first for reference
+                if (data.hasData || idx === 0) {
                     const isFirst = day === autoDetectedData.firstWorkingDay;
                     
                     html += `
@@ -1688,8 +1787,8 @@ Tesseract: ${typeof Tesseract !== 'undefined' ? (Tesseract.version || 'v5.x') : 
 
         function resetToAuto() {
             if (confirm('Reset all times to auto-detected values?')) {
-                if (autoDetectedData && autoDetectedData.rawText) {
-                    autoDetectedData = parseTimesheetColumns(autoDetectedData.rawText);
+                if (lastOcrResult) {
+                    autoDetectedData = parseTimesheetSpatial(lastOcrResult.data);
                     
                     let totalHours = 0;
                     Object.values(autoDetectedData.days).forEach(day => {
@@ -1836,6 +1935,7 @@ Tesseract: ${typeof Tesseract !== 'undefined' ? (Tesseract.version || 'v5.x') : 
             autoDetectedData = null;
             autoDetectedWeekEnding = null;
             ocrAttempts = 0;
+            lastOcrResult = null;
             document.getElementById('preview-front').src = '';
             document.getElementById('preview-front').classList.add('hidden');
             document.getElementById('upload-front-default').classList.remove('hidden');
@@ -2057,7 +2157,7 @@ Tesseract: ${typeof Tesseract !== 'undefined' ? (Tesseract.version || 'v5.x') : 
                             <i class="fas fa-calendar-week text-lg"></i>
                         </div>
                         <div>
-                            <h4 class="font-semibold text-gray-900 dark:text-white text-sm">${ts.weekRange}</h4>
+                            <h4 class="font-semibold text-sm text-gray-900 dark:text-white">${ts.weekRange}</h4>
                             <p class="text-xs text-gray-500">${ts.totalHours}h • ${ts.firstWorkingDay || '?'} start</p>
                         </div>
                     </div>
