@@ -1,11 +1,12 @@
 {
-  "version": "2.8.1",
+  "version": "3.0.0",
   "downloadUrl": "https://twmiddleton21-lgtm.github.io/driver-timesheet-app/index.html",
   "changelog": "Moved photo storage to IndexedDB to fix quota exceeded errors",
   "force": false,
   "minVersion": "1.0.0",
   "releaseDate": "2026-02-14"
 }
+
 
 
 
