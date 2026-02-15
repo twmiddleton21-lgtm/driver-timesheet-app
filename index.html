@@ -1317,593 +1317,349 @@ Tesseract: ${typeof Tesseract !== 'undefined' ? (Tesseract.version || 'v5.x') : 
             document.getElementById('ocr-stage').textContent = stage;
         }
 
-        // ==================== ADAPTIVE SPATIAL PARSER v3.0 ====================
-// Dynamically detects column positions by finding headers
-// No hardcoded percentages - works with any camera angle/zoom
-
-function parseWeekEndingSpatial(ocrData) {
-    const text = ocrData.text || '';
-    const lines = text.split('\n');
-
-    // First try: Look at first 5 lines for week ending patterns
-    const topLines = lines.slice(0, 5).join(' ');
-
-    const patterns = [
-        /WEEK\s*ENDING\s*:?\s*(\d{1,2})[-\s_/.](\d{1,2})[-\s_/.]?(\d{2,4})/i,
-        /WEEK\s*END\s*:?\s*(\d{1,2})[-\s_/.](\d{1,2})[-\s_/.]?(\d{2,4})/i,
-        /ENDING\s*:?\s*(\d{1,2})[-\s_/.](\d{1,2})[-\s_/.]?(\d{2,4})/i,
-        /(\d{1,2})[-\s_/.](\d{1,2})[-\s_/.](\d{2,4})(?=\s*(?:PAYROLL|NO|NAME|$))/i
-    ];
-
-    for (const pattern of patterns) {
-        const match = topLines.match(pattern);
-        if (match) {
-            const day = parseInt(match[1]);
-            const month = parseInt(match[2]) - 1;
-            let year = match[3] ? parseInt(match[3]) : new Date().getFullYear();
-
-            if (year < 100) {
-                year = year < 50 ? 2000 + year : 1900 + year;
+        // ==================== SPATIAL PARSER ====================
+        
+        // Parse week ending using spatial analysis - look in top-right quadrant
+        function parseWeekEndingSpatial(ocrData) {
+            const text = ocrData.text || '';
+            const lines = text.split('\n');
+            
+            // First try: Look at first 5 lines for week ending patterns
+            const topLines = lines.slice(0, 5).join(' ');
+            
+            // Pattern matching with various OCR error corrections
+            const patterns = [
+                /WEEK\s*ENDING\s*:?\s*(\d{1,2})[-\s_/.](\d{1,2})[-\s_/.]?(\d{2,4})/i,
+                /WEEK\s*END\s*:?\s*(\d{1,2})[-\s_/.](\d{1,2})[-\s_/.]?(\d{2,4})/i,
+                /ENDING\s*:?\s*(\d{1,2})[-\s_/.](\d{1,2})[-\s_/.]?(\d{2,4})/i,
+                /(\d{1,2})[-\s_/.](\d{1,2})[-\s_/.](\d{2,4})(?=\s*(?:PAYROLL|NO|NAME|$))/i
+            ];
+            
+            for (const pattern of patterns) {
+                const match = topLines.match(pattern);
+                if (match) {
+                    const day = parseInt(match[1]);
+                    const month = parseInt(match[2]) - 1;
+                    let year = match[3] ? parseInt(match[3]) : new Date().getFullYear();
+                    
+                    if (year < 100) {
+                        year = year < 50 ? 2000 + year : 1900 + year;
+                    }
+                    
+                    const date = new Date(year, month, day);
+                    if (date.getDate() === day && date.getMonth() === month && year > 2020 && year < 2030) {
+                        return date;
+                    }
+                }
             }
-
-            const date = new Date(year, month, day);
-            if (date.getDate() === day && date.getMonth() === month && year > 2020 && year < 2030) {
-                return date;
+            
+            // Fallback: Look for any date pattern in top-right area using word coordinates
+            if (ocrData.words && ocrData.words.length > 0) {
+                const imgWidth = Math.max(...ocrData.words.map(w => w.bbox.x1));
+                const rightThreshold = imgWidth * 0.6; // Right 40% of image
+                
+                const rightWords = ocrData.words.filter(w => w.bbox.x0 > rightThreshold);
+                const rightText = rightWords.map(w => w.text).join(' ');
+                
+                // Look for date patterns in right side
+                const dateMatch = rightText.match(/(\d{1,2})[-\s/.](\d{1,2})[-\s/.](\d{2,4})/);
+                if (dateMatch) {
+                    const day = parseInt(dateMatch[1]);
+                    const month = parseInt(dateMatch[2]) - 1;
+                    let year = parseInt(dateMatch[3]);
+                    if (year < 100) year = 2000 + year;
+                    
+                    const date = new Date(year, month, day);
+                    if (date.getFullYear() > 2020 && date.getFullYear() < 2030) {
+                        return date;
+                    }
+                }
             }
+            
+            return null;
         }
-    }
 
-    // Fallback: Look for any date pattern in top-right area
-    if (ocrData.words && ocrData.words.length > 0) {
-        const imgWidth = Math.max(...ocrData.words.map(w => w.bbox.x1));
-        const rightThreshold = imgWidth * 0.6;
-
-        const rightWords = ocrData.words.filter(w => w.bbox.x0 > rightThreshold);
-        const rightText = rightWords.map(w => w.text).join(' ');
-
-        const dateMatch = rightText.match(/(\d{1,2})[-\s/.](\d{1,2})[-\s/.](\d{2,4})/);
-        if (dateMatch) {
-            const day = parseInt(dateMatch[1]);
-            const month = parseInt(dateMatch[2]) - 1;
-            let year = parseInt(dateMatch[3]);
-            if (year < 100) year = 2000 + year;
-
-            const date = new Date(year, month, day);
-            if (date.getFullYear() > 2020 && date.getFullYear() < 2030) {
-                return date;
+        // Main spatial parser - uses word coordinates to identify columns
+        function parseTimesheetSpatial(ocrData) {
+            const days = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
+            const dayData = {};
+            days.forEach(day => {
+                dayData[day] = {
+                    day: day,
+                    onTime: null,
+                    offTime: null,
+                    hasData: false,
+                    hours: 0,
+                    rawWords: []
+                };
+            });
+            
+            const text = ocrData.text || '';
+            const words = ocrData.words || [];
+            
+            // If we have word coordinates, use spatial analysis
+            if (words.length > 0) {
+                return parseWithCoordinates(words, dayData, text);
             }
-        }
-    }
-
-    return null;
-}
-
-function parseTimesheetSpatial(ocrData) {
-    const days = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
-    const dayData = {};
-    days.forEach(day => {
-        dayData[day] = {
-            day: day,
-            onTime: null,
-            offTime: null,
-            hasData: false,
-            hours: 0,
-            rawWords: []
-        };
-    });
-
-    const text = ocrData.text || '';
-    const words = ocrData.words || [];
-
-    if (words.length === 0) {
-        console.log('No word coordinates available, falling back to text-only');
-        return parseTimesheetTextOnly(text, dayData);
-    }
-
-    return parseWithAdaptiveColumns(words, dayData, text);
-}
-
-function parseWithAdaptiveColumns(words, dayData, fullText) {
-    console.log('=== ADAPTIVE COLUMN DETECTION ===');
-    console.log(`Total words detected: ${words.length}`);
-
-    const columnInfo = detectColumnsAdaptive(words);
-
-    if (!columnInfo.found) {
-        console.warn('Could not detect columns adaptively, falling back to text-only');
-        return parseTimesheetTextOnly(fullText, dayData);
-    }
-
-    console.log('Detected columns:', columnInfo);
-
-    extractTimesWithColumns(words, dayData, columnInfo);
-
-    let firstWorkingDay = null;
-    for (const day of Object.keys(dayData)) {
-        if (dayData[day].hasData) {
-            firstWorkingDay = day;
-            break;
-        }
-    }
-
-    return {
-        days: dayData,
-        firstWorkingDay: firstWorkingDay,
-        rawText: fullText,
-        words: words,
-        columnInfo: columnInfo
-    };
-}
-
-function detectColumnsAdaptive(words) {
-    const headers = {
-        bookingOn: null,
-        bookingOff: null,
-        timeOn: null,
-        timeOff: null
-    };
-
-    // Find BOOKING ON and BOOKING OFF headers
-    words.forEach(word => {
-        const text = word.text.toUpperCase().replace(/[\s_-]/g, '');
-        const xCenter = (word.bbox.x0 + word.bbox.x1) / 2;
-        const yCenter = (word.bbox.y0 + word.bbox.y1) / 2;
-
-        if (/BOOKINGON|B0OKINGON|B00KING0N|BOOKING/.test(text) && !headers.bookingOn) {
-            headers.bookingOn = { x: xCenter, y: yCenter, word: word };
-            console.log(`Found BOOKING ON header at x:${xCenter.toFixed(0)}, y:${yCenter.toFixed(0)}`);
+            
+            // Fallback to text-only parsing
+            return parseTimesheetTextOnly(text, dayData);
         }
 
-        if (/BOOKINGOFF|B0OKING0FF|B00KING0FF/.test(text) && !headers.bookingOff) {
-            headers.bookingOff = { x: xCenter, y: yCenter, word: word };
-            console.log(`Found BOOKING OFF header at x:${xCenter.toFixed(0)}, y:${yCenter.toFixed(0)}`);
-        }
-    });
-
-    if (headers.bookingOn) {
-        headers.timeOn = findTimeColumnBelow(words, headers.bookingOn, 100);
-    }
-    if (headers.bookingOff) {
-        headers.timeOff = findTimeColumnBelow(words, headers.bookingOff, 100);
-    }
-
-    if (!headers.timeOn || !headers.timeOff) {
-        console.log('Trying alternative column detection...');
-        const altColumns = findColumnsByPattern(words);
-        if (altColumns) {
-            headers.timeOn = altColumns.timeOn;
-            headers.timeOff = altColumns.timeOff;
-        }
-    }
-
-    if (headers.timeOn && headers.timeOff) {
-        const colWidth = Math.abs(headers.timeOff.x - headers.timeOn.x) * 0.4;
-
-        return {
-            found: true,
-            onLeft: headers.timeOn.x - colWidth,
-            onRight: headers.timeOn.x + colWidth,
-            offLeft: headers.timeOff.x - colWidth,
-            offRight: headers.timeOff.x + colWidth,
-            onCenter: headers.timeOn.x,
-            offCenter: headers.timeOff.x,
-            headerY: Math.max(headers.timeOn.y, headers.timeOff.y),
-            headers: headers
-        };
-    }
-
-    return { found: false };
-}
-
-function findTimeColumnBelow(words, header, maxDistance) {
-    const candidates = words.filter(w => {
-        const dy = w.bbox.y0 - header.y;
-        const dx = Math.abs(((w.bbox.x0 + w.bbox.x1) / 2) - header.x);
-        const text = w.text.toUpperCase();
-
-        return dy > 0 && dy < maxDistance && dx < 80 && /TIME|T1ME|TlME/.test(text);
-    });
-
-    if (candidates.length > 0) {
-        const best = candidates.sort((a, b) => a.bbox.y0 - b.bbox.y0)[0];
-        return {
-            x: (best.bbox.x0 + best.bbox.x1) / 2,
-            y: (best.bbox.y0 + best.bbox.y1) / 2,
-            word: best
-        };
-    }
-
-    return {
-        x: header.x + 30,
-        y: header.y + 40,
-        estimated: true
-    };
-}
-
-function findColumnsByPattern(words) {
-    const timeWords = words.filter(w => /TIME|T1ME|TlME/.test(w.text.toUpperCase()));
-
-    if (timeWords.length >= 2) {
-        timeWords.sort((a, b) => ((a.bbox.x0 + a.bbox.x1) / 2) - ((b.bbox.x0 + b.bbox.x1) / 2));
-
-        const firstGroup = [timeWords[0]];
-        const secondGroup = [];
-        const firstX = (timeWords[0].bbox.x0 + timeWords[0].bbox.x1) / 2;
-
-        for (let i = 1; i < timeWords.length; i++) {
-            const x = (timeWords[i].bbox.x0 + timeWords[i].bbox.x1) / 2;
-            if (Math.abs(x - firstX) < 50) {
-                firstGroup.push(timeWords[i]);
-            } else {
-                secondGroup.push(timeWords[i]);
+        function parseWithCoordinates(words, dayData, fullText) {
+            // Find image dimensions
+            const maxX = Math.max(...words.map(w => w.bbox.x1));
+            const maxY = Math.max(...words.map(w => w.bbox.y1));
+            const minX = Math.min(...words.map(w => w.bbox.x0));
+            const minY = Math.min(...words.map(w => w.bbox.y0));
+            
+            const imgWidth = maxX - minX;
+            const imgHeight = maxY - minY;
+            
+            // Define regions based on typical timesheet layout
+            // BOOKING ON: left ~40-60%, BOOKING OFF: left ~60-80%
+            const onLeft = minX + imgWidth * 0.35;
+            const onRight = minX + imgWidth * 0.55;
+            const offLeft = minX + imgWidth * 0.60;
+            const offRight = minX + imgWidth * 0.80;
+            
+            // Find day rows by looking for day names
+            const dayKeywords = {
+                'SUN': ['SUN', 'SUNDAY'],
+                'MON': ['MON', 'MONDAY'],
+                'TUE': ['TUE', 'TUESDAY', 'TUES'],
+                'WED': ['WED', 'WEDNESDAY'],
+                'THU': ['THU', 'THURSDAY', 'THURS'],
+                'FRI': ['FRI', 'FRIDAY'],
+                'SAT': ['SAT', 'SATURDAY']
+            };
+            
+            // Group words by Y position (rows)
+            const rowHeight = imgHeight / 20; // Approximate row height
+            const rows = {};
+            
+            words.forEach(word => {
+                const yCenter = (word.bbox.y0 + word.bbox.y1) / 2;
+                const rowKey = Math.round(yCenter / rowHeight);
+                
+                if (!rows[rowKey]) rows[rowKey] = [];
+                rows[rowKey].push(word);
+            });
+            
+            // Sort rows by Y position
+            const sortedRows = Object.entries(rows).sort((a, b) => parseInt(a[0]) - parseInt(b[0]));
+            
+            // Find which rows contain day names
+            sortedRows.forEach(([rowNum, rowWords]) => {
+                const rowText = rowWords.map(w => w.text.toUpperCase()).join(' ');
+                
+                // Check if this row contains a day
+                let matchedDay = null;
+                for (const [day, keywords] of Object.entries(dayKeywords)) {
+                    if (keywords.some(kw => rowText.includes(kw))) {
+                        matchedDay = day;
+                        break;
+                    }
+                }
+                
+                if (matchedDay && dayData[matchedDay]) {
+                    // Look for times in this row
+                    const onTimeWords = rowWords.filter(w => {
+                        const xCenter = (w.bbox.x0 + w.bbox.x1) / 2;
+                        return xCenter >= onLeft && xCenter <= onRight && isTimeLike(w.text);
+                    });
+                    
+                    const offTimeWords = rowWords.filter(w => {
+                        const xCenter = (w.bbox.x0 + w.bbox.x1) / 2;
+                        return xCenter >= offLeft && xCenter <= offRight && isTimeLike(w.text);
+                    });
+                    
+                    if (onTimeWords.length > 0) {
+                        const time = extractTimeFromWord(onTimeWords[0].text);
+                        if (time) {
+                            dayData[matchedDay].onTime = time;
+                            dayData[matchedDay].hasData = true;
+                        }
+                    }
+                    
+                    if (offTimeWords.length > 0) {
+                        const time = extractTimeFromWord(offTimeWords[0].text);
+                        if (time) {
+                            dayData[matchedDay].offTime = time;
+                            dayData[matchedDay].hasData = true;
+                        }
+                    }
+                }
+            });
+            
+            // Find first working day
+            let firstWorkingDay = null;
+            for (const day of Object.keys(dayData)) {
+                if (dayData[day].hasData) {
+                    firstWorkingDay = day;
+                    break;
+                }
             }
-        }
-
-        if (secondGroup.length > 0) {
-            const avgFirst = firstGroup.reduce((sum, w) => sum + (w.bbox.x0 + w.bbox.x1) / 2, 0) / firstGroup.length;
-            const avgSecond = secondGroup.reduce((sum, w) => sum + (w.bbox.x0 + w.bbox.x1) / 2, 0) / secondGroup.length;
-
+            
             return {
-                timeOn: { x: avgFirst, y: (firstGroup[0].bbox.y0 + firstGroup[0].bbox.y1) / 2 },
-                timeOff: { x: avgSecond, y: (secondGroup[0].bbox.y0 + secondGroup[0].bbox.y1) / 2 }
+                days: dayData,
+                firstWorkingDay: firstWorkingDay,
+                rawText: fullText,
+                words: words
             };
         }
-    }
 
-    return null;
-}
-
-function extractTimesWithColumns(words, dayData, columnInfo) {
-    const dayKeywords = {
-        'SUN': ['SUN', 'SUNDAY'],
-        'MON': ['MON', 'MONDAY'],
-        'TUE': ['TUE', 'TUESDAY', 'TUES'],
-        'WED': ['WED', 'WEDNESDAY'],
-        'THU': ['THU', 'THUR', 'THURS', 'THURSDAY', 'THURAM', 'THURPM', 'THUAM', 'THUPM'],
-        'FRI': ['FRI', 'FRIDAY'],
-        'SAT': ['SAT', 'SATURDAY']
-    };
-
-    const rowHeight = 25;
-    const rows = {};
-
-    words.forEach(word => {
-        const yCenter = (word.bbox.y0 + word.bbox.y1) / 2;
-        const rowKey = Math.round(yCenter / rowHeight);
-
-        if (!rows[rowKey]) rows[rowKey] = [];
-        rows[rowKey].push(word);
-    });
-
-    const sortedRows = Object.entries(rows).sort((a, b) => parseInt(a[0]) - parseInt(b[0]));
-    const processedDays = new Set();
-
-    sortedRows.forEach(([rowNum, rowWords]) => {
-        const rowText = rowWords.map(w => w.text.toUpperCase()).join(' ');
-        const rowY = parseInt(rowNum) * rowHeight;
-
-        if (rowY < columnInfo.headerY + 20) return;
-
-        let matchedDay = null;
-        for (const [day, keywords] of Object.entries(dayKeywords)) {
-            const dayPattern = new RegExp(`\\b(${keywords.join('|')})\\b`, 'i');
-            if (dayPattern.test(rowText)) {
-                matchedDay = day;
-                break;
-            }
-        }
-
-        if (matchedDay && dayData[matchedDay] && !processedDays.has(matchedDay)) {
-            processedDays.add(matchedDay);
-
-            console.log(`\nProcessing ${matchedDay} at y:${rowY}`);
-
-            const currentRowNum = parseInt(rowNum);
-            const rowsToCheck = [];
-
-            for (let i = 0; i <= 3; i++) {
-                if (rows[currentRowNum + i]) {
-                    rowsToCheck.push(rows[currentRowNum + i]);
+        function parseTimesheetTextOnly(text, dayData) {
+            // Fallback when no coordinates available
+            const lines = text.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+            
+            const dayKeywords = {
+                'SUN': ['SUN', 'SUNDAY'],
+                'MON': ['MON', 'MONDAY'],
+                'TUE': ['TUE', 'TUESDAY', 'TUES'],
+                'WED': ['WED', 'WEDNESDAY'],
+                'THU': ['THU', 'THURSDAY', 'THURS'],
+                'FRI': ['FRI', 'FRIDAY'],
+                'SAT': ['SAT', 'SATURDAY']
+            };
+            
+            lines.forEach(line => {
+                const upperLine = line.toUpperCase();
+                
+                // Find which day this line contains
+                let matchedDay = null;
+                for (const [day, keywords] of Object.entries(dayKeywords)) {
+                    if (keywords.some(kw => upperLine.includes(kw))) {
+                        matchedDay = day;
+                        break;
+                    }
+                }
+                
+                if (matchedDay && dayData[matchedDay]) {
+                    // Extract all times from this line
+                    const times = extractTimesFromLine(line);
+                    
+                    // For text-only, assume first time is ON, second is OFF
+                    if (times.length >= 2) {
+                        dayData[matchedDay].onTime = times[0];
+                        dayData[matchedDay].offTime = times[1];
+                        dayData[matchedDay].hasData = true;
+                    } else if (times.length === 1) {
+                        dayData[matchedDay].onTime = times[0];
+                        dayData[matchedDay].hasData = true;
+                    }
+                }
+            });
+            
+            let firstWorkingDay = null;
+            for (const day of Object.keys(dayData)) {
+                if (dayData[day].hasData) {
+                    firstWorkingDay = day;
+                    break;
                 }
             }
+            
+            return {
+                days: dayData,
+                firstWorkingDay: firstWorkingDay,
+                rawText: text
+            };
+        }
 
-            const allWordsInRegion = rowsToCheck.flat();
+        function isTimeLike(text) {
+            // Check if text looks like a time
+            const cleaned = text.replace(/[Oo]/g, '0').replace(/[lI]/g, '1');
+            return /\d{1,2}[:.]?\d{2}/.test(cleaned) || /^\d{4}$/.test(cleaned);
+        }
 
-            const onTimeWords = allWordsInRegion.filter(w => {
-                const xCenter = (w.bbox.x0 + w.bbox.x1) / 2;
-                const inColumn = xCenter >= columnInfo.onLeft && xCenter <= columnInfo.onRight;
-                const isTime = isTimeLike(w.text);
-                return inColumn && isTime;
-            });
-
-            const offTimeWords = allWordsInRegion.filter(w => {
-                const xCenter = (w.bbox.x0 + w.bbox.x1) / 2;
-                const inColumn = xCenter >= columnInfo.offLeft && xCenter <= columnInfo.offRight;
-                const isTime = isTimeLike(w.text);
-                return inColumn && isTime;
-            });
-
-            onTimeWords.sort((a, b) => a.bbox.y0 - b.bbox.y0);
-            offTimeWords.sort((a, b) => a.bbox.y0 - b.bbox.y0);
-
-            console.log(`  Found ${onTimeWords.length} ON times, ${offTimeWords.length} OFF times`);
-
-            onTimeWords.forEach((w, i) => {
-                console.log(`  ON[${i}]: "${w.text}" at x:${((w.bbox.x0+w.bbox.x1)/2).toFixed(0)}`);
-            });
-            offTimeWords.forEach((w, i) => {
-                console.log(`  OFF[${i}]: "${w.text}" at x:${((w.bbox.x0+w.bbox.x1)/2).toFixed(0)}`);
-            });
-
-            if (onTimeWords.length > 0) {
-                const time = extractTimeFromWord(onTimeWords[0].text);
-                if (time) {
-                    dayData[matchedDay].onTime = time;
-                    dayData[matchedDay].hasData = true;
-                    console.log(`  ✓ Set ON time: ${time}`);
+        function extractTimeFromWord(text) {
+            // Clean OCR errors
+            let cleaned = text
+                .replace(/[Oo]/g, '0')
+                .replace(/[lI]/g, '1')
+                .replace(/[S]/g, '5')
+                .replace(/[Z]/g, '2')
+                .replace(/[B]/g, '8');
+            
+            // Try HH:MM format
+            const match1 = cleaned.match(/(\d{1,2})[:.](\d{2})/);
+            if (match1) {
+                const hour = parseInt(match1[1]);
+                const minute = parseInt(match1[2]);
+                if (hour >= 0 && hour <= 23 && minute >= 0 && minute <= 59) {
+                    return `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
                 }
             }
-
-            if (offTimeWords.length > 0) {
-                const time = extractTimeFromWord(offTimeWords[0].text);
-                if (time) {
-                    dayData[matchedDay].offTime = time;
-                    dayData[matchedDay].hasData = true;
-                    console.log(`  ✓ Set OFF time: ${time}`);
+            
+            // Try HHMM format
+            const match2 = cleaned.match(/^(\d{2})(\d{2})$/);
+            if (match2) {
+                const hour = parseInt(match2[1]);
+                const minute = parseInt(match2[2]);
+                if (hour >= 0 && hour <= 23 && minute >= 0 && minute <= 59) {
+                    return `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
                 }
             }
+            
+            return null;
         }
-    });
-}
 
-function isTimeLike(text) {
-    if (!text || text.length < 3) return false;
-
-    const cleaned = text
-        .toUpperCase()
-        .replace(/[OoQ]/g, '0')
-        .replace(/[lI]/g, '1')
-        .replace(/[S]/g, '5')
-        .replace(/[Z]/g, '2')
-        .replace(/[B]/g, '8')
-        .replace(/[g]/g, '9')
-        .replace(/[A]/g, '4')
-        .replace(/[:;.,\s-]/g, '');
-
-    if (!/^\d{3,4}$/.test(cleaned)) return false;
-
-    const num = parseInt(cleaned);
-    const hour = Math.floor(num / 100);
-    const minute = num % 100;
-
-    return hour >= 0 && hour <= 23 && minute >= 0 && minute <= 59;
-}
-
-function extractTimeFromWord(text) {
-    if (!text) return null;
-
-    let cleaned = text
-        .toUpperCase()
-        .replace(/[OoQ]/g, '0')
-        .replace(/[lI]/g, '1')
-        .replace(/[S]/g, '5')
-        .replace(/[Z]/g, '2')
-        .replace(/[B]/g, '8')
-        .replace(/[g]/g, '9')
-        .replace(/[A]/g, '4')
-        .replace(/[:;.,\s]/g, '');
-
-    const match1 = cleaned.match(/(\d{1,2})[:.](\d{2})/);
-    if (match1) {
-        const hour = parseInt(match1[1]);
-        const minute = parseInt(match1[2]);
-        if (hour >= 0 && hour <= 23 && minute >= 0 && minute <= 59) {
-            return `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
-        }
-    }
-
-    const match2 = cleaned.match(/^(\d{2})(\d{2})$/);
-    if (match2) {
-        const hour = parseInt(match2[1]);
-        const minute = parseInt(match2[2]);
-        if (hour >= 0 && hour <= 23 && minute >= 0 && minute <= 59) {
-            return `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
-        }
-    }
-
-    const match3 = cleaned.match(/^(\d{1})(\d{2})$/);
-    if (match3 && cleaned.length === 3) {
-        const hour = parseInt(match3[1]);
-        const minute = parseInt(match3[2]);
-        if (hour >= 0 && hour <= 9 && minute >= 0 && minute <= 59) {
-            return `0${hour}:${String(minute).padStart(2, '0')}`;
-        }
-    }
-
-    return null;
-}
-
-function parseTimesheetTextOnly(text, dayData) {
-    console.log('Using text-only fallback parser');
-
-    const lines = text.split('\n').map(l => l.trim()).filter(l => l.length > 0);
-
-    const dayKeywords = {
-        'SUN': ['SUN', 'SUNDAY'],
-        'MON': ['MON', 'MONDAY'],
-        'TUE': ['TUE', 'TUESDAY', 'TUES'],
-        'WED': ['WED', 'WEDNESDAY'],
-        'THU': ['THU', 'THUR', 'THURS', 'THURSDAY'],
-        'FRI': ['FRI', 'FRIDAY'],
-        'SAT': ['SAT', 'SATURDAY']
-    };
-
-    lines.forEach((line, lineIndex) => {
-        const upperLine = line.toUpperCase();
-
-        let matchedDay = null;
-        for (const [day, keywords] of Object.entries(dayKeywords)) {
-            if (keywords.some(kw => upperLine.includes(kw))) {
-                matchedDay = day;
-                break;
+        function extractTimesFromLine(text) {
+            const times = [];
+            const seen = new Set();
+            
+            // Pattern 1: HH:MM with various separators
+            const pattern1 = /(\d{1,2})[:;.,\s](\d{2})/g;
+            let match;
+            while ((match = pattern1.exec(text)) !== null) {
+                let hour = parseInt(match[1]);
+                let minute = parseInt(match[2]);
+                
+                if (hour >= 0 && hour <= 23 && minute >= 0 && minute <= 59) {
+                    if (hour === 20 && minute < 30) continue; // Skip years
+                    
+                    const timeStr = `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
+                    if (!seen.has(timeStr)) {
+                        times.push(timeStr);
+                        seen.add(timeStr);
+                    }
+                }
             }
-        }
-
-        if (matchedDay && dayData[matchedDay]) {
-            const contextLines = lines.slice(lineIndex, lineIndex + 3).join(' ');
-            const times = extractTimesFromLine(contextLines);
-
-            console.log(`${matchedDay}: Found times [${times.join(', ')}] in text`);
-
-            if (times.length >= 2) {
-                dayData[matchedDay].onTime = times[0];
-                dayData[matchedDay].offTime = times[1];
-                dayData[matchedDay].hasData = true;
-            } else if (times.length === 1) {
-                dayData[matchedDay].onTime = times[0];
-                dayData[matchedDay].hasData = true;
+            
+            // Pattern 2: 4-digit times (HHMM)
+            const pattern2 = /(?:^|\s)(\d{2})(\d{2})(?:\s|$)/g;
+            while ((match = pattern2.exec(text)) !== null) {
+                let hour = parseInt(match[1]);
+                let minute = parseInt(match[2]);
+                
+                if (hour >= 4 && hour <= 23 && minute >= 0 && minute <= 59 && minute % 5 === 0) {
+                    const timeStr = `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
+                    if (!seen.has(timeStr)) {
+                        times.push(timeStr);
+                        seen.add(timeStr);
+                    }
+                }
             }
+            
+            return times.sort();
         }
-    });
 
-    let firstWorkingDay = null;
-    for (const day of Object.keys(dayData)) {
-        if (dayData[day].hasData) {
-            firstWorkingDay = day;
-            break;
-        }
-    }
-
-    return {
-        days: dayData,
-        firstWorkingDay: firstWorkingDay,
-        rawText: text,
-        usedFallback: true
-    };
-}
-
-function extractTimesFromLine(text) {
-    const times = [];
-    const seen = new Set();
-
-    const pattern1 = /(\d{1,2})[:;.,\s](\d{2})/g;
-    let match;
-    while ((match = pattern1.exec(text)) !== null) {
-        let hour = parseInt(match[1]);
-        let minute = parseInt(match[2]);
-
-        if (hour >= 0 && hour <= 23 && minute >= 0 && minute <= 59) {
-            if (hour === 20 && minute < 30) continue;
-
-            const timeStr = `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
-            if (!seen.has(timeStr)) {
-                times.push(timeStr);
-                seen.add(timeStr);
+        function calculateHoursBetween(startTime, endTime) {
+            const [startHour, startMin] = startTime.split(':').map(Number);
+            const [endHour, endMin] = endTime.split(':').map(Number);
+            
+            let startMinutes = startHour * 60 + startMin;
+            let endMinutes = endHour * 60 + endMin;
+            
+            // Handle overnight
+            if (endMinutes < startMinutes) {
+                endMinutes += 24 * 60;
             }
+            
+            return (endMinutes - startMinutes) / 60;
         }
-    }
 
-    const pattern2 = /(?:^|\s)(\d{2})(\d{2})(?:\s|$)/g;
-    while ((match = pattern2.exec(text)) !== null) {
-        let hour = parseInt(match[1]);
-        let minute = parseInt(match[2]);
-
-        if (hour >= 0 && hour <= 23 && minute >= 0 && minute <= 59) {
-            const timeStr = `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
-            if (!seen.has(timeStr)) {
-                times.push(timeStr);
-                seen.add(timeStr);
-            }
-        }
-    }
-
-    return times.sort();
-}
-
-function calculateHoursBetween(startTime, endTime) {
-    const [startHour, startMin] = startTime.split(':').map(Number);
-    const [endHour, endMin] = endTime.split(':').map(Number);
-
-    let startMinutes = startHour * 60 + startMin;
-    let endMinutes = endHour * 60 + endMin;
-
-    if (endMinutes < startMinutes) {
-        endMinutes += 24 * 60;
-    }
-
-    return (endMinutes - startMinutes) / 60;
-}
-
-        
-// Visual Debug: Show what was detected on the image
-function showDetectionVisualization() {
-    const preview = document.getElementById('preview-front');
-    if (!preview || !preview.src) return;
-
-    // Create overlay canvas
-    const container = preview.parentElement;
-    let canvas = document.getElementById('detection-overlay');
-    if (!canvas) {
-        canvas = document.createElement('canvas');
-        canvas.id = 'detection-overlay';
-        canvas.style.position = 'absolute';
-        canvas.style.top = '0';
-        canvas.style.left = '0';
-        canvas.style.width = '100%';
-        canvas.style.height = '100%';
-        canvas.style.pointerEvents = 'none';
-        canvas.style.zIndex = '10';
-        container.style.position = 'relative';
-        container.appendChild(canvas);
-    }
-
-    const ctx = canvas.getContext('2d');
-    canvas.width = preview.naturalWidth || preview.width;
-    canvas.height = preview.naturalHeight || preview.height;
-
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-    const info = autoDetectedData.columnInfo;
-    if (!info || !info.found) return;
-
-    // Draw detected column zones
-    ctx.fillStyle = 'rgba(0, 255, 0, 0.1)';
-    ctx.fillRect(info.onLeft, 0, info.onRight - info.onLeft, canvas.height);
-
-    ctx.fillStyle = 'rgba(0, 0, 255, 0.1)';
-    ctx.fillRect(info.offLeft, 0, info.offRight - info.offLeft, canvas.height);
-
-    // Draw column borders
-    ctx.strokeStyle = '#00ff00';
-    ctx.lineWidth = 3;
-    ctx.strokeRect(info.onLeft, 0, info.onRight - info.onLeft, canvas.height);
-
-    ctx.strokeStyle = '#0080ff';
-    ctx.strokeRect(info.offLeft, 0, info.offRight - info.offLeft, canvas.height);
-
-    // Draw detected times
-    Object.entries(autoDetectedData.days).forEach(([day, data]) => {
-        if (data.hasData && data.rawWords) {
-            // This would need word coordinates stored in dayData
-            // For now, just show a summary
-        }
-    });
-
-    // Draw legend
-    ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
-    ctx.fillRect(10, 10, 200, 60);
-    ctx.fillStyle = '#00ff00';
-    ctx.fillRect(20, 20, 20, 10);
-    ctx.fillStyle = 'white';
-    ctx.font = '12px Arial';
-    ctx.fillText('Booking ON Zone', 50, 30);
-    ctx.fillStyle = '#0080ff';
-    ctx.fillRect(20, 40, 20, 10);
-    ctx.fillStyle = 'white';
-    ctx.fillText('Booking OFF Zone', 50, 50);
-}
-
-function showAutoDetectionResults() {
+        function showAutoDetectionResults() {
             document.getElementById('auto-results').classList.remove('hidden');
             
             // Update displays
