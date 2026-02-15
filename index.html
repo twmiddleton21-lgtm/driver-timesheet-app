@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="theme-color" content="#3B82F6">
-    <title>Driver Timesheet Pro v2.8.0</title>
+    <title>Driver Timesheet Pro v4.1.0</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
@@ -83,7 +83,24 @@
             position: relative;
         }
         
-        .day-cell.has-data { background: linear-gradient(135deg, #dbeafe 0%, #dcfce7 100%); border-color: #3B82F6; }
+        /* Dark mode for day-cell */
+        .dark .day-cell {
+            background: #1E293B;
+            border-color: #334155;
+            color: #e2e8f0;
+        }
+        
+        .day-cell.has-data { 
+            background: linear-gradient(135deg, #dbeafe 0%, #dcfce7 100%); 
+            border-color: #3B82F6; 
+        }
+        
+        /* Dark mode for has-data */
+        .dark .day-cell.has-data {
+            background: linear-gradient(135deg, #1e3a5f 0%, #14532d 100%);
+            border-color: #3B82F6;
+        }
+        
         .day-cell.first-day { box-shadow: 0 0 0 2px #10B981; }
         
         .time-display {
@@ -92,17 +109,112 @@
             font-size: 0.65rem;
         }
         
+        /* Correction row - FIXED for dark mode */
         .correction-row {
             display: grid;
             grid-template-columns: 60px 1fr 1fr 60px;
             gap: 8px;
             align-items: center;
-            padding: 8px;
+            padding: 12px;
             background: #f9fafb;
-            border-radius: 8px;
-            margin-bottom: 4px;
+            border-radius: 12px;
+            margin-bottom: 8px;
+            border: 1px solid #e5e7eb;
         }
         
+        /* Dark mode correction row */
+        .dark .correction-row {
+            background: #1E293B;
+            border-color: #334155;
+        }
+        
+        /* First day highlight - light mode */
+        .correction-row.ring-2 {
+            background: #f0fdf4;
+            border-color: #10B981;
+        }
+        
+        /* First day highlight - dark mode */
+        .dark .correction-row.ring-2 {
+            background: #064e3b;
+            border-color: #10B981;
+        }
+        
+        /* Day label in correction row */
+        .correction-row .day-label {
+            font-weight: 600;
+            color: #374151;
+        }
+        
+        .dark .correction-row .day-label {
+            color: #e2e8f0;
+        }
+        
+        /* First day label */
+        .correction-row .day-label.first-day {
+            color: #059669;
+        }
+        
+        .dark .correction-row .day-label.first-day {
+            color: #34d399;
+        }
+        
+        /* Input fields in correction row - FIXED */
+        .correction-row input[type="time"],
+        .correction-row input[type="number"] {
+            background: white;
+            border: 1px solid #d1d5db;
+            color: #111827;
+            padding: 8px;
+            border-radius: 8px;
+            font-size: 0.875rem;
+            width: 100%;
+        }
+        
+        /* Dark mode inputs */
+        .dark .correction-row input[type="time"],
+        .dark .correction-row input[type="number"] {
+            background: #0F172A;
+            border-color: #475569;
+            color: #f1f5f9;
+        }
+        
+        /* Input focus states */
+        .correction-row input:focus {
+            outline: none;
+            border-color: #3B82F6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+        
+        .dark .correction-row input:focus {
+            border-color: #60a5fa;
+            box-shadow: 0 0 0 3px rgba(96, 165, 250, 0.2);
+        }
+        
+        /* Labels in correction row */
+        .correction-row label {
+            font-size: 0.75rem;
+            color: #6b7280;
+            margin-bottom: 4px;
+            display: block;
+        }
+        
+        .dark .correction-row label {
+            color: #94a3b8;
+        }
+        
+        /* Column indicators */
+        .column-indicator {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            margin-right: 4px;
+        }
+        .col-on { background: #10B981; }
+        .col-off { background: #EF4444; }
+        
+        /* Danger zone */
         .danger-zone {
             background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
             border: 2px solid #ef4444;
@@ -113,6 +225,7 @@
             border-color: #dc2626;
         }
         
+        /* OCR debug info */
         .ocr-debug-info {
             font-family: 'Courier New', monospace;
             font-size: 0.75rem;
@@ -156,16 +269,12 @@
             border-color: #3B82F6 !important;
         }
 
-        .column-indicator {
-            display: inline-block;
-            width: 8px;
-            height: 8px;
-            border-radius: 50%;
-            margin-right: 4px;
+        .dark .auto-filled {
+            background: linear-gradient(135deg, #1e3a5f 0%, #1e40af 100%) !important;
+            border-color: #60a5fa !important;
         }
-        .col-on { background: #10B981; }
-        .col-off { background: #EF4444; }
-        
+
+        /* Word box for OCR visualization */
         .word-box {
             position: absolute;
             border: 1px solid rgba(59, 130, 246, 0.5);
@@ -196,6 +305,59 @@
             0% { background-position: 1rem 0; }
             100% { background-position: 0 0; }
         }
+
+        /* Section headers in dark mode */
+        .dark h3 {
+            color: #f1f5f9;
+        }
+
+        /* Card backgrounds in dark mode */
+        .dark .bg-white {
+            background-color: #1E293B;
+        }
+
+        /* Text colors in dark mode for cards */
+        .dark .text-gray-900 {
+            color: #f1f5f9;
+        }
+
+        .dark .text-gray-700 {
+            color: #cbd5e1;
+        }
+
+        .dark .text-gray-500 {
+            color: #94a3b8;
+        }
+
+        /* Border colors in dark mode */
+        .dark .border-gray-100 {
+            border-color: #334155;
+        }
+
+        .dark .border-gray-200 {
+            border-color: #475569;
+        }
+
+        .dark .border-gray-300 {
+            border-color: #475569;
+        }
+
+        /* Additional dark mode fixes for review section */
+        .dark .bg-gray-50 {
+            background-color: #1E293B;
+        }
+
+        .dark .bg-gray-100 {
+            background-color: #334155;
+        }
+
+        .dark .hover\:bg-gray-50:hover {
+            background-color: #334155;
+        }
+
+        .dark .hover\:bg-gray-100:hover {
+            background-color: #475569;
+        }
     </style>
 <base target="_blank">
 </head>
@@ -210,7 +372,7 @@
                 </div>
                 <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Driver Timesheet Pro</h1>
                 <p class="text-gray-500 dark:text-gray-400 mt-2 flex items-center justify-center gap-2">
-                    <span class="text-xs bg-primary/10 text-primary px-2 py-1 rounded" id="version-display">v2.8.0</span>
+                    <span class="text-xs bg-primary/10 text-primary px-2 py-1 rounded" id="version-display">v4.1.0</span>
                     <span class="text-xs bg-green-100 text-green-700 px-2 py-1 rounded">Gemini AI</span>
                 </p>
             </div>
@@ -1741,26 +1903,28 @@ Rules:
                     
                     html += `
                         <div class="correction-row ${isFirst ? 'ring-2 ring-green-400 rounded-lg' : ''} ${!data.hasData ? 'opacity-50' : ''}">
-                            <div class="font-bold text-sm ${isFirst ? 'text-green-600' : ''}">${dayNames[idx]}${isFirst ? '*' : ''}</div>
+                            <div class="day-label ${isFirst ? 'first-day' : ''}">
+                                ${dayNames[idx]}${isFirst ? '*' : ''}
+                            </div>
                             <div>
-                                <label class="text-xs text-gray-500 flex items-center">
+                                <label class="flex items-center">
                                     <span class="column-indicator col-on"></span>Booking ON
                                 </label>
-                                <input type="time" class="w-full p-1 text-sm border rounded" 
+                                <input type="time" 
                                     value="${data.onTime || ''}" 
                                     onchange="updateDayTime('${day}', 'onTime', this.value)">
                             </div>
                             <div>
-                                <label class="text-xs text-gray-500 flex items-center">
+                                <label class="flex items-center">
                                     <span class="column-indicator col-off"></span>Booking OFF
                                 </label>
-                                <input type="time" class="w-full p-1 text-sm border rounded" 
+                                <input type="time" 
                                     value="${data.offTime || ''}" 
                                     onchange="updateDayTime('${day}', 'offTime', this.value)">
                             </div>
                             <div>
-                                <label class="text-xs text-gray-500">Hrs</label>
-                                <input type="number" class="w-full p-1 text-sm border rounded text-center" 
+                                <label>Hrs</label>
+                                <input type="number" 
                                     value="${data.hours || ''}" 
                                     step="0.5" min="0" max="24"
                                     onchange="updateDayTime('${day}', 'hours', this.value)">
