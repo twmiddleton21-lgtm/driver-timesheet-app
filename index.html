@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="theme-color" content="#3B82F6">
-    <title>Driver Timesheet Pro v2.6.0</title>
+    <title>Driver Timesheet Pro v2.7.0</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
@@ -84,9 +84,7 @@
             position: relative;
         }
         
-        .day-cell.has-am { background: #fef3c7; border-color: #f59e0b; }
-        .day-cell.has-pm { background: #e0e7ff; border-color: #6366f1; }
-        .day-cell.has-both { background: linear-gradient(135deg, #fef3c7 0%, #e0e7ff 100%); border-color: #8b5cf6; }
+        .day-cell.has-data { background: linear-gradient(135deg, #dbeafe 0%, #dcfce7 100%); border-color: #3B82F6; }
         .day-cell.first-day { box-shadow: 0 0 0 2px #10B981; }
         
         .time-display {
@@ -97,7 +95,7 @@
         
         .correction-row {
             display: grid;
-            grid-template-columns: 40px 1fr 1fr 60px;
+            grid-template-columns: 60px 1fr 1fr 60px;
             gap: 8px;
             align-items: center;
             padding: 8px;
@@ -154,27 +152,20 @@
             font-size: 0.875rem;
         }
         
-        .ocr-status-badge {
-            display: inline-flex;
-            align-items: center;
-            padding: 2px 8px;
-            border-radius: 12px;
-            font-size: 0.75rem;
-            font-weight: 600;
-        }
-
         .auto-filled {
-            background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
-            border-color: #3B82F6;
+            background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%) !important;
+            border-color: #3B82F6 !important;
         }
 
-        .handwritten-note {
-            background: #fef3c7;
-            border-left: 4px solid #f59e0b;
-            padding: 12px;
-            border-radius: 8px;
-            margin-bottom: 16px;
+        .column-indicator {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            margin-right: 4px;
         }
+        .col-on { background: #10B981; }
+        .col-off { background: #EF4444; }
     </style>
 </head>
 <body class="bg-gray-50 dark:bg-dark text-gray-800 dark:text-gray-100 transition-colors duration-300 min-h-screen pb-20">
@@ -188,8 +179,8 @@
                 </div>
                 <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Driver Timesheet Pro</h1>
                 <p class="text-gray-500 dark:text-gray-400 mt-2 flex items-center justify-center gap-2">
-                    <span class="text-xs bg-primary/10 text-primary px-2 py-1 rounded" id="version-display">v2.6.0</span>
-                    <span class="text-xs bg-green-100 text-green-700 px-2 py-1 rounded">Handwriting Support</span>
+                    <span class="text-xs bg-primary/10 text-primary px-2 py-1 rounded" id="version-display">v2.7.0</span>
+                    <span class="text-xs bg-green-100 text-green-700 px-2 py-1 rounded">Column Parser</span>
                 </p>
             </div>
 
@@ -233,9 +224,9 @@
                 
                 <div class="bg-blue-50 dark:bg-blue-900/20 rounded-xl p-4 border border-blue-200 dark:border-blue-800">
                     <label class="block text-sm font-medium text-blue-900 dark:text-blue-300 mb-2">
-                        <i class="fas fa-magic mr-2"></i>Handwriting Recognition
+                        <i class="fas fa-columns mr-2"></i>Column-Aware Parser
                     </label>
-                    <p class="text-xs text-blue-700 dark:text-blue-400">Now supports handwritten timesheets with AM/PM shifts. Position camera directly above form for best results.</p>
+                    <p class="text-xs text-blue-700 dark:text-blue-400">Now detects BOOKING ON (right column) and BOOKING OFF (right column) times. Week ending auto-detected from top-right.</p>
                 </div>
                 
                 <div class="flex gap-3">
@@ -332,16 +323,23 @@
             <div id="scan-view" class="view-section hidden fade-in space-y-4">
                 <div class="text-center mb-4">
                     <h2 class="text-xl font-bold text-gray-900 dark:text-white">Scan Timesheet</h2>
-                    <p class="text-sm text-gray-500 dark:text-gray-400">Auto-extracts times & week ending date</p>
+                    <p class="text-sm text-gray-500 dark:text-gray-400">Auto-extracts times from columns</p>
                 </div>
 
-                <!-- Handwritten Warning -->
-                <div class="handwritten-note">
-                    <div class="flex items-center gap-2 mb-1">
-                        <i class="fas fa-pen-fancy text-amber-600"></i>
-                        <span class="font-bold text-amber-800">Handwritten Timesheets</span>
+                <!-- Column Structure Info -->
+                <div class="bg-gradient-to-r from-blue-50 to-green-50 dark:from-blue-900/20 dark:to-green-900/20 rounded-2xl p-4 border border-blue-200 dark:border-blue-800">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 bg-blue-100 dark:bg-blue-900/30 rounded-full flex items-center justify-center">
+                            <i class="fas fa-columns text-blue-600"></i>
+                        </div>
+                        <div>
+                            <p class="text-sm font-bold text-gray-900 dark:text-white">Column-Aware Detection</p>
+                            <p class="text-xs text-gray-500">
+                                <span class="column-indicator col-on"></span>BOOKING ON (right col) | 
+                                <span class="column-indicator col-off"></span>BOOKING OFF (right col)
+                            </p>
+                        </div>
                     </div>
-                    <p class="text-xs text-amber-700">For best results with handwriting: ensure good lighting, hold camera steady, and fill in times clearly. OCR may need manual correction.</p>
                 </div>
 
                 <!-- Week Ending Date -->
@@ -353,7 +351,7 @@
                         </span>
                     </label>
                     <input type="date" id="scan-date-select" class="w-full p-3 bg-gray-100 dark:bg-dark-surface rounded-xl border-2 border-transparent focus:border-primary outline-none">
-                    <p class="text-xs text-gray-500 mt-2" id="selected-week-info">Week ending date will be auto-detected from "WEEK ENDING" field</p>
+                    <p class="text-xs text-gray-500 mt-2" id="selected-week-info">Week ending auto-detected from top-right of timesheet</p>
                 </div>
 
                 <!-- Upload Zone -->
@@ -369,7 +367,7 @@
                         <div id="upload-front-default">
                             <i class="fas fa-camera text-3xl text-gray-400 mb-2"></i>
                             <p class="text-sm text-gray-600 dark:text-gray-400">Tap to take photo or browse</p>
-                            <p class="text-xs text-gray-400 mt-1">Ensure "BOOKING ON/OFF" & "WEEK ENDING" are visible</p>
+                            <p class="text-xs text-gray-400 mt-1">Ensure "WEEK ENDING" and booking columns are visible</p>
                         </div>
                         <img id="preview-front" class="hidden w-full h-48 object-cover rounded-lg mx-auto">
                         <div id="image-processing-indicator" class="image-processing-overlay hidden">
@@ -383,7 +381,7 @@
                     <div class="mt-3 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
                         <p class="text-xs text-blue-700 dark:text-blue-400">
                             <i class="fas fa-lightbulb mr-1"></i>
-                            <strong>Tips:</strong> Position camera directly above form. Ensure "WEEK ENDING" date and all booking times are clearly visible.
+                            <strong>Tip:</strong> Hold camera directly above. Ensure "WEEK ENDING" date in top-right is visible. Times are read from the RIGHT columns of BOOKING ON/OFF.
                         </p>
                     </div>
                 </div>
@@ -447,12 +445,12 @@
                                 <span class="font-bold text-gray-900 dark:text-white ml-1" id="result-week-ending">14 Feb 2026</span>
                             </div>
                             <div>
-                                <span class="text-gray-500 dark:text-gray-400">Shifts Found:</span>
-                                <span class="font-bold text-gray-900 dark:text-white ml-1" id="result-total-shifts">6 shifts</span>
+                                <span class="text-gray-500 dark:text-gray-400">Working Days:</span>
+                                <span class="font-bold text-gray-900 dark:text-white ml-1" id="result-working-days">3 days</span>
                             </div>
                             <div>
-                                <span class="text-gray-500 dark:text-gray-400">Pattern:</span>
-                                <span class="font-bold text-gray-900 dark:text-white ml-1" id="result-pattern">AM/PM Shifts</span>
+                                <span class="text-gray-500 dark:text-gray-400">Shifts:</span>
+                                <span class="font-bold text-gray-900 dark:text-white ml-1" id="result-total-shifts">6 shifts</span>
                             </div>
                             <div>
                                 <span class="text-gray-500 dark:text-gray-400">Total Hours:</span>
@@ -468,9 +466,9 @@
                             <!-- Generated by JS -->
                         </div>
                         <div class="flex gap-4 mt-3 text-xs justify-center">
-                            <div class="flex items-center gap-1"><div class="w-3 h-3 bg-amber-200 rounded"></div><span>AM Start</span></div>
-                            <div class="flex items-center gap-1"><div class="w-3 h-3 bg-indigo-200 rounded"></div><span>PM End</span></div>
-                            <div class="flex items-center gap-1"><div class="w-3 h-3 bg-gradient-to-r from-amber-200 to-indigo-200 rounded"></div><span>Both</span></div>
+                            <div class="flex items-center gap-1"><div class="w-3 h-3 bg-green-400 rounded"></div><span>ON Time</span></div>
+                            <div class="flex items-center gap-1"><div class="w-3 h-3 bg-red-400 rounded"></div><span>OFF Time</span></div>
+                            <div class="flex items-center gap-1"><div class="w-3 h-3 bg-blue-400 rounded"></div><span>Both</span></div>
                         </div>
                     </div>
 
@@ -533,9 +531,9 @@
                 <div class="bg-white dark:bg-dark-card rounded-2xl p-4 shadow-sm border border-gray-100 dark:border-gray-700">
                     <h3 class="font-semibold text-gray-900 dark:text-white mb-3"><i class="fas fa-info-circle text-primary mr-2"></i>About</h3>
                     <div class="space-y-2 text-sm text-gray-600 dark:text-gray-400">
-                        <p><strong>Version:</strong> <span id="settings-version">v2.6.0</span></p>
-                        <p><strong>OCR Engine:</strong> Tesseract.js v5 with Handwriting Support</p>
-                        <p class="text-xs">Optimized for UK driver timesheets with AM/PM shifts and handwritten entries.</p>
+                        <p><strong>Version:</strong> <span id="settings-version">v2.7.0</span></p>
+                        <p><strong>OCR Engine:</strong> Tesseract.js v5 with Column Parser</p>
+                        <p class="text-xs">Detects: Top-right week ending + BOOKING ON/OFF right columns.</p>
                     </div>
                 </div>
 
@@ -670,7 +668,7 @@
 
     <script>
         // ==================== CONFIG ====================
-        const APP_VERSION = '2.6.0';
+        const APP_VERSION = '2.7.0';
         let currentUser = null;
         let currentMonth = new Date();
         let selectedWeekStart = null;
@@ -764,8 +762,9 @@
             return `${startDate.toLocaleDateString('en-US', options)} - ${endDate.toLocaleDateString('en-US', options)}`;
         }
 
-        // Parse week ending date from various formats
+        // Parse week ending date - look for it in top right area
         function parseWeekEndingDate(ocrText) {
+            // Clean up OCR errors
             const cleaned = ocrText
                 .replace(/[Oo]/g, '0')
                 .replace(/[lI]/g, '1')
@@ -773,31 +772,47 @@
                 .replace(/[Z]/g, '2')
                 .toUpperCase();
             
-            // Pattern 1: WEEK ENDING followed by date (handles spaces and dashes)
-            const pattern1 = /WEEK\s*ENDING\s*[:_\-]?\s*(\d{1,2})[-\s_/.](\d{1,2})[-\s_/.]?(\d{2,4})?/i;
+            // Pattern 1: WEEK ENDING with various separators and formats
+            // Matches: WEEK ENDING 14-2-26, WEEKENDING 14/02/26, etc.
+            const patterns = [
+                /WEEK\s*ENDING\s*:?\s*(\d{1,2})[-\s_/.](\d{1,2})[-\s_/.]?(\d{2,4})/i,
+                /WEEK\s*END\s*:?\s*(\d{1,2})[-\s_/.](\d{1,2})[-\s_/.]?(\d{2,4})/i,
+                /ENDING\s*:?\s*(\d{1,2})[-\s_/.](\d{1,2})[-\s_/.]?(\d{2,4})/i,
+                /(\d{1,2})[-\s_/.](\d{1,2})[-\s_/.](\d{2,4})(?=\s*(?:PAYROLL|NO|NAME|$))/i
+            ];
             
-            // Pattern 2: Just the date in DD-MM-YY format near "WEEK ENDING"
-            const pattern2 = /(\d{1,2})[-\s_/.](\d{1,2})[-\s_/.](\d{2,4})/;
-            
-            let match = cleaned.match(pattern1);
-            if (!match) {
-                match = cleaned.match(pattern2);
+            for (const pattern of patterns) {
+                const match = cleaned.match(pattern);
+                if (match) {
+                    const day = parseInt(match[1]);
+                    const month = parseInt(match[2]) - 1;
+                    let year = match[3] ? parseInt(match[3]) : new Date().getFullYear();
+                    
+                    if (year < 100) {
+                        year = year < 50 ? 2000 + year : 1900 + year;
+                    }
+                    
+                    const date = new Date(year, month, day);
+                    if (date.getDate() === day && date.getMonth() === month && year > 2020 && year < 2030) {
+                        return date;
+                    }
+                }
             }
             
-            if (match) {
-                const day = parseInt(match[1]);
-                const month = parseInt(match[2]) - 1;
-                let year = match[3] ? parseInt(match[3]) : new Date().getFullYear();
-                
-                // Handle 2-digit year
-                if (year < 100) {
-                    year = year < 50 ? 2000 + year : 1900 + year;
-                }
-                
-                // Validate it's a reasonable date
-                const date = new Date(year, month, day);
-                if (date.getDate() === day && date.getMonth() === month && year > 2020 && year < 2030) {
-                    return date;
+            // Fallback: Look for any date in DD-MM-YY format near top of document
+            const lines = cleaned.split('\n').slice(0, 10); // First 10 lines
+            for (const line of lines) {
+                const dateMatch = line.match(/(\d{1,2})[-\s/.](\d{1,2})[-\s/.](\d{2,4})/);
+                if (dateMatch) {
+                    const day = parseInt(dateMatch[1]);
+                    const month = parseInt(dateMatch[2]) - 1;
+                    let year = parseInt(dateMatch[3]);
+                    if (year < 100) year = 2000 + year;
+                    
+                    const date = new Date(year, month, day);
+                    if (date.getFullYear() > 2020 && date.getFullYear() < 2030) {
+                        return date;
+                    }
                 }
             }
             
@@ -858,7 +873,6 @@
             document.getElementById('main-app').classList.remove('hidden');
             document.getElementById('header-username').textContent = user.username;
             
-            // Set default date to upcoming Saturday
             const today = new Date();
             const saturday = new Date(today);
             saturday.setDate(today.getDate() + (6 - today.getDay()));
@@ -1062,7 +1076,7 @@
                         const canvas = document.createElement('canvas');
                         const ctx = canvas.getContext('2d');
                         
-                        const maxWidth = 2500; // Higher resolution for handwriting
+                        const maxWidth = 3000; // Higher res for column detection
                         let width = img.width;
                         let height = img.height;
                         
@@ -1078,17 +1092,9 @@
                         ctx.fillStyle = '#FFFFFF';
                         ctx.fillRect(0, 0, width, height);
                         
-                        // Increase contrast more for handwriting
-                        ctx.filter = 'contrast(1.4) brightness(1.05)';
+                        // High contrast for handwritten text
+                        ctx.filter = 'contrast(1.5) brightness(1.0)';
                         ctx.drawImage(img, 0, 0, width, height);
-                        
-                        // Apply slight sharpening
-                        ctx.filter = 'none';
-                        ctx.globalCompositeOperation = 'hard-light';
-                        ctx.globalAlpha = 0.3;
-                        ctx.drawImage(canvas, 0, 0, width, height);
-                        ctx.globalCompositeOperation = 'source-over';
-                        ctx.globalAlpha = 1.0;
                         
                         const processed = canvas.toDataURL('image/jpeg', 0.95);
                         resolve(processed);
@@ -1250,26 +1256,26 @@
                     updateScanWeekDisplay();
                 }
                 
-                // Parse timesheet data
-                autoDetectedData = parseTimesheetAdvanced(debugInfo.rawText);
+                // Parse timesheet data with column-aware parser
+                autoDetectedData = parseTimesheetColumns(debugInfo.rawText);
                 
-                const workingShifts = Object.values(autoDetectedData.shifts).filter(s => s.hasData).length;
-                if (workingShifts === 0 && !autoDetectedWeekEnding) {
-                    throw new Error('Could not detect any booking times or week ending date. Please ensure the timesheet is clearly visible.');
+                const workingDays = Object.values(autoDetectedData.days).filter(d => d.hasData).length;
+                if (workingDays === 0 && !autoDetectedWeekEnding) {
+                    throw new Error('Could not detect any booking times or week ending date.');
                 }
                 
-                // Calculate hours for each shift
+                // Calculate hours
                 let totalHours = 0;
-                Object.values(autoDetectedData.shifts).forEach(shift => {
-                    if (shift.hasData && shift.startTime && shift.endTime) {
-                        const hours = calculateHoursBetween(shift.startTime, shift.endTime);
-                        shift.hours = Math.round(hours * 10) / 10;
-                        totalHours += shift.hours;
+                Object.values(autoDetectedData.days).forEach(day => {
+                    if (day.hasData && day.onTime && day.offTime) {
+                        const hours = calculateHoursBetween(day.onTime, day.offTime);
+                        day.hours = Math.round(hours * 10) / 10;
+                        totalHours += day.hours;
                     }
                 });
                 
                 autoDetectedData.totalHours = Math.round(totalHours * 10) / 10;
-                autoDetectedData.workingShifts = workingShifts;
+                autoDetectedData.workingDays = workingDays;
                 
                 updateOcrProgress(100, 'Complete!');
                 
@@ -1314,8 +1320,8 @@ Recognition Completed: ${debugInfo.recognitionCompleted}
 
 Error: ${err.message || 'Unknown error'}
 
-Raw OCR Text (first 1000 chars):
-${debugInfo.rawText ? debugInfo.rawText.substring(0, 1000) : '[NO TEXT CAPTURED]'}
+Raw OCR Text (first 1500 chars):
+${debugInfo.rawText ? debugInfo.rawText.substring(0, 1500) : '[NO TEXT CAPTURED]'}
 
 Browser: ${navigator.userAgent.substring(0, 100)}
 Tesseract: ${typeof Tesseract !== 'undefined' ? (Tesseract.version || 'v5.x') : 'NOT LOADED'}
@@ -1346,9 +1352,9 @@ Tesseract: ${typeof Tesseract !== 'undefined' ? (Tesseract.version || 'v5.x') : 
             document.getElementById('ocr-stage').textContent = stage;
         }
 
-        // ADVANCED PARSER: Handles AM/PM shifts and handwritten text
-        function parseTimesheetAdvanced(ocrText) {
-            // Aggressive cleaning for handwritten text
+        // COLUMN-AWARE PARSER: Looks for BOOKING ON/OFF columns and extracts rightmost times
+        function parseTimesheetColumns(ocrText) {
+            // Aggressive cleaning
             let cleaned = ocrText
                 .replace(/[Oo]/g, '0')
                 .replace(/[lI]/g, '1')
@@ -1361,117 +1367,123 @@ Tesseract: ${typeof Tesseract !== 'undefined' ? (Tesseract.version || 'v5.x') : 
             
             const lines = cleaned.split('\n').map(l => l.trim()).filter(l => l.length > 0);
             
-            // Initialize shifts for all days with AM/PM
+            // Initialize days
             const days = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
-            const shifts = {};
-            
+            const dayData = {};
             days.forEach(day => {
-                shifts[`${day}_AM`] = { 
-                    day: day, period: 'AM',
-                    startTime: null, endTime: null, 
-                    hasData: false, hours: 0,
-                    rawLine: ''
-                };
-                shifts[`${day}_PM`] = { 
-                    day: day, period: 'PM',
-                    startTime: null, endTime: null, 
-                    hasData: false, hours: 0,
-                    rawLine: ''
+                dayData[day] = {
+                    day: day,
+                    onTime: null,
+                    offTime: null,
+                    hasData: false,
+                    hours: 0,
+                    rawLines: []
                 };
             });
             
-            // Find the table structure
+            // Find table structure
             let inTable = false;
             let tableLines = [];
+            let headerLineIndex = -1;
             
+            // Look for BOOKING ON header to find table start
             for (let i = 0; i < lines.length; i++) {
                 const line = lines[i];
-                
-                // Detect table start by looking for DAY or BOOKING headers
-                if ((line.includes('DAY') && line.includes('BOOKING')) || 
-                    (line.includes('BOOKING') && line.includes('ON')) ||
-                    line.match(/^(DAY|SUN|MON|TUE|WED|THU|FRI|SAT)/)) {
+                if (line.includes('BOOKING') && line.includes('ON')) {
+                    headerLineIndex = i;
                     inTable = true;
                 }
-                
                 if (inTable) {
-                    // Check if we've reached the end of the table
+                    // Stop at week ending or bottom of form
                     if (line.includes('WEEK ENDING') && !line.includes('DAY')) {
                         break;
                     }
-                    tableLines.push(line);
+                    tableLines.push({ line, index: i });
                 }
             }
             
-            // Process each table line looking for day patterns
-            tableLines.forEach(line => {
-                // Pattern: DAY PERIOD (e.g., "THUR AM", "FRI PM")
-                const dayPeriodMatch = line.match(/\b(SUN|MON|TUE|WED|THU|FRI|SAT)\s*(AM|PM)\b/i);
+            // Process table lines to find day rows
+            tableLines.forEach(({ line }) => {
+                // Check if line contains a day
+                const dayMatch = line.match(/\b(SUN|MON|TUE|WED|THU|FRI|SAT)\b/);
+                if (!dayMatch) return;
                 
-                if (dayPeriodMatch) {
-                    const day = dayPeriodMatch[1].toUpperCase();
-                    const period = dayPeriodMatch[2].toUpperCase();
-                    const key = `${day}_${period}`;
+                const day = dayMatch[1];
+                if (!dayData[day]) return;
+                
+                dayData[day].rawLines.push(line);
+                
+                // Extract all times from this line
+                const times = extractTimesFromLine(line);
+                
+                if (times.length >= 2) {
+                    // Assume: first time is ON, second is OFF (from right columns)
+                    dayData[day].onTime = times[0];
+                    dayData[day].offTime = times[1];
+                    dayData[day].hasData = true;
+                } else if (times.length === 1) {
+                    // Single time - need to determine if ON or OFF based on context
+                    // Look at position in line or surrounding text
+                    const onIndex = line.indexOf('ON');
+                    const offIndex = line.indexOf('OFF');
+                    const timeIndex = line.indexOf(times[0]);
                     
-                    if (shifts[key]) {
-                        shifts[key].rawLine = line;
-                        shifts[key].hasData = true;
-                        
-                        // Extract times from this line
-                        const times = extractTimesAdvanced(line);
-                        
-                        // For AM shifts: first time is booking on, second is booking off (or tach start)
-                        // For PM shifts: similar logic
-                        if (times.length >= 2) {
-                            shifts[key].startTime = times[0];
-                            shifts[key].endTime = times[1];
-                        } else if (times.length === 1) {
-                            shifts[key].startTime = times[0];
+                    if (onIndex !== -1 && offIndex !== -1 && timeIndex !== -1) {
+                        // If time is closer to OFF, it's OFF time, else ON
+                        if (Math.abs(timeIndex - offIndex) < Math.abs(timeIndex - onIndex)) {
+                            dayData[day].offTime = times[0];
+                        } else {
+                            dayData[day].onTime = times[0];
                         }
+                        dayData[day].hasData = true;
+                    } else {
+                        // Default to ON time if we can't determine
+                        dayData[day].onTime = times[0];
+                        dayData[day].hasData = true;
                     }
                 }
-                
-                // Alternative: Just day name followed by times (assume AM if morning time)
-                const dayOnlyMatch = line.match(/^(SUN|MON|TUE|WED|THU|FRI|SAT)\b/i);
-                if (dayOnlyMatch && !dayPeriodMatch) {
-                    const day = dayOnlyMatch[1].toUpperCase();
-                    const times = extractTimesAdvanced(line);
+            });
+            
+            // Alternative: Look for lines that start with day and have times
+            lines.forEach(line => {
+                const dayStartMatch = line.match(/^(SUN|MON|TUE|WED|THU|FRI|SAT)[\s:,-]+(.+)/i);
+                if (dayStartMatch) {
+                    const day = dayStartMatch[1].toUpperCase();
+                    const rest = dayStartMatch[2];
                     
-                    if (times.length >= 2) {
-                        // Determine AM/PM based on hour
-                        const hour = parseInt(times[0].split(':')[0]);
-                        const period = hour < 12 ? 'AM' : 'PM';
-                        const key = `${day}_${period}`;
-                        
-                        if (shifts[key] && !shifts[key].hasData) {
-                            shifts[key].hasData = true;
-                            shifts[key].startTime = times[0];
-                            shifts[key].endTime = times[1];
-                            shifts[key].rawLine = line;
+                    if (dayData[day] && !dayData[day].hasData) {
+                        const times = extractTimesFromLine(rest);
+                        if (times.length >= 2) {
+                            dayData[day].onTime = times[0];
+                            dayData[day].offTime = times[1];
+                            dayData[day].hasData = true;
+                        } else if (times.length === 1) {
+                            dayData[day].onTime = times[0];
+                            dayData[day].hasData = true;
                         }
                     }
                 }
             });
             
-            // Find first working shift
-            let firstWorkingShift = null;
-            for (const key of Object.keys(shifts)) {
-                if (shifts[key].hasData) {
-                    firstWorkingShift = shifts[key];
+            // Find first working day
+            let firstWorkingDay = null;
+            for (const day of days) {
+                if (dayData[day].hasData) {
+                    firstWorkingDay = day;
                     break;
                 }
             }
             
             return {
-                shifts: shifts,
-                firstWorkingShift: firstWorkingShift,
+                days: dayData,
+                firstWorkingDay: firstWorkingDay,
                 rawText: ocrText,
                 cleanedText: cleaned
             };
         }
 
-        // Advanced time extraction for handwritten text
-        function extractTimesAdvanced(text) {
+        // Extract times from line - handles handwritten formats
+        function extractTimesFromLine(text) {
             const times = [];
             const seen = new Set();
             
@@ -1494,13 +1506,12 @@ Tesseract: ${typeof Tesseract !== 'undefined' ? (Tesseract.version || 'v5.x') : 
                 }
             }
             
-            // Pattern 2: 4-digit times without separator (HHMM)
+            // Pattern 2: 4-digit times (HHMM)
             const pattern2 = /(?:^|\s)(\d{2})(\d{2})(?:\s|$)/g;
             while ((match = pattern2.exec(text)) !== null) {
                 let hour = parseInt(match[1]);
                 let minute = parseInt(match[2]);
                 
-                // Likely a time if reasonable hours and minutes divisible by 5
                 if (hour >= 4 && hour <= 23 && minute >= 0 && minute <= 59 && minute % 5 === 0) {
                     const timeStr = `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
                     if (!seen.has(timeStr)) {
@@ -1510,7 +1521,7 @@ Tesseract: ${typeof Tesseract !== 'undefined' ? (Tesseract.version || 'v5.x') : 
                 }
             }
             
-            // Pattern 3: Handwritten-style with spaces (0 7 5 8 -> 07:58)
+            // Pattern 3: Spaced digits (0 7 5 8 -> 07:58)
             const pattern3 = /(\d)\s*(\d)\s*[:;.,]?\s*(\d)\s*(\d)/g;
             while ((match = pattern3.exec(text)) !== null) {
                 let hour = parseInt(match[1] + match[2]);
@@ -1535,7 +1546,7 @@ Tesseract: ${typeof Tesseract !== 'undefined' ? (Tesseract.version || 'v5.x') : 
             let startMinutes = startHour * 60 + startMin;
             let endMinutes = endHour * 60 + endMin;
             
-            // Handle overnight shifts
+            // Handle overnight
             if (endMinutes < startMinutes) {
                 endMinutes += 24 * 60;
             }
@@ -1546,13 +1557,12 @@ Tesseract: ${typeof Tesseract !== 'undefined' ? (Tesseract.version || 'v5.x') : 
         function showAutoDetectionResults() {
             document.getElementById('auto-results').classList.remove('hidden');
             
-            const days = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
             const dayNames = {
-                'SUN': 'Sun', 'MON': 'Mon', 'TUE': 'Tue', 'WED': 'Wed', 
+                'SUN': 'Sun', 'MON': 'Mon', 'TUE': 'Tue', 'WED': 'Wed',
                 'THU': 'Thu', 'FRI': 'Fri', 'SAT': 'Sat'
             };
             
-            // Update week ending display
+            // Update displays
             if (autoDetectedWeekEnding) {
                 document.getElementById('result-week-ending').textContent = 
                     autoDetectedWeekEnding.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
@@ -1560,22 +1570,13 @@ Tesseract: ${typeof Tesseract !== 'undefined' ? (Tesseract.version || 'v5.x') : 
                 document.getElementById('result-week-ending').textContent = 'Not detected';
             }
             
-            // Count shifts
-            const workingShifts = Object.values(autoDetectedData.shifts).filter(s => s.hasData).length;
-            document.getElementById('result-total-shifts').textContent = workingShifts + ' shifts';
-            
-            // Pattern detection
-            const amShifts = Object.values(autoDetectedData.shifts).filter(s => s.hasData && s.period === 'AM').length;
-            const pmShifts = Object.values(autoDetectedData.shifts).filter(s => s.hasData && s.period === 'PM').length;
-            let pattern = 'Single Shifts';
-            if (amShifts > 0 && pmShifts > 0) pattern = 'AM/PM Shifts';
-            if (workingShifts >= 4) pattern = 'Double Shifts';
-            
-            document.getElementById('result-pattern').textContent = pattern;
+            const workingDays = Object.values(autoDetectedData.days).filter(d => d.hasData).length;
+            document.getElementById('result-working-days').textContent = workingDays + ' days';
+            document.getElementById('result-total-shifts').textContent = workingDays + ' shifts';
             document.getElementById('result-total-hours').textContent = '~' + autoDetectedData.totalHours + 'h';
             
             // Confidence
-            const confidence = workingShifts >= 4 ? 'High' : workingShifts >= 2 ? 'Medium' : 'Low';
+            const confidence = workingDays >= 3 ? 'High' : workingDays >= 1 ? 'Medium' : 'Low';
             const badge = document.getElementById('confidence-badge');
             badge.textContent = confidence + ' Confidence';
             badge.className = 'text-xs px-2 py-1 rounded-full ' + 
@@ -1593,32 +1594,20 @@ Tesseract: ${typeof Tesseract !== 'undefined' ? (Tesseract.version || 'v5.x') : 
             const dayLabels = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
             
             grid.innerHTML = days.map((day, idx) => {
-                const amShift = autoDetectedData.shifts[`${day}_AM`];
-                const pmShift = autoDetectedData.shifts[`${day}_PM`];
-                
-                const hasAM = amShift && amShift.hasData;
-                const hasPM = pmShift && pmShift.hasData;
-                const isFirst = amShift && amShift === autoDetectedData.firstWorkingShift;
+                const data = autoDetectedData.days[day];
+                const isFirst = day === autoDetectedData.firstWorkingDay;
                 
                 let cellClass = 'day-cell';
-                if (hasAM && hasPM) cellClass += ' has-both';
-                else if (hasAM) cellClass += ' has-am';
-                else if (hasPM) cellClass += ' has-pm';
+                if (data.hasData) cellClass += ' has-data';
                 if (isFirst) cellClass += ' first-day';
                 
                 let content = `<div class="font-bold text-xs mb-1 ${isFirst ? 'text-green-600' : ''}">${dayLabels[idx]}</div>`;
                 
-                if (hasAM) {
-                    content += `<div class="time-display text-amber-700">${amShift.startTime || '--:--'}</div>`;
-                    if (amShift.endTime) content += `<div class="time-display text-amber-600 text-[0.6rem]">to ${amShift.endTime}</div>`;
-                }
-                
-                if (hasPM) {
-                    content += `<div class="time-display text-indigo-700">${pmShift.startTime || '--:--'}</div>`;
-                    if (pmShift.endTime) content += `<div class="time-display text-indigo-600 text-[0.6rem]">to ${pmShift.endTime}</div>`;
-                }
-                
-                if (!hasAM && !hasPM) {
+                if (data.hasData) {
+                    content += `<div class="time-display text-green-700">${data.onTime || '--:--'}</div>`;
+                    content += `<div class="text-[0.6rem] text-gray-400">to</div>`;
+                    content += `<div class="time-display text-blue-700">${data.offTime || '--:--'}</div>`;
+                } else {
                     content += '<div class="text-gray-300">-</div>';
                 }
                 
@@ -1638,79 +1627,60 @@ Tesseract: ${typeof Tesseract !== 'undefined' ? (Tesseract.version || 'v5.x') : 
             let html = '';
             
             days.forEach((day, idx) => {
-                const amShift = autoDetectedData.shifts[`${day}_AM`];
-                const pmShift = autoDetectedData.shifts[`${day}_PM`];
-                
-                if ((amShift && amShift.hasData) || (pmShift && pmShift.hasData)) {
-                    // AM Row
-                    if (amShift && amShift.hasData) {
-                        const isFirst = amShift === autoDetectedData.firstWorkingShift;
-                        html += createShiftRow(dayNames[idx], 'AM', amShift, isFirst);
-                    }
+                const data = autoDetectedData.days[day];
+                if (data.hasData || idx === 0) { // Show all days or just first for reference
+                    const isFirst = day === autoDetectedData.firstWorkingDay;
                     
-                    // PM Row
-                    if (pmShift && pmShift.hasData) {
-                        const isFirst = pmShift === autoDetectedData.firstWorkingShift;
-                        html += createShiftRow(dayNames[idx], 'PM', pmShift, isFirst);
-                    }
+                    html += `
+                        <div class="correction-row ${isFirst ? 'ring-2 ring-green-400 rounded-lg' : ''} ${!data.hasData ? 'opacity-50' : ''}">
+                            <div class="font-bold text-sm ${isFirst ? 'text-green-600' : ''}">${dayNames[idx]}${isFirst ? '*' : ''}</div>
+                            <div>
+                                <label class="text-xs text-gray-500 flex items-center">
+                                    <span class="column-indicator col-on"></span>Booking ON
+                                </label>
+                                <input type="time" class="w-full p-1 text-sm border rounded" 
+                                    value="${data.onTime || ''}" 
+                                    onchange="updateDayTime('${day}', 'onTime', this.value)">
+                            </div>
+                            <div>
+                                <label class="text-xs text-gray-500 flex items-center">
+                                    <span class="column-indicator col-off"></span>Booking OFF
+                                </label>
+                                <input type="time" class="w-full p-1 text-sm border rounded" 
+                                    value="${data.offTime || ''}" 
+                                    onchange="updateDayTime('${day}', 'offTime', this.value)">
+                            </div>
+                            <div>
+                                <label class="text-xs text-gray-500">Hrs</label>
+                                <input type="number" class="w-full p-1 text-sm border rounded text-center" 
+                                    value="${data.hours || ''}" 
+                                    step="0.5" min="0" max="24"
+                                    onchange="updateDayTime('${day}', 'hours', this.value)">
+                            </div>
+                        </div>
+                    `;
                 }
             });
-            
-            // If no shifts detected, show all for manual entry
-            if (html === '') {
-                days.forEach((day, idx) => {
-                    html += createShiftRow(dayNames[idx], 'AM', {startTime: '', endTime: '', hours: 0}, false);
-                    html += createShiftRow(dayNames[idx], 'PM', {startTime: '', endTime: '', hours: 0}, false);
-                });
-            }
             
             container.innerHTML = html;
         }
 
-        function createShiftRow(dayName, period, shift, isFirst) {
-            return `
-                <div class="correction-row ${isFirst ? 'ring-2 ring-green-400 rounded-lg' : ''}">
-                    <div class="font-bold text-sm ${isFirst ? 'text-green-600' : ''}">${dayName} ${period}${isFirst ? '*' : ''}</div>
-                    <div>
-                        <label class="text-xs text-gray-500">Start Time</label>
-                        <input type="time" class="w-full p-1 text-sm border rounded" 
-                            value="${shift.startTime || ''}" 
-                            onchange="updateShiftTime('${shift.day}', '${period}', 'start', this.value)">
-                    </div>
-                    <div>
-                        <label class="text-xs text-gray-500">End Time</label>
-                        <input type="time" class="w-full p-1 text-sm border rounded" 
-                            value="${shift.endTime || ''}" 
-                            onchange="updateShiftTime('${shift.day}', '${period}', 'end', this.value)">
-                    </div>
-                    <div>
-                        <label class="text-xs text-gray-500">Hrs</label>
-                        <input type="number" class="w-full p-1 text-sm border rounded text-center" 
-                            value="${shift.hours || ''}" 
-                            step="0.5" min="0" max="24"
-                            onchange="updateShiftTime('${shift.day}', '${period}', 'hours', this.value)">
-                    </div>
-                </div>
-            `;
-        }
-
-        function updateShiftTime(day, period, field, value) {
+        function updateDayTime(day, field, value) {
             if (!autoDetectedData) return;
             
-            const key = `${day}_${period}`;
-            const shift = autoDetectedData.shifts[key];
-            if (!shift) return;
+            const dayData = autoDetectedData.days[day];
+            if (!dayData) return;
             
-            if (field === 'start') shift.startTime = value || null;
-            if (field === 'end') shift.endTime = value || null;
-            if (field === 'hours') shift.hours = parseFloat(value) || 0;
+            if (field === 'onTime') dayData.onTime = value || null;
+            if (field === 'offTime') dayData.offTime = value || null;
+            if (field === 'hours') dayData.hours = parseFloat(value) || 0;
             
-            if (value) shift.hasData = true;
+            if (value) dayData.hasData = true;
             
             // Recalculate total
             let total = 0;
-            Object.values(autoDetectedData.shifts).forEach(s => {
-                if (s.hours) total += s.hours;
+            Object.values(autoDetectedData.days).forEach(d => {
+                if (d.hours) total += d.hours;
             });
             autoDetectedData.totalHours = Math.round(total * 10) / 10;
             document.getElementById('result-total-hours').textContent = '~' + autoDetectedData.totalHours + 'h';
@@ -1719,13 +1689,13 @@ Tesseract: ${typeof Tesseract !== 'undefined' ? (Tesseract.version || 'v5.x') : 
         function resetToAuto() {
             if (confirm('Reset all times to auto-detected values?')) {
                 if (autoDetectedData && autoDetectedData.rawText) {
-                    autoDetectedData = parseTimesheetAdvanced(autoDetectedData.rawText);
+                    autoDetectedData = parseTimesheetColumns(autoDetectedData.rawText);
                     
                     let totalHours = 0;
-                    Object.values(autoDetectedData.shifts).forEach(shift => {
-                        if (shift.startTime && shift.endTime) {
-                            shift.hours = Math.round(calculateHoursBetween(shift.startTime, shift.endTime) * 10) / 10;
-                            totalHours += shift.hours;
+                    Object.values(autoDetectedData.days).forEach(day => {
+                        if (day.onTime && day.offTime) {
+                            day.hours = Math.round(calculateHoursBetween(day.onTime, day.offTime) * 10) / 10;
+                            totalHours += day.hours;
                         }
                     });
                     autoDetectedData.totalHours = Math.round(totalHours * 10) / 10;
@@ -1740,20 +1710,17 @@ Tesseract: ${typeof Tesseract !== 'undefined' ? (Tesseract.version || 'v5.x') : 
             document.getElementById('ocr-error').classList.add('hidden');
             document.getElementById('auto-results').classList.remove('hidden');
             
-            // Initialize empty structure
             const days = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
-            const shifts = {};
-            
+            const dayData = {};
             days.forEach(day => {
-                shifts[`${day}_AM`] = { day: day, period: 'AM', startTime: null, endTime: null, hasData: false, hours: 0 };
-                shifts[`${day}_PM`] = { day: day, period: 'PM', startTime: null, endTime: null, hasData: false, hours: 0 };
+                dayData[day] = { day: day, onTime: null, offTime: null, hasData: false, hours: 0 };
             });
             
             autoDetectedData = {
-                shifts: shifts,
-                firstWorkingShift: null,
+                days: dayData,
+                firstWorkingDay: null,
                 totalHours: 0,
-                workingShifts: 0,
+                workingDays: 0,
                 rawText: 'MANUAL_ENTRY'
             };
             
@@ -1783,7 +1750,6 @@ Tesseract: ${typeof Tesseract !== 'undefined' ? (Tesseract.version || 'v5.x') : 
             const startDate = new Date(endDate);
             startDate.setDate(startDate.getDate() - 6);
             
-            // Convert shifts to daily format
             const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
             const dayKeys = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
             const dayData = [];
@@ -1792,38 +1758,32 @@ Tesseract: ${typeof Tesseract !== 'undefined' ? (Tesseract.version || 'v5.x') : 
             
             days.forEach((dayName, idx) => {
                 const dayKey = dayKeys[idx];
-                const amShift = autoDetectedData.shifts[`${dayKey}_AM`];
-                const pmShift = autoDetectedData.shifts[`${dayKey}_PM`];
+                const detected = autoDetectedData.days[dayKey];
                 
-                let dayHours = 0;
+                let hours = 0;
                 let start = '-';
                 let end = '-';
                 
-                // Combine AM and PM shifts for the day
-                if (amShift && amShift.hasData) {
-                    start = amShift.startTime || '-';
-                    dayHours += amShift.hours || 0;
-                }
-                
-                if (pmShift && pmShift.hasData) {
-                    end = pmShift.endTime || '-';
-                    dayHours += pmShift.hours || 0;
-                    // If no AM start, use PM start
-                    if (start === '-' && pmShift.startTime) {
-                        start = pmShift.startTime;
+                if (detected && detected.hasData) {
+                    start = detected.onTime || '-';
+                    end = detected.offTime || '-';
+                    hours = detected.hours || 0;
+                    
+                    if (hours === 0 && start !== '-' && end !== '-') {
+                        hours = Math.round(calculateHoursBetween(start, end) * 10) / 10;
                     }
+                    
+                    totalHours += hours;
+                    if (hours > 10) longDays++;
                 }
-                
-                totalHours += dayHours;
-                if (dayHours > 10) longDays++;
                 
                 dayData.push({
                     day: dayName,
-                    hours: Math.round(dayHours * 10) / 10,
+                    hours: Math.round(hours * 10) / 10,
                     start: start,
                     end: end,
-                    rest: dayHours > 0 ? '11h' : '-',
-                    flag: dayHours > 10 ? 'warning' : (dayHours > 0 ? 'ok' : 'none')
+                    rest: hours > 0 ? '11h' : '-',
+                    flag: hours > 10 ? 'warning' : (hours > 0 ? 'ok' : 'none')
                 });
             });
             
@@ -1841,9 +1801,8 @@ Tesseract: ${typeof Tesseract !== 'undefined' ? (Tesseract.version || 'v5.x') : 
                 totalHours: Math.round(totalHours * 10) / 10,
                 longDays,
                 lowRestDays: 0,
-                firstWorkingDay: autoDetectedData.firstWorkingShift ? autoDetectedData.firstWorkingShift.day : null,
-                firstShiftType: autoDetectedData.firstWorkingShift ? autoDetectedData.firstWorkingShift.period : null,
-                pattern: 'am_pm_shifts',
+                firstWorkingDay: autoDetectedData.firstWorkingDay,
+                pattern: 'standard',
                 imageIds,
                 days: dayData,
                 uploadedAt: new Date().toISOString(),
@@ -1863,8 +1822,8 @@ Tesseract: ${typeof Tesseract !== 'undefined' ? (Tesseract.version || 'v5.x') : 
             updateStats();
             renderRecent();
             
-            const msg = autoDetectedData.firstWorkingShift ? 
-                `Saved! ${autoDetectedData.firstWorkingShift.day} ${autoDetectedData.firstWorkingShift.period} start, ${totalHours.toFixed(1)}h total` :
+            const msg = autoDetectedData.firstWorkingDay ? 
+                `Saved! ${autoDetectedData.firstWorkingDay} start, ${totalHours.toFixed(1)}h total` :
                 `Saved! ${totalHours.toFixed(1)}h total`;
             
             showToast(msg);
@@ -1912,7 +1871,7 @@ Tesseract: ${typeof Tesseract !== 'undefined' ? (Tesseract.version || 'v5.x') : 
                             <button onclick="confirmDeleteWeek('${ts.weekStart}')" class="w-full flex justify-between items-center p-4 bg-gray-50 dark:bg-dark-surface rounded-xl mb-2 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors">
                                 <div>
                                     <span class="font-medium text-gray-900 dark:text-white block">${week}</span>
-                                    <span class="text-xs text-gray-500">${ts.totalHours}h • ${ts.firstWorkingDay || 'Unknown'} ${ts.firstShiftType || ''}</span>
+                                    <span class="text-xs text-gray-500">${ts.totalHours}h • ${ts.firstWorkingDay || 'Unknown'} start</span>
                                 </div>
                                 <i class="fas fa-trash text-red-500"></i>
                             </button>
@@ -2053,7 +2012,6 @@ Tesseract: ${typeof Tesseract !== 'undefined' ? (Tesseract.version || 'v5.x') : 
             const keysToRemove = Object.keys(localStorage).filter(k => k.startsWith('ts_'));
             keysToRemove.forEach(key => localStorage.removeItem(key));
             
-            // Animate
             await new Promise(r => setTimeout(r, 300));
             document.getElementById('removal-check').classList.remove('opacity-0');
             await new Promise(r => setTimeout(r, 300));
@@ -2100,7 +2058,7 @@ Tesseract: ${typeof Tesseract !== 'undefined' ? (Tesseract.version || 'v5.x') : 
                         </div>
                         <div>
                             <h4 class="font-semibold text-gray-900 dark:text-white text-sm">${ts.weekRange}</h4>
-                            <p class="text-xs text-gray-500">${ts.totalHours}h • ${ts.firstWorkingDay || '?'} ${ts.firstShiftType || ''}</p>
+                            <p class="text-xs text-gray-500">${ts.totalHours}h • ${ts.firstWorkingDay || '?'} start</p>
                         </div>
                     </div>
                     <i class="fas fa-chevron-right text-gray-400"></i>
@@ -2138,7 +2096,7 @@ Tesseract: ${typeof Tesseract !== 'undefined' ? (Tesseract.version || 'v5.x') : 
                 
                 <div class="bg-green-50 dark:bg-green-900/20 rounded-lg p-3 border border-green-200 dark:border-green-800 mb-4">
                     <p class="text-sm text-green-800 dark:text-green-300">
-                        <i class="fas fa-robot mr-2"></i>Auto-detected • First: ${ts.firstWorkingDay || 'Unknown'} ${ts.firstShiftType || ''}
+                        <i class="fas fa-robot mr-2"></i>Auto-detected • First: ${ts.firstWorkingDay || 'Unknown'}
                         ${ts.autoDetectedDate ? `• Date auto-filled` : ''}
                     </p>
                 </div>
@@ -2163,8 +2121,8 @@ Tesseract: ${typeof Tesseract !== 'undefined' ? (Tesseract.version || 'v5.x') : 
                         <thead class="bg-gray-50 dark:bg-dark-card">
                             <tr>
                                 <th class="text-left p-3 text-gray-500 font-medium">Day</th>
-                                <th class="text-left p-3 text-gray-500 font-medium">Start</th>
-                                <th class="text-left p-3 text-gray-500 font-medium">End</th>
+                                <th class="text-left p-3 text-gray-500 font-medium">Booking On</th>
+                                <th class="text-left p-3 text-gray-500 font-medium">Booking Off</th>
                                 <th class="text-right p-3 text-gray-500 font-medium">Hours</th>
                             </tr>
                         </thead>
