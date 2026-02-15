@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="theme-color" content="#3B82F6">
-    <title>Driver Timesheet Pro v2.8.1</title>
+    <title>Driver Timesheet Pro v3.0.0</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
@@ -176,7 +176,6 @@
             pointer-events: none;
         }
     </style>
-<base target="_blank">
 </head>
 <body class="bg-gray-50 dark:bg-dark text-gray-800 dark:text-gray-100 transition-colors duration-300 min-h-screen pb-20">
 
@@ -678,7 +677,7 @@
 
     <script>
         // ==================== CONFIG ====================
-        const APP_VERSION = '2.8.1';
+        const APP_VERSION = '3.0.0';
         let currentUser = null;
         let currentMonth = new Date();
         let selectedWeekStart = null;
@@ -1020,44 +1019,240 @@
         }
 
         // ==================== IMAGE PREPROCESSING ====================
+        // v2.9: smarter preprocessing (deskew + stronger contrast + handwriting-friendly grayscale)
+        // Goal: keep this lightweight (no OpenCV) but robust to slight angles and imperfect photos.
         async function preprocessImage(imageDataUrl) {
             return new Promise((resolve) => {
                 const img = new Image();
                 img.crossOrigin = 'anonymous';
-                
-                img.onload = () => {
+
+                img.onload = async () => {
                     try {
-                        const canvas = document.createElement('canvas');
-                        const ctx = canvas.getContext('2d');
-                        
+                        // 1) Draw to working canvas (cap size for speed/memory)
                         const maxWidth = 3000;
                         let width = img.width;
                         let height = img.height;
-                        
+
                         if (width > maxWidth) {
                             height = (maxWidth / width) * height;
                             width = maxWidth;
                         }
-                        
-                        canvas.width = width;
-                        canvas.height = height;
-                        
+
+                        const canvas = document.createElement('canvas');
+                        const ctx = canvas.getContext('2d', { willReadFrequently: true });
+                        canvas.width = Math.round(width);
+                        canvas.height = Math.round(height);
+
+                        // White background (photos often contain transparency/edge artifacts)
                         ctx.fillStyle = '#FFFFFF';
-                        ctx.fillRect(0, 0, width, height);
-                        
-                        ctx.filter = 'contrast(1.5) brightness(1.0)';
-                        ctx.drawImage(img, 0, 0, width, height);
-                        
+                        ctx.fillRect(0, 0, canvas.width, canvas.height);
+                        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+                        // 2) Estimate skew on a smaller copy, then rotate full-res once
+                        const angleDeg = estimateSkewAngle(canvas, 10, 1); // [-10..10] step 1 deg
+                        if (Math.abs(angleDeg) >= 0.5) {
+                            const rotated = rotateCanvas(canvas, -angleDeg);
+                            canvas.width = rotated.width;
+                            canvas.height = rotated.height;
+                            ctx.clearRect(0, 0, canvas.width, canvas.height);
+                            ctx.drawImage(rotated, 0, 0);
+                        }
+
+                        // 3) Enhance for OCR (adaptive-ish stretch + mild sharpen)
+                        enhanceForOcr(canvas);
+
                         const processed = canvas.toDataURL('image/jpeg', 0.95);
                         resolve(processed);
                     } catch (err) {
+                        console.warn('preprocessImage error:', err);
                         resolve(imageDataUrl);
                     }
                 };
-                
+
                 img.onerror = () => resolve(imageDataUrl);
                 img.src = imageDataUrl;
             });
+        }
+
+        function rotateCanvas(srcCanvas, angleDeg) {
+            const angle = angleDeg * Math.PI / 180;
+            const w = srcCanvas.width;
+            const h = srcCanvas.height;
+
+            const cos = Math.cos(angle);
+            const sin = Math.sin(angle);
+
+            // Bounding box of rotated rect
+            const newW = Math.ceil(Math.abs(w * cos) + Math.abs(h * sin));
+            const newH = Math.ceil(Math.abs(w * sin) + Math.abs(h * cos));
+
+            const dst = document.createElement('canvas');
+            dst.width = newW;
+            dst.height = newH;
+
+            const dctx = dst.getContext('2d');
+            dctx.fillStyle = '#FFFFFF';
+            dctx.fillRect(0, 0, newW, newH);
+
+            dctx.translate(newW / 2, newH / 2);
+            dctx.rotate(angle);
+            dctx.drawImage(srcCanvas, -w / 2, -h / 2);
+            dctx.setTransform(1, 0, 0, 1, 0, 0);
+            return dst;
+        }
+
+        // Fast skew estimator using projection profile variance.
+        // Works well for slight camera angles (a few degrees).
+        function estimateSkewAngle(srcCanvas, maxAbsDeg = 10, stepDeg = 1) {
+            // Downscale for speed
+            const targetW = 900;
+            const scale = Math.min(1, targetW / srcCanvas.width);
+            const w = Math.round(srcCanvas.width * scale);
+            const h = Math.round(srcCanvas.height * scale);
+
+            const small = document.createElement('canvas');
+            small.width = w;
+            small.height = h;
+
+            const sctx = small.getContext('2d', { willReadFrequently: true });
+            sctx.fillStyle = '#FFFFFF';
+            sctx.fillRect(0, 0, w, h);
+            sctx.drawImage(srcCanvas, 0, 0, w, h);
+
+            // Make a binary-ish image quickly (favor dark strokes + blue pen)
+            const img = sctx.getImageData(0, 0, w, h);
+            const data = img.data;
+
+            // Compute mean luminance for a crude adaptive threshold
+            let sum = 0;
+            for (let i = 0; i < data.length; i += 4) {
+                const r = data[i], g = data[i + 1], b = data[i + 2];
+                // Boost blue ink slightly
+                const lum = 0.2126 * r + 0.7152 * g + 0.0722 * b - Math.max(0, (b - (r + g) / 2) * 0.12);
+                sum += lum;
+            }
+            const mean = sum / (data.length / 4);
+            const thr = Math.max(120, Math.min(200, mean - 10));
+
+            // Write binary to a 1-channel array
+            const bin = new Uint8Array(w * h);
+            for (let i = 0, p = 0; i < data.length; i += 4, p++) {
+                const r = data[i], g = data[i + 1], b = data[i + 2];
+                const lum = 0.2126 * r + 0.7152 * g + 0.0722 * b - Math.max(0, (b - (r + g) / 2) * 0.12);
+                // 1 = ink
+                bin[p] = lum < thr ? 1 : 0;
+            }
+
+            let bestAngle = 0;
+            let bestScore = -Infinity;
+
+            // Try angles and pick the one with the strongest horizontal alignment (max variance of row sums)
+            for (let a = -maxAbsDeg; a <= maxAbsDeg; a += stepDeg) {
+                const score = projectionScore(bin, w, h, a);
+                if (score > bestScore) {
+                    bestScore = score;
+                    bestAngle = a;
+                }
+            }
+            return bestAngle;
+        }
+
+        // Rotate sampling + projection variance (cheap, good enough for deskew)
+        function projectionScore(bin, w, h, angleDeg) {
+            const angle = angleDeg * Math.PI / 180;
+            const cos = Math.cos(angle), sin = Math.sin(angle);
+
+            // Sample a central band to avoid borders/noise
+            const x0 = Math.floor(w * 0.10), x1 = Math.floor(w * 0.90);
+            const y0 = Math.floor(h * 0.15), y1 = Math.floor(h * 0.85);
+
+            // Row sums
+            const rows = new Float32Array(h);
+            let total = 0;
+
+            const cx = w / 2, cy = h / 2;
+
+            for (let y = y0; y < y1; y++) {
+                for (let x = x0; x < x1; x++) {
+                    const dx = x - cx, dy = y - cy;
+                    const rx = (dx * cos - dy * sin) + cx;
+                    const ry = (dx * sin + dy * cos) + cy;
+
+                    const ix = rx | 0;
+                    const iy = ry | 0;
+                    if (ix >= 0 && ix < w && iy >= 0 && iy < h) {
+                        const v = bin[iy * w + ix];
+                        rows[y] += v;
+                        total += v;
+                    }
+                }
+            }
+
+            // Variance of row sums (higher = more horizontal structure)
+            const mean = total / (y1 - y0);
+            let varSum = 0;
+            for (let y = y0; y < y1; y++) {
+                const d = rows[y] - mean;
+                varSum += d * d;
+            }
+            return varSum;
+        }
+
+        function enhanceForOcr(canvas) {
+            const ctx = canvas.getContext('2d', { willReadFrequently: true });
+            const w = canvas.width, h = canvas.height;
+            const img = ctx.getImageData(0, 0, w, h);
+            const d = img.data;
+
+            // Contrast stretch (sampled min/max)
+            let min = 255, max = 0;
+            const sampleStep = Math.max(1, Math.floor((w * h) / 200000)); // sample up to ~200k px
+            for (let p = 0; p < d.length; p += 4 * sampleStep) {
+                const r = d[p], g = d[p + 1], b = d[p + 2];
+                const gray = Math.min(r, g, b, (r + g + b) / 3) - Math.max(0, (b - (r + g) / 2) * 0.08);
+                if (gray < min) min = gray;
+                if (gray > max) max = gray;
+            }
+            const range = Math.max(10, max - min);
+
+            const grayArr = new Uint8ClampedArray(w * h);
+            for (let i = 0, p = 0; i < d.length; i += 4, p++) {
+                const r = d[i], g = d[i + 1], b = d[i + 2];
+                let gray = Math.min(r, g, b, (r + g + b) / 3) - Math.max(0, (b - (r + g) / 2) * 0.08);
+                gray = Math.max(0, Math.min(255, Math.round(((gray - min) * 255) / range)));
+                grayArr[p] = gray;
+            }
+
+            // 3x3 box blur
+            const blur = new Uint8ClampedArray(w * h);
+            const idx = (x, y) => y * w + x;
+            for (let y = 1; y < h - 1; y++) {
+                for (let x = 1; x < w - 1; x++) {
+                    let s = 0;
+                    s += grayArr[idx(x - 1, y - 1)] + grayArr[idx(x, y - 1)] + grayArr[idx(x + 1, y - 1)];
+                    s += grayArr[idx(x - 1, y)]     + grayArr[idx(x, y)]     + grayArr[idx(x + 1, y)];
+                    s += grayArr[idx(x - 1, y + 1)] + grayArr[idx(x, y + 1)] + grayArr[idx(x + 1, y + 1)];
+                    blur[idx(x, y)] = (s / 9) | 0;
+                }
+            }
+
+            // Unsharp + background push
+            for (let y = 0; y < h; y++) {
+                for (let x = 0; x < w; x++) {
+                    const p = idx(x, y);
+                    let v = grayArr[p];
+                    const b = blur[p] || v;
+                    v = v + 0.8 * (v - b);
+                    v = Math.max(0, Math.min(255, v));
+                    if (v > 200) v = 255; // push paper to white
+
+                    const o = p * 4;
+                    d[o] = d[o + 1] = d[o + 2] = v;
+                    d[o + 3] = 255;
+                }
+            }
+
+            ctx.putImageData(img, 0, 0);
         }
 
         // ==================== SCAN & OCR ====================
@@ -1218,7 +1413,17 @@
                 
                 // Parse timesheet data with SPATIAL column-aware parser
                 autoDetectedData = parseTimesheetSpatial(result.data);
-                
+
+                // v2.9: If any times are missing, do a second pass by cropping each TIME cell and
+                // running a digits-only OCR on the small ROI. This is much more tolerant of
+                // angles, noise, and faint/handwritten entries.
+                try {
+                    updateOcrProgress(96, 'Refining time cells...');
+                    autoDetectedData = await fillMissingTimesWithROIs(worker, imageToProcess, result.data, autoDetectedData);
+                } catch (roiErr) {
+                    console.warn('ROI refinement skipped:', roiErr);
+                }
+
                 const workingDays = Object.values(autoDetectedData.days).filter(d => d.hasData).length;
                 if (workingDays === 0 && !autoDetectedWeekEnding) {
                     throw new Error('Could not detect any booking times or week ending date. Please ensure the timesheet is clearly visible.');
@@ -1317,7 +1522,226 @@ Tesseract: ${typeof Tesseract !== 'undefined' ? (Tesseract.version || 'v5.x') : 
             document.getElementById('ocr-stage').textContent = stage;
         }
 
-        // ==================== SPATIAL PARSER ====================
+        
+        // ==================== ROI TIME EXTRACTOR ====================
+        // Two-pass approach:
+        // 1) Run full-page OCR to get word coordinates.
+        // 2) If any ON/OFF times are missing/low-quality, crop the relevant TIME cells and OCR them with a digits-only config.
+        //
+        // This is dramatically more reliable on imperfect photos and angled scans because:
+        // - We anchor the TIME columns using the printed header "TIME" positions (instead of fixed % columns)
+        // - We OCR tiny, zoomed-in rectangles (less noise)
+        // - We restrict characters to what times actually contain
+
+        function normWord(t) {
+            return (t || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+        }
+
+        function normalizeTimeString(raw) {
+            if (!raw) return null;
+            let s = raw.toUpperCase().replace(/[^0-9:]/g, '');
+
+            // Common OCR slips: 0/O, 1/I, 5/S etc are already removed by whitelist,
+            // but sometimes ':' is missing or extra.
+            if (!s) return null;
+
+            // Accept HH:MM, H:MM, HHMM, HMM, 4 digits like 0758
+            const m1 = s.match(/^(\d{1,2}):(\d{2})$/);
+            if (m1) {
+                const hh = parseInt(m1[1], 10), mm = parseInt(m1[2], 10);
+                if (hh >= 0 && hh <= 23 && mm >= 0 && mm <= 59) return `${String(hh).padStart(2,'0')}:${String(mm).padStart(2,'0')}`;
+            }
+
+            const digits = s.replace(/:/g, '');
+            if (digits.length === 3) {
+                // 758 => 07:58
+                const hh = parseInt(digits.slice(0, 1), 10);
+                const mm = parseInt(digits.slice(1), 10);
+                if (hh >= 0 && hh <= 23 && mm >= 0 && mm <= 59) return `${String(hh).padStart(2,'0')}:${String(mm).padStart(2,'0')}`;
+            }
+            if (digits.length === 4) {
+                const hh = parseInt(digits.slice(0, 2), 10);
+                const mm = parseInt(digits.slice(2), 10);
+                if (hh >= 0 && hh <= 23 && mm >= 0 && mm <= 59) return `${String(hh).padStart(2,'0')}:${String(mm).padStart(2,'0')}`;
+            }
+            return null;
+        }
+
+        function findTimeHeaderColumns(words) {
+            if (!words || words.length === 0) return null;
+
+            const maxX = Math.max(...words.map(w => w.bbox.x1));
+            const minX = Math.min(...words.map(w => w.bbox.x0));
+            const maxY = Math.max(...words.map(w => w.bbox.y1));
+            const minY = Math.min(...words.map(w => w.bbox.y0));
+            const w = maxX - minX;
+            const h = maxY - minY;
+
+            // Find TIME in the header area (upper third)
+            const headerWords = words.filter(wd => (wd.bbox.y0 - minY) < h * 0.35);
+            const timeWords = headerWords.filter(wd => normWord(wd.text) === 'TIME');
+
+            if (timeWords.length < 2) return null;
+
+            // Cluster by x-center
+            const centers = timeWords
+                .map(wd => ({ x: (wd.bbox.x0 + wd.bbox.x1) / 2, y: (wd.bbox.y0 + wd.bbox.y1) / 2, wd }))
+                .sort((a, b) => a.x - b.x);
+
+            const clusters = [];
+            const tol = Math.max(25, w * 0.03); // x tolerance scales with image width
+            for (const c of centers) {
+                let placed = false;
+                for (const cl of clusters) {
+                    if (Math.abs(cl.x - c.x) < tol) {
+                        cl.items.push(c);
+                        cl.x = cl.items.reduce((s, it) => s + it.x, 0) / cl.items.length;
+                        placed = true;
+                        break;
+                    }
+                }
+                if (!placed) clusters.push({ x: c.x, items: [c] });
+            }
+
+            // Keep the two left-most TIME clusters in the middle area of the sheet (filters out "TIME" elsewhere)
+            const usable = clusters
+                .filter(cl => cl.x > (minX + w * 0.25) && cl.x < (minX + w * 0.85))
+                .sort((a, b) => a.x - b.x);
+
+            if (usable.length < 2) return null;
+
+            const onX = usable[0].x;
+            const offX = usable[1].x;
+
+            const colHalfW = Math.max(60, w * 0.05); // ~5% of width, min 60px
+            return {
+                on: { x0: onX - colHalfW, x1: onX + colHalfW },
+                off: { x0: offX - colHalfW, x1: offX + colHalfW },
+                bounds: { minX, minY, maxX, maxY, w, h }
+            };
+        }
+
+        function findDayRows(words) {
+            const daySet = new Set(['SUN','MON','TUE','WED','THU','FRI','SAT']);
+            const out = [];
+
+            for (const wd of (words || [])) {
+                const t = normWord(wd.text);
+                if (daySet.has(t)) {
+                    const y = (wd.bbox.y0 + wd.bbox.y1) / 2;
+                    out.push({ day: t, y, bbox: wd.bbox });
+                }
+            }
+
+            // Sort by Y and de-dup close matches
+            out.sort((a, b) => a.y - b.y);
+            const dedup = [];
+            const yTol = 18; // pixels; will scale later if needed
+            for (const r of out) {
+                const last = dedup[dedup.length - 1];
+                if (!last || Math.abs(last.y - r.y) > yTol || last.day !== r.day) {
+                    dedup.push(r);
+                }
+            }
+
+            return dedup;
+        }
+
+        async function recognizeTimeInRect(worker, imageToProcess, rect) {
+            // rect: { left, top, width, height }
+            const res = await worker.recognize(imageToProcess, { rectangle: rect });
+            const txt = (res && res.data && res.data.text) ? res.data.text.trim() : '';
+            return normalizeTimeString(txt);
+        }
+
+        async function fillMissingTimesWithROIs(worker, imageToProcess, ocrData, parsed) {
+            if (!worker || !ocrData || !ocrData.words || !parsed || !parsed.days) return parsed;
+
+            const cols = findTimeHeaderColumns(ocrData.words);
+            if (!cols) return parsed;
+
+            const rows = findDayRows(ocrData.words);
+            if (!rows || rows.length === 0) return parsed;
+
+            // Estimate row height using distances between successive day labels
+            const deltas = [];
+            for (let i = 1; i < rows.length; i++) deltas.push(rows[i].y - rows[i - 1].y);
+            const median = deltas.length ? deltas.sort((a,b)=>a-b)[Math.floor(deltas.length/2)] : 45;
+            const rowHalfH = Math.max(18, Math.min(40, median * 0.35));
+
+            // Digits-only OCR config for time cells
+            await worker.setParameters({
+                tessedit_char_whitelist: '0123456789:',
+                tessedit_pageseg_mode: '7' // treat as single text line
+            });
+
+            // Map day->best row y (sheet has AM/PM rows; this timesheet uses AM/PM lines, but handwriting usually in one)
+            // We'll try the closest row y for each day that has missing data.
+            const dayToYs = {};
+            rows.forEach(r => {
+                if (!dayToYs[r.day]) dayToYs[r.day] = [];
+                dayToYs[r.day].push(r.y);
+            });
+
+            const imgW = cols.bounds.maxX;
+            const imgH = cols.bounds.maxY;
+
+            const safeRect = (x0, x1, y0, y1) => {
+                const left = Math.max(0, Math.floor(x0));
+                const top = Math.max(0, Math.floor(y0));
+                const right = Math.min(imgW, Math.ceil(x1));
+                const bottom = Math.min(imgH, Math.ceil(y1));
+                return { left, top, width: Math.max(1, right - left), height: Math.max(1, bottom - top) };
+            };
+
+            const dayKeys = Object.keys(parsed.days);
+            for (const dayKey of dayKeys) {
+                const dayObj = parsed.days[dayKey];
+                if (!dayObj) continue;
+
+                // Only do ROI OCR if we are missing something
+                const needsOn = !dayObj.onTime;
+                const needsOff = !dayObj.offTime;
+                if (!needsOn && !needsOff) continue;
+
+                const yCandidates = dayToYs[dayKey] || [];
+                if (yCandidates.length === 0) continue;
+
+                // Use the lowest y (usually the PM line) if multiple; handwriting tends to be in later row on some forms.
+                const y = yCandidates.length > 1 ? yCandidates[yCandidates.length - 1] : yCandidates[0];
+
+                // Expand X a bit to catch slightly shifted writing
+                const xPad = Math.max(10, cols.bounds.w * 0.01);
+
+                if (needsOn) {
+                    const rect = safeRect(cols.on.x0 - xPad, cols.on.x1 + xPad, y - rowHalfH, y + rowHalfH);
+                    const t = await recognizeTimeInRect(worker, imageToProcess, rect);
+                    if (t) {
+                        dayObj.onTime = t;
+                        dayObj.hasData = true;
+                    }
+                }
+
+                if (needsOff) {
+                    const rect = safeRect(cols.off.x0 - xPad, cols.off.x1 + xPad, y - rowHalfH, y + rowHalfH);
+                    const t = await recognizeTimeInRect(worker, imageToProcess, rect);
+                    if (t) {
+                        dayObj.offTime = t;
+                        dayObj.hasData = true;
+                    }
+                }
+            }
+
+            // Reset parameters back to default-ish for any later reads
+            await worker.setParameters({
+                tessedit_char_whitelist: '',
+                tessedit_pageseg_mode: '3'
+            });
+
+            return parsed;
+        }
+
+// ==================== SPATIAL PARSER ====================
         
         // Parse week ending using spatial analysis - look in top-right quadrant
         function parseWeekEndingSpatial(ocrData) {
@@ -1429,7 +1853,7 @@ Tesseract: ${typeof Tesseract !== 'undefined' ? (Tesseract.version || 'v5.x') : 
                 'MON': ['MON', 'MONDAY'],
                 'TUE': ['TUE', 'TUESDAY', 'TUES'],
                 'WED': ['WED', 'WEDNESDAY'],
-                'THU': ['THU', 'THUR', 'THURS', 'THURSDAY', 'THURAM', 'THURPM', 'THUAM', 'THUPM'],
+                'THU': ['THU', 'THURSDAY', 'THURS'],
                 'FRI': ['FRI', 'FRIDAY'],
                 'SAT': ['SAT', 'SATURDAY']
             };
@@ -1518,7 +1942,7 @@ Tesseract: ${typeof Tesseract !== 'undefined' ? (Tesseract.version || 'v5.x') : 
                 'MON': ['MON', 'MONDAY'],
                 'TUE': ['TUE', 'TUESDAY', 'TUES'],
                 'WED': ['WED', 'WEDNESDAY'],
-                'THU': ['THU', 'THUR', 'THURS', 'THURSDAY', 'THURAM', 'THURPM', 'THUAM', 'THUPM'],
+                'THU': ['THU', 'THURSDAY', 'THURS'],
                 'FRI': ['FRI', 'FRIDAY'],
                 'SAT': ['SAT', 'SATURDAY']
             };
@@ -1567,26 +1991,9 @@ Tesseract: ${typeof Tesseract !== 'undefined' ? (Tesseract.version || 'v5.x') : 
         }
 
         function isTimeLike(text) {
-            if (!text || text.length < 3) return false;
-
-            // Clean common OCR errors in handwritten text
-            const cleaned = text
-                .replace(/[Oo]/g, '0')
-                .replace(/[lI]/g, '1')
-                .replace(/[S]/g, '5')
-                .replace(/[Z]/g, '2')
-                .replace(/[B]/g, '8')
-                .replace(/[g]/g, '9')
-                .replace(/[:;.,\s]/g, '');
-
-            // Check for 3-4 digit numbers that could be times (0700-2359)
-            if (!/^\d{3,4}$/.test(cleaned)) return false;
-
-            const num = parseInt(cleaned);
-            const hour = Math.floor(num / 100);
-            const minute = num % 100;
-
-            return hour >= 0 && hour <= 23 && minute >= 0 && minute <= 59;
+            // Check if text looks like a time
+            const cleaned = text.replace(/[Oo]/g, '0').replace(/[lI]/g, '1');
+            return /\d{1,2}[:.]?\d{2}/.test(cleaned) || /^\d{4}$/.test(cleaned);
         }
 
         function extractTimeFromWord(text) {
