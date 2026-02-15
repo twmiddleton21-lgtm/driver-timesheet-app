@@ -541,8 +541,8 @@
                 <div class="bg-white dark:bg-dark-card rounded-2xl p-4 shadow-sm border border-gray-100 dark:border-gray-700">
                     <h3 class="font-semibold text-gray-900 dark:text-white mb-3"><i class="fas fa-info-circle text-primary mr-2"></i>About</h3>
                     <div class="space-y-2 text-sm text-gray-600 dark:text-gray-400">
-                        <p><strong>Version:</strong> <span id="settings-version">v4.0.0 (Gemini AI)</span></p>
-                        <p><strong>OCR Engine:</strong> Google Gemini 1.5 Flash AI</p>
+                        <p><strong>Version:</strong> <span id="settings-version">v4.1.0 (Gemini 2.0 Flash)</span></p>
+                        <p><strong>OCR Engine:</strong> Google Gemini 2.0 Flash AI</p>
                         <p class="text-xs">Uses word coordinates to identify right-hand TIME columns. Top-right week ending detection.</p>
                     </div>
                 </div>
@@ -1126,10 +1126,63 @@
 
 // Configuration - User needs to set their API key
 let GEMINI_API_KEY = localStorage.getItem('gemini_api_key') || '';
-const GEMINI_MODEL = 'gemini-1.5-flash';
-const GEMINI_API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/' + GEMINI_MODEL + ':generateContent';
+// Using Gemini 2.0 Flash - latest stable model (as of 2025)
+// Alternative options:
+// - 'gemini-2.0-flash' (auto-updating alias)
+// - 'gemini-2.0-flash-001' (specific stable version)
+// - 'gemini-2.0-flash-lite' (faster, cheaper, slightly less capable)
+// - 'gemini-2.5-flash-preview-09-2025' (preview - latest but may change)
+// Model is now dynamic based on user selection
+const GEMINI_API_URL = window.GEMINI_API_URL || 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent';
+
+// Model configuration with selector
+const GEMINI_MODELS = {
+    'gemini-2.0-flash': {
+        name: 'Gemini 2.0 Flash',
+        description: 'Best balance of speed and accuracy',
+        costPer1K: '$0.40',
+        speed: 'Fast',
+        recommended: true
+    },
+    'gemini-2.0-flash-lite': {
+        name: 'Gemini 2.0 Flash-Lite',
+        description: 'Fastest & cheapest for simple scans',
+        costPer1K: '$0.30',
+        speed: 'Fastest',
+        recommended: false
+    },
+    'gemini-2.5-flash-preview-09-2025': {
+        name: 'Gemini 2.5 Flash (Preview)',
+        description: 'Latest preview - best accuracy',
+        costPer1K: '$0.60',
+        speed: 'Very Fast',
+        recommended: false
+    }
+};
+
+let CURRENT_MODEL = localStorage.getItem('gemini_model') || 'gemini-2.0-flash';
+
+function setGeminiModel(modelName) {
+    CURRENT_MODEL = modelName;
+    localStorage.setItem('gemini_model', modelName);
+    // Update the API URL
+    window.GEMINI_API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/' + modelName + ':generateContent';
+}
+
+// Initialize model on load
+setGeminiModel(CURRENT_MODEL);
+
 
 // Set API key
+
+function changeGeminiModel(modelKey) {
+    setGeminiModel(modelKey);
+    const model = GEMINI_MODELS[modelKey];
+    document.getElementById('model-description').textContent = 
+        `${model.description} • Cost: ${model.costPer1K} per 1K pages`;
+    showToast(`Switched to ${model.name}`);
+}
+
 function setGeminiApiKey(key) {
     GEMINI_API_KEY = key;
     localStorage.setItem('gemini_api_key', key);
@@ -1432,7 +1485,7 @@ async function startOCR() {
     updateOcrProgress(10, 'Connecting to Gemini AI...');
 
     try {
-        updateOcrProgress(30, 'Analyzing with Gemini 1.5 Flash...');
+        updateOcrProgress(30, 'Analyzing with Gemini 2.0 Flash...');
 
         const geminiResult = await performGeminiOCRWithRetry(imageToProcess);
 
@@ -1794,7 +1847,7 @@ async function startOCR() {
             showAutoDetectionResults();
         }, 500);
 
-        showToast(`✅ Extracted ${autoDetectedData.workingDays} days with Gemini AI`);
+        showToast(`✅ Extracted ${autoDetectedData.workingDays} days with Gemini 2.0 Flash`);
 
     } catch (err) {
         console.error('Gemini OCR Error:', err);
@@ -1895,12 +1948,37 @@ function addGeminiSettings() {
         <div class="space-y-3">
             <div class="flex items-center justify-between p-3 bg-gray-100 dark:bg-dark-surface rounded-xl">
                 <div>
-                    <p class="font-medium text-gray-900 dark:text-white">Gemini AI</p>
-                    <p class="text-xs text-gray-500">Google Gemini 1.5 Flash</p>
+                    <p class="font-medium text-gray-900 dark:text-white">Gemini 2.0 Flash</p>
+                    <p class="text-xs text-gray-500">Latest stable model - Fast & Accurate</p>
                 </div>
                 <span class="px-3 py-1 bg-green-100 text-green-700 rounded-full text-xs font-medium">
                     ${isGeminiConfigured() ? 'Active' : 'Not Configured'}
                 </span>
+            </div>
+
+            <div class="space-y-2">
+                <label class="text-sm font-medium text-gray-700 dark:text-gray-300">Select Model</label>
+                <select id="gemini-model-select" onchange="changeGeminiModel(this.value)" 
+                    class="w-full p-3 bg-white dark:bg-dark-surface border border-gray-300 dark:border-gray-600 rounded-xl text-sm">
+                    ${Object.entries(GEMINI_MODELS).map(([key, model]) => `
+                        <option value="${key}" ${key === CURRENT_MODEL ? 'selected' : ''}>
+                            ${model.name} ${model.recommended ? '(Recommended)' : ''}
+                        </option>
+                    `).join('')}
+                </select>
+                <p id="model-description" class="text-xs text-gray-500">
+                    ${GEMINI_MODELS[CURRENT_MODEL].description} • Cost: ${GEMINI_MODELS[CURRENT_MODEL].costPer1K} per 1K pages
+                </p>
+            </div>
+
+            <div class="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+                <p class="text-xs text-blue-700 dark:text-blue-400">
+                    <i class="fas fa-bolt mr-1"></i>
+                    <strong>${GEMINI_MODELS[CURRENT_MODEL].name}</strong> selected
+                    <br>
+                    <i class="fas fa-tag mr-1"></i>
+                    Cost: ~${GEMINI_MODELS[CURRENT_MODEL].costPer1K} per 1,000 pages
+                </p>
             </div>
 
             <button onclick="showGeminiKeyModal()" class="w-full flex items-center justify-between p-3 bg-gray-100 dark:bg-dark-surface rounded-xl hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors">
@@ -2703,4 +2781,3 @@ function showAutoDetectionResults() {
     </script>
 </body>
 </html>
-
