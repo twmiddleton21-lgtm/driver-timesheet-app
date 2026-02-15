@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="theme-color" content="#3B82F6">
-    <title>Driver Timesheet Pro v5.0.0</title>
+    <title>Driver Timesheet Pro v5.1.0</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
@@ -61,6 +61,7 @@
         .upload-zone { transition: all 0.3s ease; border: 2px dashed #cbd5e1; }
         .upload-zone.active { border-color: #3B82F6; background-color: rgba(59, 130, 246, 0.05); transform: scale(1.02); }
         .upload-zone.has-file { border-color: #10B981; background-color: rgba(16, 185, 129, 0.05); }
+        .upload-zone.required { border-color: #EF4444; background-color: rgba(239, 68, 68, 0.05); }
         
         .nav-item { transition: all 0.3s ease; }
         .nav-item.active { color: #3B82F6; }
@@ -359,6 +360,8 @@
             transition: all 0.2s ease;
             position: relative;
             overflow: hidden;
+            padding: 8px;
+            text-align: center;
         }
         
         .doc-upload-item:hover {
@@ -372,17 +375,18 @@
         }
         
         .doc-upload-item i {
-            font-size: 1.5rem;
+            font-size: 1.25rem;
             margin-bottom: 4px;
         }
         
         .doc-upload-item .doc-label {
-            font-size: 0.75rem;
+            font-size: 0.65rem;
             font-weight: 600;
+            line-height: 1.2;
         }
         
         .doc-upload-item .doc-status {
-            font-size: 0.65rem;
+            font-size: 0.6rem;
             color: #6b7280;
         }
         
@@ -411,23 +415,94 @@
             z-index: 10;
         }
 
-        /* Archive styles */
-        .archive-item {
-            opacity: 0.7;
-            position: relative;
+        /* Scanned documents preview section */
+        .scanned-docs-preview {
+            background: #f9fafb;
+            border-radius: 16px;
+            padding: 16px;
+            margin-bottom: 16px;
         }
         
-        .archive-item::before {
-            content: 'ARCHIVED';
+        .dark .scanned-docs-preview {
+            background: #1E293B;
+        }
+        
+        .scanned-doc-item {
+            position: relative;
+            border-radius: 12px;
+            overflow: hidden;
+            background: white;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        
+        .dark .scanned-doc-item {
+            background: #0F172A;
+        }
+        
+        .scanned-doc-item img {
+            width: 100%;
+            height: 120px;
+            object-fit: cover;
+        }
+        
+        .scanned-doc-item .doc-type-badge {
+            position: absolute;
+            top: 8px;
+            left: 8px;
+            background: rgba(0,0,0,0.7);
+            color: white;
+            font-size: 0.65rem;
+            padding: 4px 8px;
+            border-radius: 6px;
+            font-weight: 600;
+        }
+        
+        .scanned-doc-item .doc-actions {
             position: absolute;
             top: 8px;
             right: 8px;
-            background: #6B7280;
+            display: flex;
+            gap: 6px;
+        }
+        
+        .scanned-doc-item .doc-action-btn {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            font-size: 12px;
+            border: none;
+        }
+        
+        .scanned-doc-item .doc-action-btn.close-btn {
+            background: rgba(239, 68, 68, 0.9);
             color: white;
-            font-size: 0.65rem;
-            padding: 2px 6px;
-            border-radius: 4px;
-            z-index: 5;
+        }
+        
+        .scanned-doc-item .doc-action-btn.share-btn {
+            background: rgba(59, 130, 246, 0.9);
+            color: white;
+        }
+        
+        .scanned-doc-item .doc-action-btn.view-btn {
+            background: rgba(16, 185, 129, 0.9);
+            color: white;
+        }
+        
+        .scanned-doc-item .doc-filename {
+            padding: 8px;
+            font-size: 0.75rem;
+            color: #374151;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        
+        .dark .scanned-doc-item .doc-filename {
+            color: #e2e8f0;
         }
 
         .storage-bar {
@@ -443,8 +518,39 @@
             background: linear-gradient(90deg, #3B82F6, #10B981);
             transition: width 0.3s ease;
         }
+
+        /* Toggle switch */
+        .toggle-switch {
+            position: relative;
+            width: 48px;
+            height: 24px;
+            background: #cbd5e1;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+        
+        .toggle-switch.active {
+            background: #3B82F6;
+        }
+        
+        .toggle-switch::after {
+            content: '';
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            background: white;
+            border-radius: 50%;
+            top: 2px;
+            left: 2px;
+            transition: transform 0.3s;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+        }
+        
+        .toggle-switch.active::after {
+            transform: translateX(24px);
+        }
     </style>
-<base target="_blank">
 <base target="_blank">
 </head>
 <body class="bg-gray-50 dark:bg-dark text-gray-800 dark:text-gray-100 transition-colors duration-300 min-h-screen pb-20">
@@ -458,8 +564,8 @@
                 </div>
                 <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Driver Timesheet Pro</h1>
                 <p class="text-gray-500 dark:text-gray-400 mt-2 flex items-center justify-center gap-2">
-                    <span class="text-xs bg-primary/10 text-primary px-2 py-1 rounded" id="version-display">v5.0.0</span>
-                    <span class="text-xs bg-green-100 text-green-700 px-2 py-1 rounded">Gemini AI + Archive</span>
+                    <span class="text-xs bg-primary/10 text-primary px-2 py-1 rounded" id="version-display">v5.1.0</span>
+                    <span class="text-xs bg-green-100 text-green-700 px-2 py-1 rounded">Gemini AI</span>
                 </p>
             </div>
 
@@ -586,14 +692,9 @@
                         </div>
                     </div>
                     
-                    <div class="flex gap-2 mt-3">
-                        <button onclick="openSelectedWeek()" class="flex-1 py-3 bg-primary/10 dark:bg-primary/20 text-primary font-semibold rounded-xl hover:bg-primary/20 transition-colors">
-                            View Details
-                        </button>
-                        <button onclick="archiveSelectedWeek()" id="archive-btn" class="px-4 py-3 bg-gray-100 dark:bg-dark-surface text-gray-600 dark:text-gray-400 rounded-xl hover:bg-gray-200 transition-colors" title="Archive Week">
-                            <i class="fas fa-archive"></i>
-                        </button>
-                    </div>
+                    <button onclick="openSelectedWeek()" class="w-full mt-3 py-3 bg-primary/10 dark:bg-primary/20 text-primary font-semibold rounded-xl hover:bg-primary/20 transition-colors">
+                        View Full Details
+                    </button>
                 </div>
 
                 <div class="grid grid-cols-2 gap-3">
@@ -601,7 +702,7 @@
                         <p class="text-xs text-gray-500 dark:text-gray-400 mb-1">This Month</p>
                         <p class="text-2xl font-bold text-gray-900 dark:text-white" id="stat-month-hours">0h</p>
                     </div>
-                    <div class="bg-white dark:bg-dark-card rounded-2xl p-4 shadow-sm border border-gray-100 dark:border-gray-700">
+                    <div class="bg-white dark:bg-dark-card rounded-2xl p-4 shadow-sm border border-gray-100 dark:border-gray-700" id="storage-widget">
                         <p class="text-xs text-gray-500 dark:text-gray-400 mb-1">Storage Used</p>
                         <p class="text-2xl font-bold text-gray-900 dark:text-white" id="stat-storage-used">0 MB</p>
                         <div class="storage-bar">
@@ -620,7 +721,7 @@
             <div id="scan-view" class="view-section hidden fade-in space-y-4">
                 <div class="text-center mb-4">
                     <h2 class="text-xl font-bold text-gray-900 dark:text-white">Scan Timesheet & Docs</h2>
-                    <p class="text-sm text-gray-500 dark:text-gray-400">Timesheet uses Gemini AI • Documents save directly</p>
+                    <p class="text-sm text-gray-500 dark:text-gray-400">Timesheet required • Additional docs optional</p>
                 </div>
 
                 <!-- API Key Warning -->
@@ -649,23 +750,23 @@
                     <p class="text-xs text-gray-500 mt-2" id="selected-week-info">Week ending auto-detected from timesheet</p>
                 </div>
 
-                <!-- Timesheet Upload (OCR) -->
+                <!-- Timesheet Upload (OCR - MANDATORY) -->
                 <div class="bg-white dark:bg-dark-card rounded-2xl p-4 shadow-sm border border-gray-100 dark:border-gray-700">
                     <div class="flex items-center justify-between mb-3">
                         <h3 class="font-medium text-gray-900 dark:text-white flex items-center gap-2">
                             <i class="fas fa-clock text-primary"></i>
-                            Timesheet <span class="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded">OCR</span>
+                            Timesheet <span class="text-xs bg-red-100 text-red-600 px-2 py-0.5 rounded font-bold">REQUIRED</span>
                         </h3>
-                        <span class="text-xs text-gray-500" id="front-status">Optional</span>
+                        <span class="text-xs text-red-500 font-medium" id="front-status">Required</span>
                     </div>
-                    <div class="upload-zone rounded-xl p-6 text-center cursor-pointer relative overflow-hidden bg-gray-50 dark:bg-dark-surface image-preview-container" 
+                    <div class="upload-zone rounded-xl p-6 text-center cursor-pointer relative overflow-hidden bg-gray-50 dark:bg-dark-surface image-preview-container" id="timesheet-upload-zone"
                          onclick="document.getElementById('file-front').click()"
                          ondrop="handleDrop(event, 'front')" ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)">
                         <input type="file" id="file-front" class="hidden" accept="image/*" capture="environment" onchange="handleFileSelect(event, 'front')">
                         <div id="upload-front-default">
                             <i class="fas fa-camera text-3xl text-gray-400 mb-2"></i>
-                            <p class="text-sm text-gray-600 dark:text-gray-400">Tap for timesheet photo</p>
-                            <p class="text-xs text-gray-400 mt-1">Gemini AI will extract times</p>
+                            <p class="text-sm text-gray-600 dark:text-gray-400 font-medium">Tap to take timesheet photo</p>
+                            <p class="text-xs text-gray-400 mt-1">This is required for processing</p>
                         </div>
                         <img id="preview-front" class="hidden w-full h-48 object-cover rounded-lg mx-auto">
                         <div id="image-processing-indicator" class="image-processing-overlay hidden">
@@ -684,43 +785,57 @@
                             <i class="fas fa-file-alt text-purple-500"></i>
                             Additional Documents
                         </h3>
-                        <span class="text-xs text-purple-600 bg-purple-50 dark:bg-purple-900/20 px-2 py-1 rounded-full">Direct Save</span>
+                        <span class="text-xs text-purple-600 bg-purple-50 dark:bg-purple-900/20 px-2 py-1 rounded-full">Optional</span>
                     </div>
-                    <p class="text-xs text-gray-500 dark:text-gray-400 mb-3">These documents are saved directly to your device without processing</p>
+                    <p class="text-xs text-gray-500 dark:text-gray-400 mb-3">These documents are saved directly to your device without AI processing</p>
                     
                     <div class="doc-upload-grid">
+                        <!-- Timesheet Front -->
                         <div class="doc-upload-item" id="doc-1-item" onclick="document.getElementById('file-doc-1').click()">
                             <input type="file" id="file-doc-1" class="hidden" accept="image/*,application/pdf" onchange="handleDocSelect(event, 1)">
                             <i class="fas fa-file-image text-gray-400" id="doc-1-icon"></i>
-                            <span class="doc-label text-gray-600 dark:text-gray-300">Doc 1</span>
-                            <span class="doc-status" id="doc-1-status">Tap to add</span>
+                            <span class="doc-label text-gray-600 dark:text-gray-300">Timesheet<br>Front</span>
+                            <span class="doc-status" id="doc-1-status">Add</span>
                             <img id="doc-1-preview" class="doc-preview-thumb hidden">
                             <div class="doc-remove-btn hidden" id="doc-1-remove" onclick="removeDoc(event, 1)">
                                 <i class="fas fa-times"></i>
                             </div>
                         </div>
                         
+                        <!-- Fuel And Expense -->
                         <div class="doc-upload-item" id="doc-2-item" onclick="document.getElementById('file-doc-2').click()">
                             <input type="file" id="file-doc-2" class="hidden" accept="image/*,application/pdf" onchange="handleDocSelect(event, 2)">
-                            <i class="fas fa-file-image text-gray-400" id="doc-2-icon"></i>
-                            <span class="doc-label text-gray-600 dark:text-gray-300">Doc 2</span>
-                            <span class="doc-status" id="doc-2-status">Tap to add</span>
+                            <i class="fas fa-gas-pump text-gray-400" id="doc-2-icon"></i>
+                            <span class="doc-label text-gray-600 dark:text-gray-300">Fuel &<br>Expense</span>
+                            <span class="doc-status" id="doc-2-status">Add</span>
                             <img id="doc-2-preview" class="doc-preview-thumb hidden">
                             <div class="doc-remove-btn hidden" id="doc-2-remove" onclick="removeDoc(event, 2)">
                                 <i class="fas fa-times"></i>
                             </div>
                         </div>
                         
+                        <!-- Circle Check Sheets -->
                         <div class="doc-upload-item" id="doc-3-item" onclick="document.getElementById('file-doc-3').click()">
                             <input type="file" id="file-doc-3" class="hidden" accept="image/*,application/pdf" onchange="handleDocSelect(event, 3)">
-                            <i class="fas fa-file-image text-gray-400" id="doc-3-icon"></i>
-                            <span class="doc-label text-gray-600 dark:text-gray-300">Doc 3</span>
-                            <span class="doc-status" id="doc-3-status">Tap to add</span>
+                            <i class="fas fa-clipboard-check text-gray-400" id="doc-3-icon"></i>
+                            <span class="doc-label text-gray-600 dark:text-gray-300">Circle Check<br>Sheets</span>
+                            <span class="doc-status" id="doc-3-status">Add</span>
                             <img id="doc-3-preview" class="doc-preview-thumb hidden">
                             <div class="doc-remove-btn hidden" id="doc-3-remove" onclick="removeDoc(event, 3)">
                                 <i class="fas fa-times"></i>
                             </div>
                         </div>
+                    </div>
+                </div>
+
+                <!-- Scanned Documents Preview (Above Auto-Detect) -->
+                <div id="scanned-docs-section" class="hidden scanned-docs-preview">
+                    <h3 class="font-semibold text-gray-900 dark:text-white mb-3 text-sm flex items-center gap-2">
+                        <i class="fas fa-images text-purple-500"></i>
+                        Scanned Documents
+                    </h3>
+                    <div class="grid grid-cols-3 gap-3" id="scanned-docs-grid">
+                        <!-- Populated by JS -->
                     </div>
                 </div>
 
@@ -831,10 +946,6 @@
                 <button onclick="startOCR()" id="scan-btn" class="w-full bg-primary hover:bg-blue-600 text-white font-bold py-4 rounded-xl shadow-lg shadow-blue-500/30 transition-all transform active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed mt-4">
                     <i class="fas fa-magic mr-2"></i>Auto-Extract Times
                 </button>
-                
-                <button onclick="saveDocumentsOnly()" id="save-docs-btn" class="w-full bg-purple-600 hover:bg-purple-700 text-white font-bold py-4 rounded-xl shadow-lg shadow-purple-500/30 transition-all transform active:scale-95 mt-2 hidden">
-                    <i class="fas fa-file-archive mr-2"></i>Save Documents Only
-                </button>
             </div>
 
             <!-- History View -->
@@ -892,6 +1003,20 @@
                     </div>
                 </div>
 
+                <!-- Dashboard Widget Toggle -->
+                <div class="bg-white dark:bg-dark-card rounded-2xl p-4 shadow-sm border border-gray-100 dark:border-gray-700">
+                    <h3 class="font-semibold text-gray-900 dark:text-white mb-3">
+                        <i class="fas fa-toggle-on text-primary mr-2"></i>Dashboard Options
+                    </h3>
+                    <div class="flex items-center justify-between p-3 bg-gray-50 dark:bg-dark-surface rounded-xl">
+                        <div>
+                            <p class="font-medium text-gray-900 dark:text-white text-sm">Show Storage Widget</p>
+                            <p class="text-xs text-gray-500">Display storage usage on calendar page</p>
+                        </div>
+                        <div class="toggle-switch active" id="storage-widget-toggle" onclick="toggleStorageWidget()"></div>
+                    </div>
+                </div>
+
                 <!-- Gemini API Settings -->
                 <div class="bg-white dark:bg-dark-card rounded-2xl p-4 shadow-sm border border-gray-100 dark:border-gray-700">
                     <h3 class="font-semibold text-gray-900 dark:text-white mb-3">
@@ -943,10 +1068,10 @@
                 <div class="bg-white dark:bg-dark-card rounded-2xl p-4 shadow-sm border border-gray-100 dark:border-gray-700">
                     <h3 class="font-semibold text-gray-900 dark:text-white mb-3"><i class="fas fa-info-circle text-primary mr-2"></i>About</h3>
                     <div class="space-y-2 text-sm text-gray-600 dark:text-gray-400">
-                        <p><strong>Version:</strong> <span id="settings-version">v5.0.0 (Gemini + Archive)</span></p>
+                        <p><strong>Version:</strong> <span id="settings-version">v5.1.0 (Gemini + Docs)</span></p>
                         <p><strong>OCR Engine:</strong> Google Gemini 2.0 Flash AI</p>
                         <p><strong>Storage:</strong> IndexedDB (Local Device)</p>
-                        <p class="text-xs">Supports timesheet OCR + 3 additional document uploads per week. Archive feature for old data.</p>
+                        <p class="text-xs">Required timesheet OCR + 3 additional document uploads per week.</p>
                     </div>
                 </div>
 
@@ -1127,7 +1252,7 @@
 
     <script>
         // ==================== CONFIG ====================
-        const APP_VERSION = '5.0.0';
+        const APP_VERSION = '5.1.0';
         const GEMINI_MODEL = 'gemini-2.0-flash';
         
         let currentUser = null;
@@ -1141,12 +1266,19 @@
         let ocrAttempts = 0;
         let lastOcrResult = null;
         let GEMINI_API_KEY = localStorage.getItem('gemini_api_key') || '';
+        let showStorageWidget = localStorage.getItem('showStorageWidget') !== 'false'; // Default true
         
         // Document storage (no OCR)
         let currentDocs = {
-            1: null, // { file, preview, dataUrl }
-            2: null,
-            3: null
+            1: null, // Timesheet Front
+            2: null, // Fuel And Expense
+            3: null  // Circle Check Sheets
+        };
+
+        const DOC_NAMES = {
+            1: 'Timesheet Front',
+            2: 'Fuel & Expense',
+            3: 'Circle Check'
         };
 
         // ==================== INDEXEDDB ====================
@@ -1173,25 +1305,21 @@
                 request.onupgradeneeded = (event) => {
                     const db = event.target.result;
                     
-                    // Images store for timesheet photos
                     if (!db.objectStoreNames.contains(STORES.images)) {
                         db.createObjectStore(STORES.images, { keyPath: 'id' });
                     }
                     
-                    // Documents store for additional docs
                     if (!db.objectStoreNames.contains(STORES.documents)) {
                         const docStore = db.createObjectStore(STORES.documents, { keyPath: 'id' });
                         docStore.createIndex('weekStart', 'weekStart', { unique: false });
                     }
                     
-                    // Timesheets store
                     if (!db.objectStoreNames.contains(STORES.timesheets)) {
                         const tsStore = db.createObjectStore(STORES.timesheets, { keyPath: 'id' });
                         tsStore.createIndex('weekStart', 'weekStart', { unique: false });
                         tsStore.createIndex('archived', 'archived', { unique: false });
                     }
                     
-                    // Archives store for old data
                     if (!db.objectStoreNames.contains(STORES.archives)) {
                         db.createObjectStore(STORES.archives, { keyPath: 'id' });
                     }
@@ -1262,7 +1390,6 @@
             }
         }
 
-        // Storage quota check
         async function checkStorageQuota() {
             if ('storage' in navigator && 'estimate' in navigator.storage) {
                 try {
@@ -1306,7 +1433,7 @@
             return `${startDate.toLocaleDateString('en-US', options)} - ${endDate.toLocaleDateString('en-US', options)}`;
         }
 
-        // ==================== DATA STORE (LocalStorage for metadata) ====================
+        // ==================== DATA STORE ====================
         const DB_LS = {
             getUsers: () => JSON.parse(localStorage.getItem('ts_users') || '[]'),
             saveUsers: (users) => localStorage.setItem('ts_users', JSON.stringify(users)),
@@ -1323,7 +1450,7 @@
         // ==================== AUTH ====================
         function initAuth() {
             document.getElementById('version-display').textContent = 'v' + APP_VERSION;
-            document.getElementById('settings-version').textContent = 'v' + APP_VERSION + ' (Gemini + Archive)';
+            document.getElementById('settings-version').textContent = 'v' + APP_VERSION + ' (Gemini + Docs)';
             
             const users = DB_LS.getUsers();
             const select = document.getElementById('user-select');
@@ -1340,6 +1467,29 @@
             });
 
             updateApiKeyStatus();
+            updateStorageWidgetToggle();
+        }
+
+        function updateStorageWidgetToggle() {
+            const toggle = document.getElementById('storage-widget-toggle');
+            if (showStorageWidget) {
+                toggle.classList.add('active');
+            } else {
+                toggle.classList.remove('active');
+            }
+        }
+
+        function toggleStorageWidget() {
+            showStorageWidget = !showStorageWidget;
+            localStorage.setItem('showStorageWidget', showStorageWidget);
+            updateStorageWidgetToggle();
+            
+            const widget = document.getElementById('storage-widget');
+            if (widget) {
+                widget.style.display = showStorageWidget ? 'block' : 'none';
+            }
+            
+            showToast(showStorageWidget ? 'Storage widget enabled' : 'Storage widget hidden');
         }
 
         function updateApiKeyStatus() {
@@ -1403,8 +1553,16 @@
             renderRecent();
             checkStorageQuota();
             updateApiKeyStatus();
+            updateStorageWidgetVisibility();
             
             showToast(`Welcome, ${user.username}`);
+        }
+
+        function updateStorageWidgetVisibility() {
+            const widget = document.getElementById('storage-widget');
+            if (widget) {
+                widget.style.display = showStorageWidget ? 'block' : 'none';
+            }
         }
 
         function updateScanWeekDisplay() {
@@ -1484,7 +1642,6 @@
             const weekData = {};
             const docData = {};
             
-            // Check for timesheets
             timesheets.forEach(ts => {
                 const date = parseDate(ts.weekStart);
                 if (date.getFullYear() === year && date.getMonth() === month) {
@@ -1492,7 +1649,6 @@
                 }
             });
             
-            // Check for documents
             const allDocs = await getAllFromStore(STORES.documents);
             allDocs.forEach(doc => {
                 const date = parseDate(doc.weekStart);
@@ -1588,18 +1744,6 @@
                         <span class="font-bold">${day.hours > 0 ? day.hours : '-'}</span>
                     </div>
                 `).join('');
-                
-                // Show archive button only if not archived
-                const archiveBtn = document.getElementById('archive-btn');
-                if (timesheet.archived) {
-                    archiveBtn.innerHTML = '<i class="fas fa-box-open"></i>';
-                    archiveBtn.onclick = () => unarchiveWeek(timesheet.weekStart);
-                    archiveBtn.title = 'Restore from Archive';
-                } else {
-                    archiveBtn.innerHTML = '<i class="fas fa-archive"></i>';
-                    archiveBtn.onclick = () => archiveSelectedWeek();
-                    archiveBtn.title = 'Archive Week';
-                }
             } else {
                 document.getElementById('preview-week-range').textContent = 'Week of ' + 
                     new Date(currentMonth.getFullYear(), currentMonth.getMonth(), day).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
@@ -1607,7 +1751,6 @@
                 document.getElementById('preview-days').innerHTML = '<div class="text-gray-400 text-sm">No timesheet data</div>';
             }
             
-            // Check for documents
             const docs = await getDocumentsForWeek(selectedWeekStart);
             const docPreview = document.getElementById('preview-documents');
             if (docs.length > 0) {
@@ -1684,17 +1827,15 @@
             const file = event.target.files[0];
             if (!file) return;
             
-            const MAX_SIZE = 20 * 1024 * 1024; // 20MB limit per doc
+            const MAX_SIZE = 20 * 1024 * 1024;
             
             if (file.size > MAX_SIZE) {
                 showToast('File too large (max 20MB)', 'error');
                 return;
             }
             
-            // Show loading
             const icon = document.getElementById(`doc-${docNum}-icon`);
             const status = document.getElementById(`doc-${docNum}-status`);
-            const originalIcon = icon.className;
             
             icon.className = 'fas fa-spinner fa-spin text-primary';
             status.textContent = 'Loading...';
@@ -1709,16 +1850,12 @@
                     type: file.type
                 };
                 
-                // Update UI
                 updateDocUI(docNum);
-                showToast(`Document ${docNum} ready to save`);
-                
-                // Show save docs button if timesheet not present
-                document.getElementById('save-docs-btn').classList.remove('hidden');
+                updateScannedDocsPreview();
+                showToast(`${DOC_NAMES[docNum]} ready`);
             };
             
             reader.onerror = () => {
-                icon.className = originalIcon;
                 status.textContent = 'Error';
                 showToast('Error reading file', 'error');
             };
@@ -1738,7 +1875,7 @@
             
             item.classList.add('has-file');
             icon.className = 'hidden';
-            status.textContent = 'Ready';
+            status.textContent = 'Added';
             
             if (doc.type.startsWith('image/')) {
                 preview.src = doc.dataUrl;
@@ -1749,6 +1886,123 @@
             }
             
             removeBtn.classList.remove('hidden');
+        }
+
+        function updateScannedDocsPreview() {
+            const section = document.getElementById('scanned-docs-section');
+            const grid = document.getElementById('scanned-docs-grid');
+            const hasAnyDocs = Object.values(currentDocs).some(d => d !== null);
+            
+            if (!hasAnyDocs) {
+                section.classList.add('hidden');
+                return;
+            }
+            
+            section.classList.remove('hidden');
+            grid.innerHTML = '';
+            
+            Object.entries(currentDocs).forEach(([docNum, doc]) => {
+                if (!doc) return;
+                
+                const docId = `scanned-doc-${docNum}`;
+                const isImage = doc.type.startsWith('image/');
+                
+                const div = document.createElement('div');
+                div.className = 'scanned-doc-item';
+                div.innerHTML = `
+                    ${isImage ? 
+                        `<img src="${doc.dataUrl}" id="${docId}-img" onclick="viewScannedDoc(${docNum})">` :
+                        `<div class="h-[120px] flex items-center justify-center bg-red-50 dark:bg-red-900/20" onclick="viewScannedDoc(${docNum})">
+                            <i class="fas fa-file-pdf text-4xl text-red-500"></i>
+                        </div>`
+                    }
+                    <div class="doc-type-badge">${DOC_NAMES[docNum]}</div>
+                    <div class="doc-actions">
+                        <button class="doc-action-btn view-btn" onclick="viewScannedDoc(${docNum})" title="View">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                        <button class="doc-action-btn share-btn" onclick="shareScannedDoc(${docNum})" title="Share/Save">
+                            <i class="fas fa-share-alt"></i>
+                        </button>
+                        <button class="doc-action-btn close-btn" onclick="removeScannedDoc(event, ${docNum})" title="Remove">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                    <div class="doc-filename">${doc.name}</div>
+                `;
+                
+                grid.appendChild(div);
+            });
+            
+            // Scroll to the scanned docs section
+            section.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+
+        function viewScannedDoc(docNum) {
+            const doc = currentDocs[docNum];
+            if (!doc) return;
+            
+            if (doc.type.startsWith('image/')) {
+                const modal = document.createElement('div');
+                modal.className = 'fixed inset-0 z-[200] bg-black/90 flex items-center justify-center p-4';
+                modal.innerHTML = `
+                    <div class="relative max-w-4xl w-full">
+                        <button onclick="this.closest('.fixed').remove()" class="absolute -top-12 right-0 text-white text-2xl w-10 h-10 flex items-center justify-center bg-red-500 rounded-full">
+                            <i class="fas fa-times"></i>
+                        </button>
+                        <img src="${doc.dataUrl}" class="w-full max-h-[80vh] object-contain rounded-lg">
+                        <div class="text-white text-center mt-4">
+                            <p class="font-bold">${DOC_NAMES[docNum]}</p>
+                            <p class="text-sm opacity-75">${doc.name}</p>
+                        </div>
+                    </div>
+                `;
+                document.body.appendChild(modal);
+            } else {
+                // For PDFs, download
+                const link = document.createElement('a');
+                link.href = doc.dataUrl;
+                link.download = doc.name;
+                link.click();
+            }
+        }
+
+        async function shareScannedDoc(docNum) {
+            const doc = currentDocs[docNum];
+            if (!doc) return;
+            
+            // Try native share if available
+            if (navigator.share && navigator.canShare) {
+                try {
+                    const response = await fetch(doc.dataUrl);
+                    const blob = await response.blob();
+                    const file = new File([blob], doc.name, { type: doc.type });
+                    
+                    if (navigator.canShare({ files: [file] })) {
+                        await navigator.share({
+                            title: DOC_NAMES[docNum],
+                            text: `${DOC_NAMES[docNum]} - ${doc.name}`,
+                            files: [file]
+                        });
+                        return;
+                    }
+                } catch (e) {
+                    console.log('Native share failed, falling back');
+                }
+            }
+            
+            // Fallback: download
+            const link = document.createElement('a');
+            link.href = doc.dataUrl;
+            link.download = doc.name;
+            link.click();
+            showToast('Document saved to downloads');
+        }
+
+        function removeScannedDoc(event, docNum) {
+            event.stopPropagation();
+            removeDoc(event, docNum);
+            updateScannedDocsPreview();
         }
 
         function removeDoc(event, docNum) {
@@ -1763,68 +2017,18 @@
             const input = document.getElementById(`file-doc-${docNum}`);
             
             item.classList.remove('has-file');
-            icon.className = 'fas fa-file-image text-gray-400';
+            
+            // Reset icon based on doc type
+            const iconClass = docNum === '1' ? 'fa-file-image' : 
+                             docNum === '2' ? 'fa-gas-pump' : 'fa-clipboard-check';
+            icon.className = `fas ${iconClass} text-gray-400`;
             icon.classList.remove('hidden');
-            status.textContent = 'Tap to add';
+            
+            status.textContent = 'Add';
             preview.src = '';
             preview.classList.add('hidden');
             removeBtn.classList.add('hidden');
             input.value = '';
-            
-            // Check if any docs remain
-            const hasDocs = Object.values(currentDocs).some(d => d !== null);
-            if (!hasDocs) {
-                document.getElementById('save-docs-btn').classList.add('hidden');
-            }
-        }
-
-        async function saveDocumentsOnly() {
-            const weekEnding = document.getElementById('scan-date-select').value;
-            if (!weekEnding) {
-                showToast('Please select week ending date', 'error');
-                return;
-            }
-            
-            const endDate = parseDate(weekEnding);
-            const startDate = new Date(endDate);
-            startDate.setDate(startDate.getDate() - 6);
-            const weekStart = formatDateForInput(startDate);
-            
-            let savedCount = 0;
-            
-            for (let i = 1; i <= 3; i++) {
-                const doc = currentDocs[i];
-                if (doc) {
-                    const docId = `doc_${currentUser.username}_${weekStart}_${i}_${Date.now()}`;
-                    await saveToStore(STORES.documents, docId, {
-                        weekStart: weekStart,
-                        weekEnd: weekEnding,
-                        docNum: i,
-                        filename: doc.name,
-                        fileType: doc.type,
-                        fileSize: doc.size,
-                        data: doc.dataUrl,
-                        uploadedAt: new Date().toISOString()
-                    });
-                    savedCount++;
-                }
-            }
-            
-            if (savedCount > 0) {
-                showToast(`Saved ${savedCount} document(s) for week ending ${weekEnding}`);
-                resetDocForm();
-                renderCalendar();
-                updateStats();
-            } else {
-                showToast('No documents to save', 'error');
-            }
-        }
-
-        function resetDocForm() {
-            for (let i = 1; i <= 3; i++) {
-                removeDoc({ stopPropagation: () => {} }, i);
-            }
-            document.getElementById('save-docs-btn').classList.add('hidden');
         }
 
         // ==================== SCAN & OCR ====================
@@ -1869,6 +2073,7 @@
                     document.getElementById('upload-front-default').classList.add('hidden');
                     document.getElementById('front-status').textContent = 'Ready';
                     document.getElementById('front-status').className = 'text-xs text-green-600 font-medium';
+                    document.getElementById('timesheet-upload-zone').classList.remove('required');
                     
                     showToast('Timesheet loaded. Tap "Auto-Extract Times" to scan.');
                 } catch (err) {
@@ -2207,8 +2412,12 @@ Rules:
         }
 
         async function startOCR() {
+            // Check if timesheet is uploaded (MANDATORY)
             if (!processedImage && !currentImage) {
-                return showToast('Please upload timesheet image first', 'error');
+                showToast('Timesheet photo is required', 'error');
+                document.getElementById('timesheet-upload-zone').classList.add('required');
+                document.getElementById('timesheet-upload-zone').scrollIntoView({ behavior: 'smooth', block: 'center' });
+                return;
             }
 
             if (!isGeminiConfigured()) {
@@ -2516,6 +2725,7 @@ Rules:
                         weekStart: formatDateForInput(startDate),
                         weekEnd: weekEnding,
                         docNum: i,
+                        docName: DOC_NAMES[i],
                         filename: doc.name,
                         fileType: doc.type,
                         fileSize: doc.size,
@@ -2577,13 +2787,20 @@ Rules:
             document.getElementById('preview-front').classList.add('hidden');
             document.getElementById('upload-front-default').classList.remove('hidden');
             document.getElementById('file-front').value = '';
-            document.getElementById('front-status').textContent = 'Optional';
-            document.getElementById('front-status').className = 'text-xs text-gray-500';
+            document.getElementById('front-status').textContent = 'Required';
+            document.getElementById('front-status').className = 'text-xs text-red-500 font-medium';
+            document.getElementById('timesheet-upload-zone').classList.remove('required');
             document.getElementById('scan-date-select').classList.remove('auto-filled');
             document.getElementById('auto-detected-badge').classList.add('hidden');
             
             // Reset documents
-            resetDocForm();
+            for (let i = 1; i <= 3; i++) {
+                removeDoc({ stopPropagation: () => {} }, i);
+            }
+            
+            // Hide scanned docs preview
+            document.getElementById('scanned-docs-section').classList.add('hidden');
+            document.getElementById('scanned-docs-grid').innerHTML = '';
             
             const today = new Date();
             const saturday = new Date(today);
@@ -2606,14 +2823,12 @@ Rules:
             
             if (tsIndex === -1) return;
             
-            // Move to archive in IndexedDB
             const ts = timesheets[tsIndex];
             ts.archived = true;
             ts.archivedAt = new Date().toISOString();
             
             await saveToStore(STORES.archives, `archive_${currentUser.username}_${ts.weekStart}`, ts);
             
-            // Remove from active timesheets
             timesheets.splice(tsIndex, 1);
             DB_LS.saveTimesheets(currentUser.username, timesheets);
             
@@ -2635,7 +2850,6 @@ Rules:
                 return;
             }
             
-            // Restore to active
             delete archived.archived;
             delete archived.archivedAt;
             
@@ -2643,7 +2857,6 @@ Rules:
             timesheets.push(archived);
             DB_LS.saveTimesheets(currentUser.username, timesheets);
             
-            // Remove from archive
             await deleteFromStore(STORES.archives, archiveKey);
             
             renderCalendar();
@@ -2763,7 +2976,6 @@ Rules:
             
             if (ts && ts.imageIds.front) await deleteFromStore(STORES.images, ts.imageIds.front);
             
-            // Also delete associated documents
             const docs = await getDocumentsForWeek(weekStart);
             for (const doc of docs) {
                 await deleteFromStore(STORES.documents, doc.id);
@@ -2953,7 +3165,7 @@ Rules:
                         </h4>
                         <div class="grid grid-cols-3 gap-2">
                             ${docs.map((doc, idx) => `
-                                <div class="relative aspect-square rounded-lg overflow-hidden border border-purple-200 dark:border-purple-700 cursor-pointer" onclick="viewDocument('${doc.id}')">
+                                <div class="relative aspect-square rounded-lg overflow-hidden border border-purple-200 dark:border-purple-700 cursor-pointer" onclick="viewDocumentFromModal('${doc.id}')">
                                     ${doc.fileType.startsWith('image/') ? 
                                         `<img src="${doc.data}" class="w-full h-full object-cover">` :
                                         `<div class="w-full h-full flex items-center justify-center bg-red-100 dark:bg-red-900/30 text-red-600">
@@ -2961,7 +3173,7 @@ Rules:
                                         </div>`
                                     }
                                     <div class="absolute bottom-0 left-0 right-0 bg-black/50 text-white text-[10px] p-1 truncate">
-                                        ${doc.filename}
+                                        ${doc.docName || doc.filename}
                                     </div>
                                 </div>
                             `).join('')}
@@ -3020,61 +3232,40 @@ Rules:
                     </table>
                 </div>
                 
-                <div class="flex gap-2 mt-4">
-                    <button onclick="deleteWeek('${ts.weekStart}')" class="flex-1 py-3 bg-red-100 dark:bg-red-900/30 text-red-600 rounded-xl font-medium hover:bg-red-200 transition-colors">
-                        <i class="fas fa-trash mr-2"></i>Delete
-                    </button>
-                    ${!ts.archived ? `
-                        <button onclick="archiveWeekFromModal('${ts.weekStart}')" class="flex-1 py-3 bg-gray-100 dark:bg-dark-surface text-gray-600 dark:text-gray-400 rounded-xl font-medium hover:bg-gray-200 transition-colors">
-                            <i class="fas fa-archive mr-2"></i>Archive
-                        </button>
-                    ` : `
-                        <button onclick="unarchiveWeekFromModal('${ts.weekStart}')" class="flex-1 py-3 bg-primary/10 text-primary rounded-xl font-medium hover:bg-primary/20 transition-colors">
-                            <i class="fas fa-box-open mr-2"></i>Restore
-                        </button>
-                    `}
-                </div>
+                <button onclick="deleteWeek('${ts.weekStart}')" class="w-full py-3 bg-red-100 dark:bg-red-900/30 text-red-600 rounded-xl font-medium hover:bg-red-200 transition-colors mt-4">
+                    <i class="fas fa-trash mr-2"></i>Delete This Week
+                </button>
             `;
             
             document.getElementById('week-modal').classList.remove('hidden');
         }
 
-        async function viewDocument(docId) {
+        async function viewDocumentFromModal(docId) {
             const doc = await getFromStore(STORES.documents, docId);
             if (!doc) return;
             
             if (doc.fileType.startsWith('image/')) {
-                // Show image in modal
                 const modal = document.createElement('div');
                 modal.className = 'fixed inset-0 z-[200] bg-black/90 flex items-center justify-center p-4';
                 modal.innerHTML = `
                     <div class="relative max-w-4xl w-full">
-                        <button onclick="this.closest('.fixed').remove()" class="absolute -top-12 right-0 text-white text-2xl">
+                        <button onclick="this.closest('.fixed').remove()" class="absolute -top-12 right-0 text-white text-2xl w-10 h-10 flex items-center justify-center bg-red-500 rounded-full">
                             <i class="fas fa-times"></i>
                         </button>
                         <img src="${doc.data}" class="w-full max-h-[80vh] object-contain rounded-lg">
-                        <p class="text-white text-center mt-4">${doc.filename}</p>
+                        <div class="text-white text-center mt-4">
+                            <p class="font-bold">${doc.docName || 'Document'}</p>
+                            <p class="text-sm opacity-75">${doc.filename}</p>
+                        </div>
                     </div>
                 `;
                 document.body.appendChild(modal);
             } else {
-                // For PDFs, open in new tab
                 const link = document.createElement('a');
                 link.href = doc.data;
                 link.download = doc.filename;
                 link.click();
             }
-        }
-
-        async function archiveWeekFromModal(weekStart) {
-            selectedWeekStart = weekStart;
-            await archiveSelectedWeek();
-            closeWeekModal();
-        }
-
-        async function unarchiveWeekFromModal(weekStart) {
-            await unarchiveWeek(weekStart);
-            closeWeekModal();
         }
 
         function closeWeekModal() {
@@ -3120,14 +3311,12 @@ Rules:
         }
 
         function switchView(viewName) {
-            // Hide all views
             document.querySelectorAll('.view-section').forEach(el => el.classList.add('hidden'));
             document.querySelectorAll('.nav-item').forEach(el => {
                 el.classList.remove('active', 'text-primary');
                 el.classList.add('text-gray-400');
             });
             
-            // Show selected view
             document.getElementById(`${viewName}-view`).classList.remove('hidden');
             const activeBtn = document.querySelector(`[data-view="${viewName}"]`);
             if (activeBtn) {
@@ -3135,11 +3324,10 @@ Rules:
                 activeBtn.classList.remove('text-gray-400');
             }
             
-            // View-specific initialization
             if (viewName === 'history') renderHistory();
             if (viewName === 'dashboard') { renderCalendar(); updateStats(); }
             if (viewName === 'scan') updateApiKeyStatus();
-            if (viewName === 'settings') { updateApiKeyStatus(); checkStorageQuota(); }
+            if (viewName === 'settings') { updateApiKeyStatus(); checkStorageQuota(); updateStorageWidgetToggle(); }
             if (viewName === 'archive') renderArchiveList();
         }
 
@@ -3182,7 +3370,6 @@ Rules:
             await initImageDB();
             initAuth();
             
-            // Update scan date listener
             document.getElementById('scan-date-select').addEventListener('change', updateScanWeekDisplay);
         });
     </script>
