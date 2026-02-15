@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="theme-color" content="#3B82F6">
-    <title>Driver Timesheet Pro v2.8.0</title>
+    <title>Driver Timesheet Pro v2.8.1</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
@@ -176,6 +176,7 @@
             pointer-events: none;
         }
     </style>
+<base target="_blank">
 </head>
 <body class="bg-gray-50 dark:bg-dark text-gray-800 dark:text-gray-100 transition-colors duration-300 min-h-screen pb-20">
 
@@ -1428,7 +1429,7 @@ Tesseract: ${typeof Tesseract !== 'undefined' ? (Tesseract.version || 'v5.x') : 
                 'MON': ['MON', 'MONDAY'],
                 'TUE': ['TUE', 'TUESDAY', 'TUES'],
                 'WED': ['WED', 'WEDNESDAY'],
-                'THU': ['THU', 'THURSDAY', 'THURS'],
+                'THU': ['THU', 'THUR', 'THURS', 'THURSDAY', 'THURAM', 'THURPM', 'THUAM', 'THUPM'],
                 'FRI': ['FRI', 'FRIDAY'],
                 'SAT': ['SAT', 'SATURDAY']
             };
@@ -1517,7 +1518,7 @@ Tesseract: ${typeof Tesseract !== 'undefined' ? (Tesseract.version || 'v5.x') : 
                 'MON': ['MON', 'MONDAY'],
                 'TUE': ['TUE', 'TUESDAY', 'TUES'],
                 'WED': ['WED', 'WEDNESDAY'],
-                'THU': ['THU', 'THURSDAY', 'THURS'],
+                'THU': ['THU', 'THUR', 'THURS', 'THURSDAY', 'THURAM', 'THURPM', 'THUAM', 'THUPM'],
                 'FRI': ['FRI', 'FRIDAY'],
                 'SAT': ['SAT', 'SATURDAY']
             };
@@ -1566,9 +1567,26 @@ Tesseract: ${typeof Tesseract !== 'undefined' ? (Tesseract.version || 'v5.x') : 
         }
 
         function isTimeLike(text) {
-            // Check if text looks like a time
-            const cleaned = text.replace(/[Oo]/g, '0').replace(/[lI]/g, '1');
-            return /\d{1,2}[:.]?\d{2}/.test(cleaned) || /^\d{4}$/.test(cleaned);
+            if (!text || text.length < 3) return false;
+
+            // Clean common OCR errors in handwritten text
+            const cleaned = text
+                .replace(/[Oo]/g, '0')
+                .replace(/[lI]/g, '1')
+                .replace(/[S]/g, '5')
+                .replace(/[Z]/g, '2')
+                .replace(/[B]/g, '8')
+                .replace(/[g]/g, '9')
+                .replace(/[:;.,\s]/g, '');
+
+            // Check for 3-4 digit numbers that could be times (0700-2359)
+            if (!/^\d{3,4}$/.test(cleaned)) return false;
+
+            const num = parseInt(cleaned);
+            const hour = Math.floor(num / 100);
+            const minute = num % 100;
+
+            return hour >= 0 && hour <= 23 && minute >= 0 && minute <= 59;
         }
 
         function extractTimeFromWord(text) {
