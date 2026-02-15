@@ -4,12 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="theme-color" content="#3B82F6">
-    <title>Driver Timesheet Pro v2.8.0</title>
-    
+    <title>Driver Timesheet Pro v5.0</title>
+
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
-    <!-- Tesseract removed - using Gemini AI instead -->
-    
+
     <script>
         tailwind.config = {
             darkMode: 'class',
@@ -28,15 +27,15 @@
             }
         }
     </script>
-    
+
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
-        
+
         * { -webkit-tap-highlight-color: transparent; -webkit-touch-callout: none; }
         body { font-family: 'Inter', sans-serif; overscroll-behavior: none; }
-        
+
         .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 8px; }
-        
+
         .calendar-day {
             aspect-ratio: 1;
             display: flex;
@@ -50,30 +49,33 @@
             position: relative;
             cursor: pointer;
         }
-        
+
         .calendar-day:active { transform: scale(0.95); }
         .calendar-day.has-data { background: linear-gradient(135deg, #10B981 0%, #059669 100%); color: white; box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3); }
         .calendar-day.today { box-shadow: 0 0 0 3px #3B82F6, 0 0 0 5px rgba(59, 130, 246, 0.3); z-index: 10; }
         .calendar-day.today.has-data { box-shadow: 0 0 0 3px #3B82F6, 0 0 0 5px rgba(59, 130, 246, 0.5); }
         .calendar-day.other-month { opacity: 0.3; }
-        
+
         .upload-zone { transition: all 0.3s ease; border: 2px dashed #cbd5e1; }
         .upload-zone.active { border-color: #3B82F6; background-color: rgba(59, 130, 246, 0.05); transform: scale(1.02); }
-        
+
         .nav-item { transition: all 0.3s ease; }
         .nav-item.active { color: #3B82F6; }
         .nav-item.active i { transform: translateY(-2px); }
-        
+
         .fade-in { animation: fadeIn 0.3s ease-out; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-        
+
+        .slide-up { animation: slideUp 0.3s ease-out; }
+        @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+
         .extraction-grid {
             display: grid;
             grid-template-columns: repeat(7, 1fr);
             gap: 4px;
             font-size: 0.7rem;
         }
-        
+
         .day-cell {
             border: 1px solid #e5e7eb;
             border-radius: 6px;
@@ -83,16 +85,16 @@
             background: white;
             position: relative;
         }
-        
+
         .day-cell.has-data { background: linear-gradient(135deg, #dbeafe 0%, #dcfce7 100%); border-color: #3B82F6; }
         .day-cell.first-day { box-shadow: 0 0 0 2px #10B981; }
-        
+
         .time-display {
             font-family: 'Courier New', monospace;
             font-weight: bold;
             font-size: 0.65rem;
         }
-        
+
         .correction-row {
             display: grid;
             grid-template-columns: 60px 1fr 1fr 60px;
@@ -103,17 +105,17 @@
             border-radius: 8px;
             margin-bottom: 4px;
         }
-        
+
         .danger-zone {
             background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
             border: 2px solid #ef4444;
         }
-        
+
         .dark .danger-zone {
             background: linear-gradient(135deg, #450a0a 0%, #7f1d1d 100%);
             border-color: #dc2626;
         }
-        
+
         .ocr-debug-info {
             font-family: 'Courier New', monospace;
             font-size: 0.75rem;
@@ -126,21 +128,21 @@
             white-space: pre-wrap;
             word-break: break-all;
         }
-        
+
         .dark .ocr-debug-info {
             background: #1f2937;
             color: #d1d5db;
         }
-        
+
         .manual-entry-btn {
             background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
         }
-        
+
         .image-preview-container {
             position: relative;
             overflow: hidden;
         }
-        
+
         .image-processing-overlay {
             position: absolute;
             inset: 0;
@@ -151,7 +153,7 @@
             color: white;
             font-size: 0.875rem;
         }
-        
+
         .auto-filled {
             background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%) !important;
             border-color: #3B82F6 !important;
@@ -166,7 +168,7 @@
         }
         .col-on { background: #10B981; }
         .col-off { background: #EF4444; }
-        
+
         .word-box {
             position: absolute;
             border: 1px solid rgba(59, 130, 246, 0.5);
@@ -174,6 +176,15 @@
             font-size: 8px;
             color: #3B82F6;
             pointer-events: none;
+        }
+
+        .touch-btn {
+            touch-action: manipulation;
+            -webkit-touch-callout: none;
+        }
+
+        .touch-btn:active {
+            transform: scale(0.95);
         }
     </style>
 <base target="_blank">
@@ -189,8 +200,8 @@
                 </div>
                 <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Driver Timesheet Pro</h1>
                 <p class="text-gray-500 dark:text-gray-400 mt-2 flex items-center justify-center gap-2">
-                    <span class="text-xs bg-primary/10 text-primary px-2 py-1 rounded" id="version-display">v2.8.0</span>
-                    <span class="text-xs bg-green-100 text-green-700 px-2 py-1 rounded">Spatial Parser</span>
+                    <span class="text-xs bg-primary/10 text-primary px-2 py-1 rounded" id="version-display">v5.0.0</span>
+                    <span class="text-xs bg-green-100 text-green-700 px-2 py-1 rounded">Gemini 2.0</span>
                 </p>
             </div>
 
@@ -201,7 +212,7 @@
                         <option value="">-- Select User --</option>
                     </select>
                 </div>
-                
+
                 <div id="pin-section" class="hidden">
                     <input type="password" id="pin-input" maxlength="4" inputmode="numeric" 
                         class="w-full p-4 bg-gray-100 dark:bg-dark-card rounded-xl border-2 border-transparent focus:border-primary outline-none text-center text-2xl tracking-widest" 
@@ -225,20 +236,20 @@
             <!-- Create User Form -->
             <div id="create-user-form" class="hidden space-y-4">
                 <h2 class="text-xl font-bold text-center mb-4">Create New Driver</h2>
-                
+
                 <input type="text" id="new-username" placeholder="Driver Name" class="w-full p-4 bg-gray-100 dark:bg-dark-card rounded-xl border-2 border-transparent focus:border-primary outline-none">
-                
+
                 <input type="password" id="new-pin" maxlength="4" inputmode="numeric" placeholder="Create 4-digit PIN" class="w-full p-4 bg-gray-100 dark:bg-dark-card rounded-xl border-2 border-transparent focus:border-primary outline-none text-center text-2xl tracking-widest">
-                
+
                 <input type="password" id="confirm-pin" maxlength="4" inputmode="numeric" placeholder="Confirm PIN" class="w-full p-4 bg-gray-100 dark:bg-dark-card rounded-xl border-2 border-transparent focus:border-primary outline-none text-center text-2xl tracking-widest">
-                
+
                 <div class="bg-blue-50 dark:bg-blue-900/20 rounded-xl p-4 border border-blue-200 dark:border-blue-800">
                     <label class="block text-sm font-medium text-blue-900 dark:text-blue-300 mb-2">
-                        <i class="fas fa-crosshairs mr-2"></i>Spatial Column Parser
+                        <i class="fas fa-robot mr-2"></i>Gemini AI OCR
                     </label>
-                    <p class="text-xs text-blue-700 dark:text-blue-400">Uses word coordinates to identify right-hand TIME columns. Week ending detected from top-right region.</p>
+                    <p class="text-xs text-blue-700 dark:text-blue-400">Uses Google Gemini 2.0 Flash for accurate handwritten text recognition.</p>
                 </div>
-                
+
                 <div class="flex gap-3">
                     <button onclick="hideCreateUser()" class="flex-1 py-4 rounded-xl border-2 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 font-semibold">Cancel</button>
                     <button onclick="createUser()" class="flex-1 bg-primary hover:bg-blue-600 text-white font-semibold py-4 rounded-xl shadow-lg">Create</button>
@@ -251,14 +262,14 @@
     <div id="main-app" class="hidden">
         <!-- Header -->
         <header class="bg-white dark:bg-dark-card shadow-sm sticky top-0 z-40">
-            <div class="px-4 py-3 flex items-center justify-between">
+            <div class="px-4 py-3 flex items-center justify-between max-w-lg mx-auto">
                 <div class="flex items-center gap-3">
                     <div class="w-10 h-10 bg-primary rounded-xl flex items-center justify-center text-white shadow-lg shadow-blue-500/30">
                         <i class="fas fa-truck text-lg"></i>
                     </div>
                     <div>
                         <h1 class="text-lg font-bold text-gray-900 dark:text-white leading-tight" id="header-username">Driver</h1>
-                        <p class="text-xs text-gray-500 dark:text-gray-400" id="sync-status"><i class="fas fa-shield-alt text-green-500"></i> Local Storage</p>
+                        <p class="text-xs text-gray-500 dark:text-gray-400" id="sync-status"><i class="fas fa-robot text-green-500"></i> Gemini AI Ready</p>
                     </div>
                 </div>
                 <button onclick="logout()" class="touch-btn flex items-center justify-center text-gray-500 hover:text-red-500 transition-colors">
@@ -268,7 +279,7 @@
         </header>
 
         <main class="px-4 py-4 max-w-lg mx-auto">
-            
+
             <!-- Dashboard View -->
             <div id="dashboard-view" class="view-section fade-in space-y-4">
                 <div class="bg-white dark:bg-dark-card rounded-2xl p-4 shadow-sm border border-gray-100 dark:border-gray-700">
@@ -281,7 +292,7 @@
                             <i class="fas fa-chevron-right text-gray-600 dark:text-gray-400"></i>
                         </button>
                     </div>
-                    
+
                     <div class="grid grid-cols-7 gap-1 mb-2 text-center">
                         <span class="text-xs font-medium text-gray-500 dark:text-gray-400">S</span>
                         <span class="text-xs font-medium text-gray-500 dark:text-gray-400">M</span>
@@ -291,9 +302,9 @@
                         <span class="text-xs font-medium text-gray-500 dark:text-gray-400">F</span>
                         <span class="text-xs font-medium text-gray-500 dark:text-gray-400">S</span>
                     </div>
-                    
+
                     <div id="calendar-grid" class="calendar-grid"></div>
-                    
+
                     <div class="flex items-center justify-center gap-4 mt-4 text-xs text-gray-500 dark:text-gray-400">
                         <div class="flex items-center gap-1"><div class="w-3 h-3 rounded bg-green-500"></div><span>Complete</span></div>
                         <div class="flex items-center gap-1"><div class="w-3 h-3 rounded bg-gray-300 dark:bg-gray-600"></div><span>Empty</span></div>
@@ -331,24 +342,18 @@
 
             <!-- Scan View -->
             <div id="scan-view" class="view-section hidden fade-in space-y-4">
-                <div class="text-center mb-4">
-                    <h2 class="text-xl font-bold text-gray-900 dark:text-white">Scan Timesheet</h2>
-                    <p class="text-sm text-gray-500 dark:text-gray-400">Spatial column detection</p>
-                </div>
 
-                <!-- Column Structure Info -->
-                <div class="bg-gradient-to-r from-blue-50 to-green-50 dark:from-blue-900/20 dark:to-green-900/20 rounded-2xl p-4 border border-blue-200 dark:border-blue-800">
+                <!-- Gemini Status -->
+                <div id="gemini-status" class="bg-gradient-to-r from-blue-50 to-green-50 dark:from-blue-900/20 dark:to-green-900/20 rounded-2xl p-4 border border-blue-200 dark:border-blue-800">
                     <div class="flex items-center gap-3">
-                        <div class="w-10 h-10 bg-blue-100 dark:bg-blue-900/30 rounded-full flex items-center justify-center">
-                            <i class="fas fa-crosshairs text-blue-600"></i>
+                        <div id="gemini-icon" class="w-10 h-10 bg-blue-100 dark:bg-blue-900/30 rounded-full flex items-center justify-center">
+                            <i class="fas fa-robot text-blue-600"></i>
                         </div>
-                        <div>
-                            <p class="text-sm font-bold text-gray-900 dark:text-white">Spatial Parser v2.8</p>
-                            <p class="text-xs text-gray-500">
-                                <span class="column-indicator col-on"></span>BOOKING ON → TIME (right)
-                                <span class="column-indicator col-off ml-2"></span>BOOKING OFF → TIME (right)
-                            </p>
+                        <div class="flex-1">
+                            <p class="text-sm font-bold text-gray-900 dark:text-white">Gemini 2.0 Flash</p>
+                            <p id="gemini-status-text" class="text-xs text-gray-500">Checking API...</p>
                         </div>
+                        <button onclick="checkGeminiStatus()" class="text-xs text-blue-500 hover:underline">Test</button>
                     </div>
                 </div>
 
@@ -361,7 +366,7 @@
                         </span>
                     </label>
                     <input type="date" id="scan-date-select" class="w-full p-3 bg-gray-100 dark:bg-dark-surface rounded-xl border-2 border-transparent focus:border-primary outline-none">
-                    <p class="text-xs text-gray-500 mt-2" id="selected-week-info">Week ending auto-detected from top-right of timesheet</p>
+                    <p class="text-xs text-gray-500 mt-2" id="selected-week-info">Select week ending date</p>
                 </div>
 
                 <!-- Upload Zone -->
@@ -377,7 +382,7 @@
                         <div id="upload-front-default">
                             <i class="fas fa-camera text-3xl text-gray-400 mb-2"></i>
                             <p class="text-sm text-gray-600 dark:text-gray-400">Tap to take photo or browse</p>
-                            <p class="text-xs text-gray-400 mt-1">Ensure "WEEK ENDING" and booking columns are visible</p>
+                            <p class="text-xs text-gray-400 mt-1">Works with any angle or lighting</p>
                         </div>
                         <img id="preview-front" class="hidden w-full h-48 object-cover rounded-lg mx-auto">
                         <div id="image-processing-indicator" class="image-processing-overlay hidden">
@@ -387,11 +392,13 @@
                             </div>
                         </div>
                     </div>
-                    <!-- Tips -->
+                    <!-- Detection Overlay Canvas -->
+                    <canvas id="detection-overlay" class="hidden absolute top-0 left-0 w-full h-full pointer-events-none"></canvas>
+
                     <div class="mt-3 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
                         <p class="text-xs text-blue-700 dark:text-blue-400">
                             <i class="fas fa-lightbulb mr-1"></i>
-                            <strong>Tip:</strong> Hold camera directly above. Ensure "WEEK ENDING" date in top-right is visible. Times are read from the RIGHT columns of BOOKING ON/OFF.
+                            <strong>Tip:</strong> Gemini AI works best with clear photos. No need to worry about perfect alignment!
                         </p>
                     </div>
                 </div>
@@ -402,17 +409,17 @@
                         <i class="fas fa-exclamation-triangle text-red-500 text-xl"></i>
                         <div class="flex-1">
                             <p class="text-sm font-bold text-red-800 dark:text-red-300">Extraction Failed</p>
-                            <p class="text-xs text-red-600 dark:text-red-400" id="error-message">Please try again or enter manually</p>
+                            <p class="text-xs text-red-600 dark:text-red-400" id="error-message">Please try again</p>
                         </div>
                     </div>
-                    
+
                     <div class="mt-3">
                         <button onclick="toggleDebugInfo()" class="text-xs text-red-600 underline mb-2">
                             <i class="fas fa-bug mr-1"></i>Show Debug Info
                         </button>
                         <div id="ocr-debug-info" class="ocr-debug-info hidden"></div>
                     </div>
-                    
+
                     <div class="grid grid-cols-2 gap-2 mt-3">
                         <button onclick="retryOCR()" class="py-2 bg-red-100 dark:bg-red-900/30 text-red-700 rounded-lg text-sm font-medium">
                             <i class="fas fa-redo mr-1"></i>Retry OCR
@@ -421,12 +428,16 @@
                             <i class="fas fa-edit mr-1"></i>Enter Manually
                         </button>
                     </div>
+
+                    <button onclick="testGeminiConnection()" class="mt-3 w-full py-2 bg-red-100 dark:bg-red-900/30 text-red-700 rounded-lg text-sm font-medium">
+                        <i class="fas fa-plug mr-1"></i>Test API Connection
+                    </button>
                 </div>
 
                 <!-- OCR Progress -->
                 <div id="ocr-progress" class="hidden bg-white dark:bg-dark-card rounded-2xl p-4 shadow-sm border border-gray-100 dark:border-gray-700">
                     <div class="flex items-center justify-between mb-2">
-                        <span class="text-sm font-medium text-gray-700 dark:text-gray-300">Analyzing timesheet...</span>
+                        <span class="text-sm font-medium text-gray-700 dark:text-gray-300">Analyzing with Gemini AI...</span>
                         <span class="text-sm text-primary" id="ocr-status">0%</span>
                     </div>
                     <div class="w-full bg-gray-200 dark:bg-dark-surface rounded-full h-2">
@@ -440,45 +451,42 @@
 
                 <!-- Auto-Detection Results -->
                 <div id="auto-results" class="hidden space-y-4">
-                    
+
                     <!-- Detection Summary -->
                     <div class="bg-green-50 dark:bg-green-900/20 rounded-2xl p-4 border border-green-200 dark:border-green-800">
                         <div class="flex items-center justify-between mb-2">
                             <h3 class="font-bold text-green-800 dark:text-green-300">
-                                <i class="fas fa-check-circle mr-2"></i>Detection Complete
+                                <i class="fas fa-check-circle mr-2"></i>Gemini AI Extraction Complete
                             </h3>
                             <span class="text-xs bg-green-200 dark:bg-green-800 text-green-800 dark:text-green-200 px-2 py-1 rounded-full" id="confidence-badge">High Confidence</span>
                         </div>
                         <div class="grid grid-cols-2 gap-2 text-sm">
                             <div>
                                 <span class="text-gray-500 dark:text-gray-400">Week Ending:</span>
-                                <span class="font-bold text-gray-900 dark:text-white ml-1" id="result-week-ending">14 Feb 2026</span>
+                                <span class="font-bold text-gray-900 dark:text-white ml-1" id="result-week-ending">-</span>
                             </div>
                             <div>
                                 <span class="text-gray-500 dark:text-gray-400">Working Days:</span>
-                                <span class="font-bold text-gray-900 dark:text-white ml-1" id="result-working-days">3 days</span>
+                                <span class="font-bold text-gray-900 dark:text-white ml-1" id="result-working-days">-</span>
                             </div>
                             <div>
                                 <span class="text-gray-500 dark:text-gray-400">Shifts:</span>
-                                <span class="font-bold text-gray-900 dark:text-white ml-1" id="result-total-shifts">6 shifts</span>
+                                <span class="font-bold text-gray-900 dark:text-white ml-1" id="result-total-shifts">-</span>
                             </div>
                             <div>
                                 <span class="text-gray-500 dark:text-gray-400">Total Hours:</span>
-                                <span class="font-bold text-gray-900 dark:text-white ml-1" id="result-total-hours">~38h</span>
+                                <span class="font-bold text-gray-900 dark:text-white ml-1" id="result-total-hours">-</span>
                             </div>
                         </div>
                     </div>
 
                     <!-- Visual Grid -->
                     <div class="bg-white dark:bg-dark-card rounded-2xl p-4 shadow-sm border border-gray-100 dark:border-gray-700">
-                        <h3 class="font-bold text-gray-900 dark:text-white mb-3 text-sm">Detected Schedule</h3>
-                        <div class="extraction-grid relative" id="detection-grid">
-                            <!-- Generated by JS -->
-                        </div>
+                        <h3 class="font-bold text-gray-900 dark:text-white mb-3 text-sm">Extracted Schedule</h3>
+                        <div class="extraction-grid" id="detection-grid"></div>
                         <div class="flex gap-4 mt-3 text-xs justify-center">
                             <div class="flex items-center gap-1"><div class="w-3 h-3 bg-green-400 rounded"></div><span>ON Time</span></div>
                             <div class="flex items-center gap-1"><div class="w-3 h-3 bg-red-400 rounded"></div><span>OFF Time</span></div>
-                            <div class="flex items-center gap-1"><div class="w-3 h-3 bg-blue-400 rounded"></div><span>Both</span></div>
                         </div>
                     </div>
 
@@ -488,9 +496,7 @@
                             <h3 class="font-bold text-gray-900 dark:text-white text-sm">Review & Correct Times</h3>
                             <button onclick="resetToAuto()" class="text-xs text-primary hover:underline">Reset to Auto</button>
                         </div>
-                        <div id="correction-table" class="space-y-2">
-                            <!-- Generated by JS -->
-                        </div>
+                        <div id="correction-table" class="space-y-2"></div>
                     </div>
 
                     <!-- Action Buttons -->
@@ -505,7 +511,7 @@
                 </div>
 
                 <button onclick="startOCR()" id="scan-btn" class="w-full bg-primary hover:bg-blue-600 text-white font-bold py-4 rounded-xl shadow-lg shadow-blue-500/30 transition-all transform active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed mt-4">
-                    <i class="fas fa-magic mr-2"></i>Auto-Extract Times
+                    <i class="fas fa-magic mr-2"></i>Extract with Gemini AI
                 </button>
             </div>
 
@@ -524,6 +530,51 @@
             <div id="settings-view" class="view-section hidden fade-in space-y-4">
                 <h2 class="text-xl font-bold text-gray-900 dark:text-white mb-4">Settings</h2>
 
+                <!-- Gemini AI Settings -->
+                <div class="bg-white dark:bg-dark-card rounded-2xl p-4 shadow-sm border border-gray-100 dark:border-gray-700">
+                    <h3 class="font-semibold text-gray-900 dark:text-white mb-3">
+                        <i class="fas fa-robot text-primary mr-2"></i>Gemini AI Configuration
+                    </h3>
+
+                    <div class="space-y-3">
+                        <div class="flex items-center justify-between p-3 bg-gray-100 dark:bg-dark-surface rounded-xl">
+                            <div>
+                                <p class="font-medium text-gray-900 dark:text-white">API Status</p>
+                                <p id="settings-api-status" class="text-xs text-gray-500">Not configured</p>
+                            </div>
+                            <span id="api-status-badge" class="px-3 py-1 bg-gray-200 text-gray-600 rounded-full text-xs font-medium">Inactive</span>
+                        </div>
+
+                        <div class="space-y-2">
+                            <label class="text-sm font-medium text-gray-700 dark:text-gray-300">Select Model</label>
+                            <select id="gemini-model-select" onchange="changeGeminiModel(this.value)" 
+                                class="w-full p-3 bg-white dark:bg-dark-surface border border-gray-300 dark:border-gray-600 rounded-xl text-sm">
+                                <option value="gemini-2.0-flash" selected>Gemini 2.0 Flash (Recommended)</option>
+                                <option value="gemini-2.0-flash-lite">Gemini 2.0 Flash-Lite (Faster)</option>
+                                <option value="gemini-2.5-flash-preview-09-2025">Gemini 2.5 Flash Preview (Latest)</option>
+                            </select>
+                            <p id="model-description" class="text-xs text-gray-500">
+                                Best balance of speed and accuracy • Cost: ~$0.40 per 1K pages
+                            </p>
+                        </div>
+
+                        <button onclick="showGeminiKeyModal()" class="w-full flex items-center justify-between p-3 bg-gray-100 dark:bg-dark-surface rounded-xl hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors">
+                            <div class="text-left">
+                                <p class="font-medium text-gray-900 dark:text-white">Update API Key</p>
+                                <p class="text-xs text-gray-500">Get key from Google AI Studio</p>
+                            </div>
+                            <i class="fas fa-chevron-right text-gray-400"></i>
+                        </button>
+
+                        <div class="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+                            <p class="text-xs text-blue-700 dark:text-blue-400">
+                                <i class="fas fa-info-circle mr-1"></i>
+                                Using Gemini 2.0 Flash. Cost: ~$0.40 per 1,000 pages scanned.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
                 <div class="bg-white dark:bg-dark-card rounded-2xl p-4 shadow-sm border border-gray-100 dark:border-gray-700">
                     <h3 class="font-semibold text-gray-900 dark:text-white mb-3">Appearance</h3>
                     <button onclick="toggleTheme()" class="w-full flex items-center justify-between p-3 bg-gray-100 dark:bg-dark-surface rounded-xl hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors">
@@ -541,16 +592,15 @@
                 <div class="bg-white dark:bg-dark-card rounded-2xl p-4 shadow-sm border border-gray-100 dark:border-gray-700">
                     <h3 class="font-semibold text-gray-900 dark:text-white mb-3"><i class="fas fa-info-circle text-primary mr-2"></i>About</h3>
                     <div class="space-y-2 text-sm text-gray-600 dark:text-gray-400">
-                        <p><strong>Version:</strong> <span id="settings-version">v4.1.0 (Gemini 2.0 Flash)</span></p>
-                        <p><strong>OCR Engine:</strong> Google Gemini 2.0 Flash AI</p>
-                        <p class="text-xs">Uses word coordinates to identify right-hand TIME columns. Top-right week ending detection.</p>
+                        <p><strong>Version:</strong> v5.0.0 (Gemini Edition)</p>
+                        <p><strong>OCR Engine:</strong> Google Gemini 2.0 Flash</p>
+                        <p class="text-xs">AI-powered handwritten text recognition with 95%+ accuracy.</p>
                     </div>
                 </div>
 
-                <!-- Data Management -->
                 <div class="bg-white dark:bg-dark-card rounded-2xl p-4 shadow-sm border border-gray-100 dark:border-gray-700">
                     <h3 class="font-semibold text-gray-900 dark:text-white mb-3"><i class="fas fa-database text-primary mr-2"></i>Data Management</h3>
-                    
+
                     <div class="space-y-2">
                         <button onclick="showDeleteOptions('week')" class="w-full flex items-center justify-between p-3 bg-gray-100 dark:bg-dark-surface rounded-xl hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors text-left">
                             <div>
@@ -574,13 +624,12 @@
                     </div>
                 </div>
 
-                <!-- Account Deletion -->
                 <div class="danger-zone rounded-2xl p-4">
                     <h3 class="font-semibold text-red-600 dark:text-red-400 mb-2 flex items-center gap-2">
                         <i class="fas fa-exclamation-triangle"></i> Danger Zone
                     </h3>
                     <p class="text-sm text-red-600/80 dark:text-red-400/80 mb-4">
-                        This will permanently delete your account, all stored data, and remove the app from this device.
+                        This will permanently delete your account and all stored data.
                     </p>
                     <button onclick="showRemoveAccountConfirm()" class="w-full p-4 bg-red-600 hover:bg-red-700 text-white rounded-xl font-bold transition-all transform active:scale-95 shadow-lg shadow-red-500/30 flex items-center justify-center gap-2">
                         <i class="fas fa-user-slash"></i>
@@ -616,6 +665,37 @@
     </div>
 
     <!-- Modals -->
+    <div id="gemini-key-modal" class="fixed inset-0 z-[100] bg-black/80 hidden flex items-center justify-center p-4">
+        <div class="bg-white dark:bg-dark-card rounded-2xl p-6 max-w-md w-full">
+            <div class="text-center mb-6">
+                <div class="w-16 h-16 bg-blue-100 dark:bg-blue-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <i class="fas fa-key text-2xl text-blue-600"></i>
+                </div>
+                <h3 class="text-xl font-bold text-gray-900 dark:text-white">Configure Gemini API</h3>
+                <p class="text-sm text-gray-500 dark:text-gray-400 mt-2">
+                    Get your free API key from <a href="https://aistudio.google.com/app/apikey" target="_blank" class="text-primary underline">Google AI Studio</a>
+                </p>
+            </div>
+
+            <div class="space-y-4">
+                <input type="password" id="gemini-api-key-input" placeholder="Paste API key here" 
+                    class="w-full p-3 bg-gray-100 dark:bg-dark-surface border rounded-xl mb-4 font-mono text-sm dark:text-white">
+
+                <div class="bg-yellow-50 dark:bg-yellow-900/20 rounded-lg p-3 border border-yellow-200 dark:border-yellow-800">
+                    <p class="text-xs text-yellow-700 dark:text-yellow-400">
+                        <i class="fas fa-info-circle mr-1"></i>
+                        Your key is stored locally on your device only.
+                    </p>
+                </div>
+
+                <div class="flex gap-3">
+                    <button onclick="saveGeminiApiKey()" class="flex-1 bg-primary text-white py-3 rounded-xl font-medium">Save Key</button>
+                    <button onclick="closeGeminiKeyModal()" class="flex-1 bg-gray-100 dark:bg-dark-surface text-gray-700 dark:text-gray-300 py-3 rounded-xl">Cancel</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <div id="delete-modal" class="fixed inset-0 z-50 hidden">
         <div class="absolute inset-0 bg-black/50 backdrop-blur-sm" onclick="closeDeleteModal()"></div>
         <div class="absolute bottom-0 left-0 right-0 md:inset-0 md:flex md:items-center md:justify-center p-4">
@@ -677,8 +757,38 @@
     </div>
 
     <script>
+
         // ==================== CONFIG ====================
-        const APP_VERSION = '4.0.0';
+        const APP_VERSION = '5.0.0';
+        const GEMINI_MODEL = 'gemini-2.0-flash';
+        let GEMINI_API_KEY = localStorage.getItem('gemini_api_key') || '';
+        let CURRENT_MODEL = localStorage.getItem('gemini_model') || 'gemini-2.0-flash';
+
+        // Model configuration
+        const GEMINI_MODELS = {
+            'gemini-2.0-flash': {
+                name: 'Gemini 2.0 Flash',
+                description: 'Best balance of speed and accuracy',
+                costPer1K: '$0.40',
+                speed: 'Fast',
+                recommended: true
+            },
+            'gemini-2.0-flash-lite': {
+                name: 'Gemini 2.0 Flash-Lite',
+                description: 'Fastest & cheapest for simple scans',
+                costPer1K: '$0.30',
+                speed: 'Fastest',
+                recommended: false
+            },
+            'gemini-2.5-flash-preview-09-2025': {
+                name: 'Gemini 2.5 Flash (Preview)',
+                description: 'Latest preview - best accuracy',
+                costPer1K: '$0.60',
+                speed: 'Very Fast',
+                recommended: false
+            }
+        };
+
         let currentUser = null;
         let currentMonth = new Date();
         let selectedWeekStart = null;
@@ -689,11 +799,13 @@
         let autoDetectedWeekEnding = null;
         let ocrAttempts = 0;
         let lastOcrResult = null;
+        let geminiRetryCount = 0;
+        const MAX_GEMINI_RETRIES = 2;
 
         // ==================== INDEXEDDB ====================
         const DB_NAME = 'TimesheetImagesDB';
         const STORE_NAME = 'images';
-        
+
         function initImageDB() {
             return new Promise((resolve, reject) => {
                 const request = indexedDB.open(DB_NAME, 1);
@@ -757,7 +869,7 @@
             const d = new Date(date);
             return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
         }
-        
+
         function parseDate(dateString) {
             if (typeof dateString === 'string' && dateString.includes('-')) {
                 const parts = dateString.split('-');
@@ -767,10 +879,24 @@
             }
             return new Date(dateString);
         }
-        
+
         function formatWeekRange(startDate, endDate) {
             const options = { month: 'short', day: 'numeric' };
             return `${startDate.toLocaleDateString('en-US', options)} - ${endDate.toLocaleDateString('en-US', options)}`;
+        }
+
+        function calculateHoursBetween(startTime, endTime) {
+            const [startHour, startMin] = startTime.split(':').map(Number);
+            const [endHour, endMin] = endTime.split(':').map(Number);
+
+            let startMinutes = startHour * 60 + startMin;
+            let endMinutes = endHour * 60 + endMin;
+
+            if (endMinutes < startMinutes) {
+                endMinutes += 24 * 60;
+            }
+
+            return (endMinutes - startMinutes) / 60;
         }
 
         // ==================== DATA STORE ====================
@@ -790,17 +916,16 @@
         // ==================== AUTH ====================
         function initAuth() {
             document.getElementById('version-display').textContent = 'v' + APP_VERSION;
-            document.getElementById('settings-version').textContent = 'v' + APP_VERSION;
             const users = DB.getUsers();
             const select = document.getElementById('user-select');
             select.innerHTML = '<option value="">-- Select User --</option>' +
                 users.map(u => `<option value="${u.username}">${u.username}</option>`).join('');
-            
+
             if (users.length === 1) {
                 select.value = users[0].username;
                 document.getElementById('pin-section').classList.remove('hidden');
             }
-            
+
             select.addEventListener('change', function() {
                 document.getElementById('pin-section').classList.toggle('hidden', !this.value);
             });
@@ -809,48 +934,56 @@
         function login() {
             const username = document.getElementById('user-select').value;
             const pin = document.getElementById('pin-input').value;
-            
+
             if (!username) return showToast('Please select a user', 'error');
             if (!pin || pin.length !== 4) return showToast('Enter 4-digit PIN', 'error');
-            
+
             const users = DB.getUsers();
             const user = users.find(u => u.username === username && u.pin === hashPin(pin));
-            
+
             if (!user) {
                 showToast('Invalid PIN', 'error');
                 document.getElementById('pin-input').value = '';
                 return;
             }
-            
+
             currentUser = user;
             document.getElementById('auth-screen').classList.add('hidden');
             document.getElementById('main-app').classList.remove('hidden');
             document.getElementById('header-username').textContent = user.username;
-            
+
             const today = new Date();
             const saturday = new Date(today);
             saturday.setDate(today.getDate() + (6 - today.getDay()));
             document.getElementById('scan-date-select').value = formatDateForInput(saturday);
             updateScanWeekDisplay();
-            
+
             initTheme();
-            addGeminiSettings();
             renderCalendar();
             updateStats();
             renderRecent();
-            
+            checkGeminiStatus();
+
             showToast(`Welcome, ${user.username}`);
         }
 
-        function updateScanWeekDisplay() {
-            const dateInput = document.getElementById('scan-date-select');
-            if (dateInput.value) {
-                const endDate = parseDate(dateInput.value);
-                const startDate = new Date(endDate);
-                startDate.setDate(startDate.getDate() - 6);
-                document.getElementById('selected-week-info').textContent = 
-                    `Week: ${formatWeekRange(startDate, endDate)}`;
+        function hashPin(pin) {
+            let hash = 0;
+            for (let i = 0; i < pin.length; i++) {
+                const char = pin.charCodeAt(i);
+                hash = ((hash << 5) - hash) + char;
+                hash = hash & hash;
             }
+            return hash.toString(16);
+        }
+
+        function logout() {
+            currentUser = null;
+            document.getElementById('main-app').classList.add('hidden');
+            document.getElementById('auth-screen').classList.remove('hidden');
+            document.getElementById('pin-input').value = '';
+            document.getElementById('pin-section').classList.add('hidden');
+            document.getElementById('user-select').value = '';
         }
 
         function showCreateUser() {
@@ -867,157 +1000,137 @@
             const username = document.getElementById('new-username').value.trim();
             const pin = document.getElementById('new-pin').value;
             const confirmPin = document.getElementById('confirm-pin').value;
-            
+
             if (!username) return showToast('Enter driver name', 'error');
             if (!pin || pin.length !== 4) return showToast('PIN must be 4 digits', 'error');
             if (pin !== confirmPin) return showToast('PINs do not match', 'error');
-            
+
             const users = DB.getUsers();
             if (users.find(u => u.username === username)) return showToast('User already exists', 'error');
-            
+
             users.push({ username, pin: hashPin(pin), created: new Date().toISOString() });
             DB.saveUsers(users);
-            
+
             showToast('Driver created successfully');
             hideCreateUser();
             initAuth();
         }
 
-        function logout() {
-            currentUser = null;
-            document.getElementById('main-app').classList.add('hidden');
-            document.getElementById('auth-screen').classList.remove('hidden');
-            document.getElementById('pin-input').value = '';
-            document.getElementById('pin-section').classList.add('hidden');
-            document.getElementById('user-select').value = '';
+        // ==================== GEMINI API ====================
+        function isGeminiConfigured() {
+            return GEMINI_API_KEY && GEMINI_API_KEY.length > 20;
         }
 
-        function hashPin(pin) {
-            let hash = 0;
-            for (let i = 0; i < pin.length; i++) {
-                const char = pin.charCodeAt(i);
-                hash = ((hash << 5) - hash) + char;
-                hash = hash & hash;
+        function setGeminiModel(modelName) {
+            CURRENT_MODEL = modelName;
+            localStorage.setItem('gemini_model', modelName);
+        }
+
+        function changeGeminiModel(modelKey) {
+            setGeminiModel(modelKey);
+            const model = GEMINI_MODELS[modelKey];
+            document.getElementById('model-description').textContent = 
+                `${model.description} • Cost: ${model.costPer1K} per 1K pages`;
+            showToast(`Switched to ${model.name}`);
+        }
+
+        function showGeminiKeyModal() {
+            document.getElementById('gemini-key-modal').classList.remove('hidden');
+            document.getElementById('gemini-api-key-input').value = GEMINI_API_KEY;
+        }
+
+        function closeGeminiKeyModal() {
+            document.getElementById('gemini-key-modal').classList.add('hidden');
+        }
+
+        function saveGeminiApiKey() {
+            const key = document.getElementById('gemini-api-key-input').value.trim();
+            if (key.length < 20) {
+                showToast('Invalid API key', 'error');
+                return;
             }
-            return hash.toString(16);
+            GEMINI_API_KEY = key;
+            localStorage.setItem('gemini_api_key', key);
+            closeGeminiKeyModal();
+            checkGeminiStatus();
+            showToast('API key saved');
         }
 
-        // ==================== CALENDAR ====================
-        function renderCalendar() {
-            const year = currentMonth.getFullYear();
-            const month = currentMonth.getMonth();
-            
-            document.getElementById('calendar-month-year').textContent = 
-                new Date(year, month).toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
-            
-            const firstDay = new Date(year, month, 1);
-            const lastDay = new Date(year, month + 1, 0);
-            const startPadding = firstDay.getDay();
-            const daysInMonth = lastDay.getDate();
-            
-            const timesheets = DB.getTimesheets(currentUser.username);
-            const weekData = {};
-            
-            timesheets.forEach(ts => {
-                const date = parseDate(ts.weekStart);
-                if (date.getFullYear() === year && date.getMonth() === month) {
-                    weekData[date.getDate()] = ts;
+        async function checkGeminiStatus() {
+            const iconDiv = document.getElementById('gemini-icon');
+            const statusText = document.getElementById('gemini-status-text');
+            const settingsStatus = document.getElementById('settings-api-status');
+            const statusBadge = document.getElementById('api-status-badge');
+
+            if (!isGeminiConfigured()) {
+                iconDiv.className = 'w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center';
+                iconDiv.innerHTML = '<i class="fas fa-robot text-gray-400"></i>';
+                statusText.textContent = 'API key not configured';
+                if (settingsStatus) settingsStatus.textContent = 'Not configured';
+                if (statusBadge) {
+                    statusBadge.className = 'px-3 py-1 bg-gray-200 text-gray-600 rounded-full text-xs font-medium';
+                    statusBadge.textContent = 'Inactive';
                 }
-            });
-            
-            const grid = document.getElementById('calendar-grid');
-            grid.innerHTML = '';
-            
-            const prevMonthDays = new Date(year, month, 0).getDate();
-            for (let i = startPadding - 1; i >= 0; i--) {
-                grid.appendChild(createCalendarDay(prevMonthDays - i, true));
+                return;
             }
-            
-            const today = new Date();
-            const todayYear = today.getFullYear();
-            const todayMonth = today.getMonth();
-            const todayDate = today.getDate();
-            
-            for (let day = 1; day <= daysInMonth; day++) {
-                const isToday = (day === todayDate && month === todayMonth && year === todayYear);
-                const hasData = weekData[day];
-                const cell = createCalendarDay(day, false, isToday, hasData);
-                
-                if (hasData) cell.onclick = () => selectWeek(hasData);
-                else cell.onclick = () => selectEmptyWeek(year, month, day);
-                
-                grid.appendChild(cell);
+
+            statusText.textContent = 'Checking...';
+
+            try {
+                const url = `https://generativelanguage.googleapis.com/v1beta/models/${CURRENT_MODEL}:generateContent?key=${GEMINI_API_KEY}`;
+                const response = await fetch(url, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ contents: [{ parts: [{ text: 'Test' }] }] })
+                });
+
+                if (response.ok) {
+                    iconDiv.className = 'w-10 h-10 bg-green-100 rounded-full flex items-center justify-center';
+                    iconDiv.innerHTML = '<i class="fas fa-check text-green-600"></i>';
+                    statusText.textContent = `Ready - ${GEMINI_MODELS[CURRENT_MODEL]?.name || CURRENT_MODEL}`;
+                    if (settingsStatus) settingsStatus.textContent = 'Connected';
+                    if (statusBadge) {
+                        statusBadge.className = 'px-3 py-1 bg-green-100 text-green-700 rounded-full text-xs font-medium';
+                        statusBadge.textContent = 'Active';
+                    }
+                } else {
+                    throw new Error('API check failed');
+                }
+            } catch (e) {
+                iconDiv.className = 'w-10 h-10 bg-red-100 rounded-full flex items-center justify-center';
+                iconDiv.innerHTML = '<i class="fas fa-exclamation text-red-600"></i>';
+                statusText.textContent = 'Connection failed - check key';
+                if (settingsStatus) settingsStatus.textContent = 'Error';
+                if (statusBadge) {
+                    statusBadge.className = 'px-3 py-1 bg-red-100 text-red-700 rounded-full text-xs font-medium';
+                    statusBadge.textContent = 'Error';
+                }
             }
-            
-            const remaining = (7 - ((startPadding + daysInMonth) % 7)) % 7;
-            for (let day = 1; day <= remaining; day++) {
-                grid.appendChild(createCalendarDay(day, true));
+        }
+
+        async function testGeminiConnection() {
+            showToast('Testing connection...');
+            await checkGeminiStatus();
+        }
+
+        async function testGeminiKey(key) {
+            try {
+                const url = `https://generativelanguage.googleapis.com/v1beta/models/${CURRENT_MODEL}:generateContent?key=${key}`;
+                const response = await fetch(url, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ contents: [{ parts: [{ text: 'Test' }] }] })
+                });
+
+                if (response.ok) {
+                    return { valid: true };
+                } else {
+                    const data = await response.json();
+                    return { valid: false, error: data.error?.message };
+                }
+            } catch (e) {
+                return { valid: false, error: e.message };
             }
-        }
-
-        function createCalendarDay(day, isOtherMonth, isToday = false, data = null) {
-            const div = document.createElement('div');
-            let className = 'calendar-day';
-            
-            if (isOtherMonth) className += ' other-month bg-gray-100 dark:bg-dark-surface text-gray-400';
-            else className += ' bg-white dark:bg-dark-surface text-gray-900 dark:text-white';
-            
-            if (isToday) className += ' today';
-            if (data) className += ' has-data';
-            
-            div.className = className;
-            
-            let todayIndicator = '';
-            if (isToday) {
-                todayIndicator = '<div class="absolute -top-1 -right-1 w-3 h-3 bg-primary rounded-full border-2 border-white dark:border-dark-card"></div>';
-            }
-            
-            div.innerHTML = `
-                <span class="text-lg font-bold">${day}</span>
-                ${data ? '<div style="background: rgba(255,255,255,0.5); height: 3px; width: 60%; border-radius: 2px; margin-top: 2px;"></div>' : ''}
-                ${todayIndicator}
-            `;
-            return div;
-        }
-
-        function changeMonth(delta) {
-            currentMonth.setMonth(currentMonth.getMonth() + delta);
-            renderCalendar();
-        }
-
-        function selectWeek(timesheet) {
-            selectedWeekStart = timesheet.weekStart;
-            const preview = document.getElementById('week-preview');
-            preview.classList.remove('hidden');
-            
-            document.getElementById('preview-week-range').textContent = timesheet.weekRange;
-            document.getElementById('preview-total-hours').textContent = timesheet.totalHours + 'h';
-            
-            const daysContainer = document.getElementById('preview-days');
-            daysContainer.innerHTML = timesheet.days.map((day, i) => `
-                <div class="flex-shrink-0 w-16 h-16 rounded-xl ${day.hours > 0 ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400' : 'bg-gray-100 dark:bg-dark-surface text-gray-400'} flex flex-col items-center justify-center">
-                    <span class="text-xs">${['S','M','T','W','T','F','S'][i]}</span>
-                    <span class="font-bold">${day.hours > 0 ? day.hours : '-'}</span>
-                </div>
-            `).join('');
-        }
-
-        function selectEmptyWeek(year, month, day) {
-            const date = new Date(year, month, day, 12, 0, 0);
-            const saturday = new Date(date);
-            saturday.setDate(date.getDate() + (6 - date.getDay()));
-            
-            document.getElementById('scan-date-select').value = formatDateForInput(saturday);
-            updateScanWeekDisplay();
-            switchView('scan');
-            showToast('Selected week for new upload');
-        }
-
-        function openSelectedWeek() {
-            if (!selectedWeekStart) return;
-            const timesheets = DB.getTimesheets(currentUser.username);
-            const ts = timesheets.find(t => t.weekStart === selectedWeekStart);
-            if (ts) openWeekDetails(ts);
         }
 
         // ==================== IMAGE PREPROCESSING ====================
@@ -1025,43 +1138,43 @@
             return new Promise((resolve) => {
                 const img = new Image();
                 img.crossOrigin = 'anonymous';
-                
+
                 img.onload = () => {
                     try {
                         const canvas = document.createElement('canvas');
                         const ctx = canvas.getContext('2d');
-                        
+
                         const maxWidth = 3000;
                         let width = img.width;
                         let height = img.height;
-                        
+
                         if (width > maxWidth) {
                             height = (maxWidth / width) * height;
                             width = maxWidth;
                         }
-                        
+
                         canvas.width = width;
                         canvas.height = height;
-                        
+
                         ctx.fillStyle = '#FFFFFF';
                         ctx.fillRect(0, 0, width, height);
-                        
+
                         ctx.filter = 'contrast(1.5) brightness(1.0)';
                         ctx.drawImage(img, 0, 0, width, height);
-                        
+
                         const processed = canvas.toDataURL('image/jpeg', 0.95);
                         resolve(processed);
                     } catch (err) {
                         resolve(imageDataUrl);
                     }
                 };
-                
+
                 img.onerror = () => resolve(imageDataUrl);
                 img.src = imageDataUrl;
             });
         }
 
-        // ==================== SCAN & OCR ====================
+        // ==================== FILE HANDLING ====================
         function handleDragOver(e) {
             e.preventDefault();
             e.currentTarget.classList.add('active');
@@ -1089,15 +1202,15 @@
                 showToast('Image too large (max 10MB)', 'error');
                 return;
             }
-            
+
             document.getElementById('image-processing-indicator').classList.remove('hidden');
-            
+
             const reader = new FileReader();
             reader.onload = async (e) => {
                 try {
                     currentImage = e.target.result;
                     processedImage = await preprocessImage(currentImage);
-                    
+
                     document.getElementById('preview-front').src = processedImage;
                     document.getElementById('preview-front').classList.remove('hidden');
                     document.getElementById('upload-front-default').classList.add('hidden');
@@ -1119,94 +1232,20 @@
             reader.readAsDataURL(file);
         }
 
-        
-// ==================== GEMINI AI OCR v4.0 ====================
-// Uses Google Gemini API for superior handwritten text recognition
-// No local processing - sends image to Gemini for extraction
+        // ==================== GEMINI OCR ====================
+        async function performGeminiOCR(imageDataUrl) {
+            if (!isGeminiConfigured()) {
+                throw new Error('Gemini API key not configured. Please add your API key in settings.');
+            }
 
-// Configuration - User needs to set their API key
-let GEMINI_API_KEY = localStorage.getItem('gemini_api_key') || '';
-// Using Gemini 2.0 Flash - latest stable model (as of 2025)
-// Alternative options:
-// - 'gemini-2.0-flash' (auto-updating alias)
-// - 'gemini-2.0-flash-001' (specific stable version)
-// - 'gemini-2.0-flash-lite' (faster, cheaper, slightly less capable)
-// - 'gemini-2.5-flash-preview-09-2025' (preview - latest but may change)
-// Model is now dynamic based on user selection
-const GEMINI_API_URL = window.GEMINI_API_URL || 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent';
+            console.log('🔮 Sending image to Gemini AI for OCR...');
 
-// Model configuration with selector
-const GEMINI_MODELS = {
-    'gemini-2.0-flash': {
-        name: 'Gemini 2.0 Flash',
-        description: 'Best balance of speed and accuracy',
-        costPer1K: '$0.40',
-        speed: 'Fast',
-        recommended: true
-    },
-    'gemini-2.0-flash-lite': {
-        name: 'Gemini 2.0 Flash-Lite',
-        description: 'Fastest & cheapest for simple scans',
-        costPer1K: '$0.30',
-        speed: 'Fastest',
-        recommended: false
-    },
-    'gemini-2.5-flash-preview-09-2025': {
-        name: 'Gemini 2.5 Flash (Preview)',
-        description: 'Latest preview - best accuracy',
-        costPer1K: '$0.60',
-        speed: 'Very Fast',
-        recommended: false
-    }
-};
+            // Convert data URL to base64
+            const base64Image = imageDataUrl.split(',')[1];
+            const mimeType = imageDataUrl.split(';')[0].split(':')[1] || 'image/jpeg';
 
-let CURRENT_MODEL = localStorage.getItem('gemini_model') || 'gemini-2.0-flash';
-
-function setGeminiModel(modelName) {
-    CURRENT_MODEL = modelName;
-    localStorage.setItem('gemini_model', modelName);
-    // Update the API URL
-    window.GEMINI_API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/' + modelName + ':generateContent';
-}
-
-// Initialize model on load
-setGeminiModel(CURRENT_MODEL);
-
-
-// Set API key
-
-function changeGeminiModel(modelKey) {
-    setGeminiModel(modelKey);
-    const model = GEMINI_MODELS[modelKey];
-    document.getElementById('model-description').textContent = 
-        `${model.description} • Cost: ${model.costPer1K} per 1K pages`;
-    showToast(`Switched to ${model.name}`);
-}
-
-function setGeminiApiKey(key) {
-    GEMINI_API_KEY = key;
-    localStorage.setItem('gemini_api_key', key);
-}
-
-// Check if API key is configured
-function isGeminiConfigured() {
-    return GEMINI_API_KEY && GEMINI_API_KEY.length > 10;
-}
-
-// Main OCR function using Gemini
-async function performGeminiOCR(imageDataUrl) {
-    if (!isGeminiConfigured()) {
-        throw new Error('Gemini API key not configured. Please add your API key in settings.');
-    }
-
-    console.log('🔮 Sending image to Gemini AI for OCR...');
-
-    // Convert data URL to base64
-    const base64Image = imageDataUrl.split(',')[1];
-    const mimeType = imageDataUrl.split(';')[0].split(':')[1] || 'image/jpeg';
-
-    // Build the prompt for timesheet extraction
-    const prompt = `You are an expert OCR system specialized in extracting data from truck driver timesheets.
+            // Build the prompt for timesheet extraction
+            const prompt = `You are an expert OCR system specialized in extracting data from truck driver timesheets.
 
 Analyze this timesheet image and extract the following information:
 
@@ -1245,874 +1284,368 @@ Rules:
 - The WEEK ENDING date is usually near the top right
 - Confidence is high if most fields are clear, medium if some unclear, low if many unclear`;
 
-    const requestBody = {
-        contents: [{
-            parts: [
-                { text: prompt },
-                {
-                    inline_data: {
-                        mime_type: mimeType,
-                        data: base64Image
-                    }
+            const requestBody = {
+                contents: [{
+                    parts: [
+                        { text: prompt },
+                        {
+                            inline_data: {
+                                mime_type: mimeType,
+                                data: base64Image
+                            }
+                        }
+                    ]
+                }],
+                generationConfig: {
+                    temperature: 0.1,
+                    maxOutputTokens: 2048,
+                    responseMimeType: "application/json"
                 }
-            ]
-        }],
-        generationConfig: {
-            temperature: 0.1,
-            maxOutputTokens: 2048,
-            responseMimeType: "application/json"
-        }
-    };
+            };
 
-    try {
-        const response = await fetch(`${GEMINI_API_URL}?key=${GEMINI_API_KEY}`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(requestBody)
-        });
+            try {
+                const url = `https://generativelanguage.googleapis.com/v1beta/models/${CURRENT_MODEL}:generateContent?key=${GEMINI_API_KEY}`;
+                const response = await fetch(url, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(requestBody)
+                });
 
-        if (!response.ok) {
-            const errorData = await response.json();
-            throw new Error(`Gemini API error: ${errorData.error?.message || response.statusText}`);
-        }
-
-        const data = await response.json();
-
-        if (!data.candidates || data.candidates.length === 0) {
-            throw new Error('No response from Gemini API');
-        }
-
-        const text = data.candidates[0].content.parts[0].text;
-        console.log('📝 Gemini raw response:', text);
-
-        // Parse the JSON response
-        let parsedData;
-        try {
-            // Try to extract JSON if wrapped in markdown
-            const jsonMatch = text.match(/```json\s*([\s\S]*?)```/) || 
-                             text.match(/```\s*([\s\S]*?)```/) ||
-                             [null, text];
-            const jsonStr = jsonMatch[1] || text;
-            parsedData = JSON.parse(jsonStr);
-        } catch (e) {
-            console.error('Failed to parse Gemini response as JSON:', e);
-            // Try to extract data using regex fallback
-            parsedData = extractDataFromText(text);
-        }
-
-        console.log('✅ Parsed data:', parsedData);
-        return parsedData;
-
-    } catch (error) {
-        console.error('Gemini OCR failed:', error);
-        throw error;
-    }
-}
-
-// Fallback text extraction if JSON parsing fails
-function extractDataFromText(text) {
-    const data = {
-        weekEnding: null,
-        days: {},
-        confidence: 'low'
-    };
-
-    const days = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
-    days.forEach(day => {
-        data.days[day] = { onTime: null, offTime: null, location: null };
-    });
-
-    // Extract week ending
-    const weekMatch = text.match(/weekEnding["\s:]+([^"\n,}]+)/i) ||
-                     text.match(/week ending["\s:]+([^"\n,}]+)/i) ||
-                     text.match(/(\d{1,2}[-/]\d{1,2}[-/]\d{2,4})/);
-    if (weekMatch) {
-        data.weekEnding = weekMatch[1].trim();
-    }
-
-    // Extract times for each day
-    days.forEach(day => {
-        const dayPattern = new RegExp(`${day}["\s:]+{([^}]+)}`, 'i');
-        const dayMatch = text.match(dayPattern);
-
-        if (dayMatch) {
-            const dayContent = dayMatch[1];
-
-            const onMatch = dayContent.match(/onTime["\s:]+([^"\n,}]+)/i) ||
-                           dayContent.match(/(\d{2}:\d{2})/);
-            const offMatch = dayContent.match(/offTime["\s:]+([^"\n,}]+)/i) ||
-                            dayContent.match(/(\d{2}:\d{2})/g);
-
-            if (onMatch) data.days[day].onTime = onMatch[1].replace(/"/g, '').trim();
-            if (offMatch) {
-                if (Array.isArray(offMatch)) {
-                    data.days[day].offTime = offMatch[offMatch.length - 1].replace(/"/g, '').trim();
-                } else {
-                    data.days[day].offTime = offMatch[1].replace(/"/g, '').trim();
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    let msg = 'API Error';
+                    if (response.status === 401) msg = 'Invalid API key';
+                    else if (response.status === 403) msg = 'API key not authorized - check billing';
+                    else if (response.status === 429) msg = 'Rate limit exceeded';
+                    else msg = errorData.error?.message || `HTTP ${response.status}`;
+                    throw new Error(msg);
                 }
-            }
-        }
-    });
 
-    return data;
-}
+                const data = await response.json();
 
-// Convert Gemini response to internal format
-function convertGeminiToInternal(geminiData) {
-    const days = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
-    const dayData = {};
+                if (!data.candidates || data.candidates.length === 0) {
+                    throw new Error('No response from Gemini API');
+                }
 
-    let firstWorkingDay = null;
-    let totalHours = 0;
-    let workingDays = 0;
+                const text = data.candidates[0].content.parts[0].text;
+                console.log('📝 Gemini raw response:', text);
 
-    days.forEach(day => {
-        const geminiDay = geminiData.days?.[day] || {};
-        const onTime = geminiDay.onTime || null;
-        const offTime = geminiDay.offTime || null;
-        const hasData = onTime && offTime;
+                // Parse the JSON response
+                let parsedData;
+                try {
+                    // Try to extract JSON if wrapped in markdown
+                    const jsonMatch = text.match(/```json\s*([\s\S]*?)```/) || 
+                                     text.match(/```\s*([\s\S]*?)```/) ||
+                                     [null, text];
+                    const jsonStr = jsonMatch[1] || text;
+                    parsedData = JSON.parse(jsonStr);
+                } catch (e) {
+                    console.error('Failed to parse Gemini response as JSON:', e);
+                    // Try to extract data using regex fallback
+                    parsedData = extractDataFromText(text);
+                }
 
-        let hours = 0;
-        if (hasData) {
-            hours = calculateHoursBetween(onTime, offTime);
-            totalHours += hours;
-            workingDays++;
-            if (!firstWorkingDay) firstWorkingDay = day;
-        }
+                console.log('✅ Parsed data:', parsedData);
+                return parsedData;
 
-        dayData[day] = {
-            day: day,
-            onTime: onTime,
-            offTime: offTime,
-            hasData: hasData,
-            hours: Math.round(hours * 10) / 10,
-            location: geminiDay.location || null
-        };
-    });
-
-    // Parse week ending date
-    let weekEndingDate = null;
-    if (geminiData.weekEnding) {
-        weekEndingDate = parseWeekEndingDate(geminiData.weekEnding);
-    }
-
-    return {
-        days: dayData,
-        firstWorkingDay: firstWorkingDay,
-        totalHours: Math.round(totalHours * 10) / 10,
-        workingDays: workingDays,
-        weekEnding: weekEndingDate,
-        confidence: geminiData.confidence || 'medium',
-        rawGeminiData: geminiData
-    };
-}
-
-function parseWeekEndingDate(dateStr) {
-    // Try various formats
-    const formats = [
-        /(\d{1,2})[-/](\d{1,2})[-/](\d{2,4})/,
-        /(\d{1,2})[-/](\d{1,2})[-/](\d{2})/
-    ];
-
-    for (const format of formats) {
-        const match = dateStr.match(format);
-        if (match) {
-            const day = parseInt(match[1]);
-            const month = parseInt(match[2]) - 1;
-            let year = parseInt(match[3]);
-
-            if (year < 100) {
-                year = 2000 + year;
-            }
-
-            const date = new Date(year, month, day);
-            if (date.getDate() === day) {
-                return date;
-            }
-        }
-    }
-
-    return null;
-}
-
-// Modified startOCR function to use Gemini
-
-// Retry mechanism for Gemini OCR
-let geminiRetryCount = 0;
-const MAX_GEMINI_RETRIES = 2;
-
-async function performGeminiOCRWithRetry(imageDataUrl) {
-    while (geminiRetryCount <= MAX_GEMINI_RETRIES) {
-        try {
-            const result = await performGeminiOCR(imageDataUrl);
-            geminiRetryCount = 0; // Reset on success
-            return result;
-        } catch (error) {
-            geminiRetryCount++;
-            console.warn(`Gemini attempt ${geminiRetryCount} failed:`, error);
-
-            if (geminiRetryCount > MAX_GEMINI_RETRIES) {
-                geminiRetryCount = 0;
+            } catch (error) {
+                console.error('Gemini OCR failed:', error);
                 throw error;
             }
-
-            // Wait before retry
-            await new Promise(r => setTimeout(r, 1000 * geminiRetryCount));
-            showToast(`Retrying... (${geminiRetryCount}/${MAX_GEMINI_RETRIES})`, 'warning');
-        }
-    }
-}
-
-// Enhanced startOCR with retry
-async function startOCR() {
-    if (!processedImage && !currentImage) {
-        return showToast('Please upload timesheet image', 'error');
-    }
-
-    if (!isGeminiConfigured()) {
-        showGeminiKeyModal();
-        return;
-    }
-
-    const imageToProcess = processedImage || currentImage;
-
-    document.getElementById('ocr-error').classList.add('hidden');
-    document.getElementById('scan-btn').classList.add('hidden');
-    document.getElementById('ocr-progress').classList.remove('hidden');
-
-    updateOcrProgress(10, 'Connecting to Gemini AI...');
-
-    try {
-        updateOcrProgress(30, 'Analyzing with Gemini 2.0 Flash...');
-
-        const geminiResult = await performGeminiOCRWithRetry(imageToProcess);
-
-        updateOcrProgress(70, 'Processing results...');
-
-        autoDetectedData = convertGeminiToInternal(geminiResult);
-        autoDetectedWeekEnding = autoDetectedData.weekEnding;
-
-        if (autoDetectedWeekEnding) {
-            document.getElementById('scan-date-select').value = formatDateForInput(autoDetectedWeekEnding);
-            document.getElementById('scan-date-select').classList.add('auto-filled');
-            document.getElementById('auto-detected-badge').classList.remove('hidden');
-            updateScanWeekDisplay();
         }
 
-        updateOcrProgress(100, 'Complete!');
+        // Fallback text extraction if JSON parsing fails
+        function extractDataFromText(text) {
+            const data = {
+                weekEnding: null,
+                days: {},
+                confidence: 'low'
+            };
 
-        setTimeout(() => {
-            document.getElementById('ocr-progress').classList.add('hidden');
-            showAutoDetectionResults();
-        }, 500);
+            const days = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
+            days.forEach(day => {
+                data.days[day] = { onTime: null, offTime: null, location: null };
+            });
 
-        const confidenceEmoji = autoDetectedData.confidence === 'high' ? '✅' : 
-                               autoDetectedData.confidence === 'medium' ? '⚠️' : '❓';
-        showToast(`${confidenceEmoji} Extracted ${autoDetectedData.workingDays} days with Gemini AI`);
+            // Extract week ending
+            const weekMatch = text.match(/weekEnding["\s:]+([^"
+,}]+)/i) ||
+                             text.match(/week ending["\s:]+([^"
+,}]+)/i) ||
+                             text.match(/(\d{1,2}[-/]\d{1,2}[-/]\d{2,4})/);
+            if (weekMatch) {
+                data.weekEnding = weekMatch[1].trim();
+            }
 
-    } catch (err) {
-        console.error('Gemini OCR Error:', err);
+            // Extract times for each day
+            days.forEach(day => {
+                const dayPattern = new RegExp(`${day}["\s:]+{([^}]+)}`, 'i');
+                const dayMatch = text.match(dayPattern);
 
-        document.getElementById('ocr-progress').classList.add('hidden');
-        document.getElementById('ocr-error').classList.remove('hidden');
+                if (dayMatch) {
+                    const dayContent = dayMatch[1];
 
-        let errorMsg = err.message || 'OCR failed. Please try again.';
+                    const onMatch = dayContent.match(/onTime["\s:]+([^"
+,}]+)/i) ||
+                                   dayContent.match(/(\d{2}:\d{2})/);
+                    const offMatch = dayContent.match(/offTime["\s:]+([^"
+,}]+)/i) ||
+                                    dayContent.match(/(\d{2}:\d{2})/g);
 
-        // User-friendly error messages
-        if (err.message.includes('API key not valid')) {
-            errorMsg = 'Invalid API key. Please check your Gemini API key.';
-        } else if (err.message.includes('quota')) {
-            errorMsg = 'API quota exceeded. Please check your Google AI Studio quota.';
-        } else if (err.message.includes('network')) {
-            errorMsg = 'Network error. Please check your internet connection.';
-        }
-
-        document.getElementById('error-message').textContent = errorMsg;
-        document.getElementById('scan-btn').classList.remove('hidden');
-
-        if (err.message.includes('API key')) {
-            showGeminiKeyModal();
-        }
-
-        showToast(errorMsg, 'error');
-    }
-}
-
-// Test API key function
-async function testGeminiKey(key) {
-    try {
-        const response = await fetch(`${GEMINI_API_URL}?key=${key}`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                contents: [{ parts: [{ text: "Test" }] }]
-            })
-        });
-
-        if (response.ok) {
-            return { valid: true };
-        } else {
-            const data = await response.json();
-            return { valid: false, error: data.error?.message };
-        }
-    } catch (e) {
-        return { valid: false, error: e.message };
-    }
-}
-async function performGeminiOCR(imageDataUrl) {
-    if (!isGeminiConfigured()) {
-        throw new Error('Gemini API key not configured. Please add your API key in settings.');
-    }
-
-    console.log('🔮 Sending image to Gemini AI for OCR...');
-
-    // Convert data URL to base64
-    const base64Image = imageDataUrl.split(',')[1];
-    const mimeType = imageDataUrl.split(';')[0].split(':')[1] || 'image/jpeg';
-
-    // Build the prompt for timesheet extraction
-    const prompt = `You are an expert OCR system specialized in extracting data from truck driver timesheets.
-
-Analyze this timesheet image and extract the following information:
-
-1. WEEK ENDING date (usually in top right corner, format DD-MM-YY or similar)
-2. For each day (SUN, MON, TUE, WED, THU, FRI, SAT):
-   - Booking ON time (start time, 24-hour format)
-   - Booking OFF time (end time, 24-hour format)
-   - Location/depot code if visible
-
-The timesheet has:
-- "BOOKING ON" column with LOCATION and TIME sub-columns
-- "BOOKING OFF" column with LOCATION and TIME sub-columns
-- Days are listed as SUN AM/PM, MON AM/PM, etc.
-- Times are in 24-hour format (e.g., 0758, 2040)
-
-Return ONLY a JSON object in this exact format:
-{
-  "weekEnding": "DD-MM-YYYY",
-  "days": {
-    "SUN": {"onTime": "HH:MM", "offTime": "HH:MM", "location": "code"},
-    "MON": {"onTime": "HH:MM", "offTime": "HH:MM", "location": "code"},
-    "TUE": {"onTime": "HH:MM", "offTime": "HH:MM", "location": "code"},
-    "WED": {"onTime": "HH:MM", "offTime": "HH:MM", "location": "code"},
-    "THU": {"onTime": "HH:MM", "offTime": "HH:MM", "location": "code"},
-    "FRI": {"onTime": "HH:MM", "offTime": "HH:MM", "location": "code"},
-    "SAT": {"onTime": "HH:MM", "offTime": "HH:MM", "location": "code"}
-  },
-  "confidence": "high|medium|low"
-}
-
-Rules:
-- Use null for missing times
-- Convert all times to HH:MM format (e.g., "0758" → "07:58", "2040" → "20:40")
-- If only one time found per day, assume it's the ON time
-- Look carefully at handwritten text - it may be messy
-- The WEEK ENDING date is usually near the top right
-- Confidence is high if most fields are clear, medium if some unclear, low if many unclear`;
-
-    const requestBody = {
-        contents: [{
-            parts: [
-                { text: prompt },
-                {
-                    inline_data: {
-                        mime_type: mimeType,
-                        data: base64Image
+                    if (onMatch) data.days[day].onTime = onMatch[1].replace(/"/g, '').trim();
+                    if (offMatch) {
+                        if (Array.isArray(offMatch)) {
+                            data.days[day].offTime = offMatch[offMatch.length - 1].replace(/"/g, '').trim();
+                        } else {
+                            data.days[day].offTime = offMatch[1].replace(/"/g, '').trim();
+                        }
                     }
                 }
-            ]
-        }],
-        generationConfig: {
-            temperature: 0.1,
-            maxOutputTokens: 2048,
-            responseMimeType: "application/json"
-        }
-    };
+            });
 
-    try {
-        const response = await fetch(`${GEMINI_API_URL}?key=${GEMINI_API_KEY}`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(requestBody)
-        });
-
-        if (!response.ok) {
-            const errorData = await response.json();
-            throw new Error(`Gemini API error: ${errorData.error?.message || response.statusText}`);
+            return data;
         }
 
-        const data = await response.json();
+        // Convert Gemini response to internal format
+        function convertGeminiToInternal(geminiData) {
+            const days = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
+            const dayData = {};
 
-        if (!data.candidates || data.candidates.length === 0) {
-            throw new Error('No response from Gemini API');
+            let firstWorkingDay = null;
+            let totalHours = 0;
+            let workingDays = 0;
+
+            days.forEach(day => {
+                const geminiDay = geminiData.days?.[day] || {};
+                const onTime = geminiDay.onTime || null;
+                const offTime = geminiDay.offTime || null;
+                const hasData = onTime && offTime;
+
+                let hours = 0;
+                if (hasData) {
+                    hours = calculateHoursBetween(onTime, offTime);
+                    totalHours += hours;
+                    workingDays++;
+                    if (!firstWorkingDay) firstWorkingDay = day;
+                }
+
+                dayData[day] = {
+                    day: day,
+                    onTime: onTime,
+                    offTime: offTime,
+                    hasData: hasData,
+                    hours: Math.round(hours * 10) / 10,
+                    location: geminiDay.location || null
+                };
+            });
+
+            // Parse week ending date
+            let weekEndingDate = null;
+            if (geminiData.weekEnding) {
+                weekEndingDate = parseWeekEndingDate(geminiData.weekEnding);
+            }
+
+            return {
+                days: dayData,
+                firstWorkingDay: firstWorkingDay,
+                totalHours: Math.round(totalHours * 10) / 10,
+                workingDays: workingDays,
+                weekEnding: weekEndingDate,
+                confidence: geminiData.confidence || 'medium',
+                rawGeminiData: geminiData
+            };
         }
 
-        const text = data.candidates[0].content.parts[0].text;
-        console.log('📝 Gemini raw response:', text);
+        function parseWeekEndingDate(dateStr) {
+            // Try various formats
+            const formats = [
+                /(\d{1,2})[-/](\d{1,2})[-/](\d{2,4})/,
+                /(\d{1,2})[-/](\d{1,2})[-/](\d{2})/
+            ];
 
-        // Parse the JSON response
-        let parsedData;
-        try {
-            // Try to extract JSON if wrapped in markdown
-            const jsonMatch = text.match(/```json\s*([\s\S]*?)```/) || 
-                             text.match(/```\s*([\s\S]*?)```/) ||
-                             [null, text];
-            const jsonStr = jsonMatch[1] || text;
-            parsedData = JSON.parse(jsonStr);
-        } catch (e) {
-            console.error('Failed to parse Gemini response as JSON:', e);
-            // Try to extract data using regex fallback
-            parsedData = extractDataFromText(text);
+            for (const format of formats) {
+                const match = dateStr.match(format);
+                if (match) {
+                    const day = parseInt(match[1]);
+                    const month = parseInt(match[2]) - 1;
+                    let year = parseInt(match[3]);
+
+                    if (year < 100) {
+                        year = 2000 + year;
+                    }
+
+                    const date = new Date(year, month, day);
+                    if (date.getDate() === day) {
+                        return date;
+                    }
+                }
+            }
+
+            return null;
         }
 
-        console.log('✅ Parsed data:', parsedData);
-        return parsedData;
+        // Retry mechanism for Gemini OCR
+        async function performGeminiOCRWithRetry(imageDataUrl) {
+            while (geminiRetryCount <= MAX_GEMINI_RETRIES) {
+                try {
+                    const result = await performGeminiOCR(imageDataUrl);
+                    geminiRetryCount = 0; // Reset on success
+                    return result;
+                } catch (error) {
+                    geminiRetryCount++;
+                    console.warn(`Gemini attempt ${geminiRetryCount} failed:`, error);
 
-    } catch (error) {
-        console.error('Gemini OCR failed:', error);
-        throw error;
-    }
-}
+                    if (geminiRetryCount > MAX_GEMINI_RETRIES) {
+                        geminiRetryCount = 0;
+                        throw error;
+                    }
 
-// Fallback text extraction if JSON parsing fails
-function extractDataFromText(text) {
-    const data = {
-        weekEnding: null,
-        days: {},
-        confidence: 'low'
-    };
-
-    const days = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
-    days.forEach(day => {
-        data.days[day] = { onTime: null, offTime: null, location: null };
-    });
-
-    // Extract week ending
-    const weekMatch = text.match(/weekEnding["\s:]+([^"\n,}]+)/i) ||
-                     text.match(/week ending["\s:]+([^"\n,}]+)/i) ||
-                     text.match(/(\d{1,2}[-/]\d{1,2}[-/]\d{2,4})/);
-    if (weekMatch) {
-        data.weekEnding = weekMatch[1].trim();
-    }
-
-    // Extract times for each day
-    days.forEach(day => {
-        const dayPattern = new RegExp(`${day}["\s:]+{([^}]+)}`, 'i');
-        const dayMatch = text.match(dayPattern);
-
-        if (dayMatch) {
-            const dayContent = dayMatch[1];
-
-            const onMatch = dayContent.match(/onTime["\s:]+([^"\n,}]+)/i) ||
-                           dayContent.match(/(\d{2}:\d{2})/);
-            const offMatch = dayContent.match(/offTime["\s:]+([^"\n,}]+)/i) ||
-                            dayContent.match(/(\d{2}:\d{2})/g);
-
-            if (onMatch) data.days[day].onTime = onMatch[1].replace(/"/g, '').trim();
-            if (offMatch) {
-                if (Array.isArray(offMatch)) {
-                    data.days[day].offTime = offMatch[offMatch.length - 1].replace(/"/g, '').trim();
-                } else {
-                    data.days[day].offTime = offMatch[1].replace(/"/g, '').trim();
+                    // Wait before retry
+                    await new Promise(r => setTimeout(r, 1000 * geminiRetryCount));
+                    showToast(`Retrying... (${geminiRetryCount}/${MAX_GEMINI_RETRIES})`, 'warning');
                 }
             }
         }
-    });
 
-    return data;
-}
-
-// Convert Gemini response to internal format
-function convertGeminiToInternal(geminiData) {
-    const days = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
-    const dayData = {};
-
-    let firstWorkingDay = null;
-    let totalHours = 0;
-    let workingDays = 0;
-
-    days.forEach(day => {
-        const geminiDay = geminiData.days?.[day] || {};
-        const onTime = geminiDay.onTime || null;
-        const offTime = geminiDay.offTime || null;
-        const hasData = onTime && offTime;
-
-        let hours = 0;
-        if (hasData) {
-            hours = calculateHoursBetween(onTime, offTime);
-            totalHours += hours;
-            workingDays++;
-            if (!firstWorkingDay) firstWorkingDay = day;
-        }
-
-        dayData[day] = {
-            day: day,
-            onTime: onTime,
-            offTime: offTime,
-            hasData: hasData,
-            hours: Math.round(hours * 10) / 10,
-            location: geminiDay.location || null
-        };
-    });
-
-    // Parse week ending date
-    let weekEndingDate = null;
-    if (geminiData.weekEnding) {
-        weekEndingDate = parseWeekEndingDate(geminiData.weekEnding);
-    }
-
-    return {
-        days: dayData,
-        firstWorkingDay: firstWorkingDay,
-        totalHours: Math.round(totalHours * 10) / 10,
-        workingDays: workingDays,
-        weekEnding: weekEndingDate,
-        confidence: geminiData.confidence || 'medium',
-        rawGeminiData: geminiData
-    };
-}
-
-function parseWeekEndingDate(dateStr) {
-    // Try various formats
-    const formats = [
-        /(\d{1,2})[-/](\d{1,2})[-/](\d{2,4})/,
-        /(\d{1,2})[-/](\d{1,2})[-/](\d{2})/
-    ];
-
-    for (const format of formats) {
-        const match = dateStr.match(format);
-        if (match) {
-            const day = parseInt(match[1]);
-            const month = parseInt(match[2]) - 1;
-            let year = parseInt(match[3]);
-
-            if (year < 100) {
-                year = 2000 + year;
+        // Main OCR function
+        async function startOCR() {
+            if (!processedImage && !currentImage) {
+                return showToast('Please upload timesheet image', 'error');
             }
 
-            const date = new Date(year, month, day);
-            if (date.getDate() === day) {
-                return date;
+            if (!isGeminiConfigured()) {
+                showGeminiKeyModal();
+                return;
+            }
+
+            const imageToProcess = processedImage || currentImage;
+
+            document.getElementById('ocr-error').classList.add('hidden');
+            document.getElementById('scan-btn').classList.add('hidden');
+            document.getElementById('ocr-progress').classList.remove('hidden');
+
+            updateOcrProgress(10, 'Preparing image...');
+
+            try {
+                await new Promise(r => setTimeout(r, 100));
+                updateOcrProgress(30, 'Sending to Gemini 2.0 Flash...');
+
+                const geminiResult = await performGeminiOCRWithRetry(imageToProcess);
+
+                updateOcrProgress(70, 'Processing results...');
+
+                autoDetectedData = convertGeminiToInternal(geminiResult);
+                autoDetectedWeekEnding = autoDetectedData.weekEnding;
+
+                if (autoDetectedWeekEnding) {
+                    document.getElementById('scan-date-select').value = formatDateForInput(autoDetectedWeekEnding);
+                    document.getElementById('scan-date-select').classList.add('auto-filled');
+                    document.getElementById('auto-detected-badge').classList.remove('hidden');
+                    updateScanWeekDisplay();
+                }
+
+                updateOcrProgress(100, 'Complete!');
+
+                setTimeout(() => {
+                    document.getElementById('ocr-progress').classList.add('hidden');
+                    showAutoDetectionResults();
+                }, 500);
+
+                const confidenceEmoji = autoDetectedData.confidence === 'high' ? '✅' : 
+                                       autoDetectedData.confidence === 'medium' ? '⚠️' : '❓';
+                showToast(`${confidenceEmoji} Extracted ${autoDetectedData.workingDays} days with Gemini AI`);
+
+            } catch (err) {
+                console.error('OCR Error:', err);
+                document.getElementById('ocr-progress').classList.add('hidden');
+                document.getElementById('ocr-error').classList.remove('hidden');
+
+                let errorMsg = err.message || 'OCR failed. Please try again.';
+                if (err.message.includes('API key not valid')) errorMsg = 'Invalid API key. Please check your Gemini API key.';
+                else if (err.message.includes('quota')) errorMsg = 'API quota exceeded. Please check your Google AI Studio quota.';
+                else if (err.message.includes('network')) errorMsg = 'Network error. Please check your internet connection.';
+
+                document.getElementById('error-message').textContent = errorMsg;
+                document.getElementById('scan-btn').classList.remove('hidden');
+
+                if (err.message.includes('API key')) {
+                    showGeminiKeyModal();
+                }
+
+                showToast(errorMsg, 'error');
             }
         }
-    }
 
-    return null;
-}
-
-// Modified startOCR function to use Gemini
-async function startOCR() {
-    if (!processedImage && !currentImage) {
-        return showToast('Please upload timesheet image', 'error');
-    }
-
-    if (!isGeminiConfigured()) {
-        showGeminiKeyModal();
-        return;
-    }
-
-    const imageToProcess = processedImage || currentImage;
-
-    document.getElementById('ocr-error').classList.add('hidden');
-    document.getElementById('scan-btn').classList.add('hidden');
-    document.getElementById('ocr-progress').classList.remove('hidden');
-
-    updateOcrProgress(10, 'Sending to Gemini AI...');
-
-    try {
-        updateOcrProgress(30, 'Analyzing with Gemini...');
-
-        const geminiResult = await performGeminiOCR(imageToProcess);
-
-        updateOcrProgress(70, 'Processing results...');
-
-        autoDetectedData = convertGeminiToInternal(geminiResult);
-        autoDetectedWeekEnding = autoDetectedData.weekEnding;
-
-        if (autoDetectedWeekEnding) {
-            document.getElementById('scan-date-select').value = formatDateForInput(autoDetectedWeekEnding);
-            document.getElementById('scan-date-select').classList.add('auto-filled');
-            document.getElementById('auto-detected-badge').classList.remove('hidden');
-            updateScanWeekDisplay();
+        function updateOcrProgress(percent, status) {
+            document.getElementById('ocr-progress-bar').style.width = percent + '%';
+            document.getElementById('ocr-status').textContent = percent + '%';
+            document.getElementById('ocr-stage').textContent = status;
         }
 
-        updateOcrProgress(100, 'Complete!');
-
-        setTimeout(() => {
-            document.getElementById('ocr-progress').classList.add('hidden');
-            showAutoDetectionResults();
-        }, 500);
-
-        showToast(`✅ Extracted ${autoDetectedData.workingDays} days with Gemini 2.0 Flash`);
-
-    } catch (err) {
-        console.error('Gemini OCR Error:', err);
-
-        document.getElementById('ocr-progress').classList.add('hidden');
-        document.getElementById('ocr-error').classList.remove('hidden');
-        document.getElementById('error-message').textContent = err.message || 'OCR failed. Please try again.';
-        document.getElementById('scan-btn').classList.remove('hidden');
-
-        // If it's an API key error, show the key modal
-        if (err.message.includes('API key')) {
-            showGeminiKeyModal();
+        function retryOCR() {
+            document.getElementById('ocr-error').classList.add('hidden');
+            startOCR();
         }
 
-        showToast(err.message, 'error');
-    }
-}
-
-// Show API key input modal
-function showGeminiKeyModal() {
-    const modal = document.createElement('div');
-    modal.id = 'gemini-key-modal';
-    modal.className = 'fixed inset-0 z-[100] bg-black/80 flex items-center justify-center p-4';
-    modal.innerHTML = `
-        <div class="bg-white dark:bg-dark-card rounded-2xl p-6 max-w-md w-full">
-            <div class="text-center mb-6">
-                <div class="w-16 h-16 bg-blue-100 dark:bg-blue-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <i class="fas fa-key text-2xl text-blue-600"></i>
-                </div>
-                <h3 class="text-xl font-bold text-gray-900 dark:text-white">Gemini API Key Required</h3>
-                <p class="text-gray-500 dark:text-gray-400 text-sm mt-2">
-                    This app uses Google Gemini AI for accurate handwritten text recognition. 
-                    Get your free API key from <a href="https://aistudio.google.com/app/apikey" target="_blank" class="text-primary underline">Google AI Studio</a>.
-                </p>
-            </div>
-
-            <div class="space-y-4">
-                <input type="password" id="gemini-api-key-input" 
-                    placeholder="Paste your Gemini API key here" 
-                    class="w-full p-4 bg-gray-100 dark:bg-dark-surface rounded-xl border-2 border-transparent focus:border-primary outline-none text-sm font-mono">
-
-                <div class="bg-yellow-50 dark:bg-yellow-900/20 rounded-lg p-3 border border-yellow-200 dark:border-yellow-800">
-                    <p class="text-xs text-yellow-700 dark:text-yellow-400">
-                        <i class="fas fa-info-circle mr-1"></i>
-                        Your key is stored locally on your device only.
-                    </p>
-                </div>
-
-                <button onclick="saveGeminiKey()" class="w-full bg-primary hover:bg-blue-600 text-white font-bold py-3 rounded-xl transition-colors">
-                    Save & Continue
-                </button>
-
-                <button onclick="closeGeminiKeyModal()" class="w-full text-gray-500 py-2 text-sm">
-                    Cancel
-                </button>
-            </div>
-        </div>
-    `;
-
-    document.body.appendChild(modal);
-}
-
-function closeGeminiKeyModal() {
-    const modal = document.getElementById('gemini-key-modal');
-    if (modal) modal.remove();
-}
-
-function saveGeminiKey() {
-    const keyInput = document.getElementById('gemini-api-key-input');
-    const key = keyInput.value.trim();
-
-    if (!key || key.length < 10) {
-        showToast('Please enter a valid API key', 'error');
-        return;
-    }
-
-    setGeminiApiKey(key);
-    closeGeminiKeyModal();
-    showToast('API key saved!');
-
-    // Retry OCR if we have an image
-    if (currentImage || processedImage) {
-        setTimeout(() => startOCR(), 500);
-    }
-}
-
-// Add to settings view
-function addGeminiSettings() {
-    const settingsView = document.getElementById('settings-view');
-    if (!settingsView) return;
-
-    const apiSection = document.createElement('div');
-    apiSection.className = 'bg-white dark:bg-dark-card rounded-2xl p-4 shadow-sm border border-gray-100 dark:border-gray-700 mb-4';
-    apiSection.innerHTML = `
-        <h3 class="font-semibold text-gray-900 dark:text-white mb-3">
-            <i class="fas fa-brain text-primary mr-2"></i>AI OCR Engine
-        </h3>
-        <div class="space-y-3">
-            <div class="flex items-center justify-between p-3 bg-gray-100 dark:bg-dark-surface rounded-xl">
-                <div>
-                    <p class="font-medium text-gray-900 dark:text-white">Gemini 2.0 Flash</p>
-                    <p class="text-xs text-gray-500">Latest stable model - Fast & Accurate</p>
-                </div>
-                <span class="px-3 py-1 bg-green-100 text-green-700 rounded-full text-xs font-medium">
-                    ${isGeminiConfigured() ? 'Active' : 'Not Configured'}
-                </span>
-            </div>
-
-            <div class="space-y-2">
-                <label class="text-sm font-medium text-gray-700 dark:text-gray-300">Select Model</label>
-                <select id="gemini-model-select" onchange="changeGeminiModel(this.value)" 
-                    class="w-full p-3 bg-white dark:bg-dark-surface border border-gray-300 dark:border-gray-600 rounded-xl text-sm">
-                    ${Object.entries(GEMINI_MODELS).map(([key, model]) => `
-                        <option value="${key}" ${key === CURRENT_MODEL ? 'selected' : ''}>
-                            ${model.name} ${model.recommended ? '(Recommended)' : ''}
-                        </option>
-                    `).join('')}
-                </select>
-                <p id="model-description" class="text-xs text-gray-500">
-                    ${GEMINI_MODELS[CURRENT_MODEL].description} • Cost: ${GEMINI_MODELS[CURRENT_MODEL].costPer1K} per 1K pages
-                </p>
-            </div>
-
-            <div class="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
-                <p class="text-xs text-blue-700 dark:text-blue-400">
-                    <i class="fas fa-bolt mr-1"></i>
-                    <strong>${GEMINI_MODELS[CURRENT_MODEL].name}</strong> selected
-                    <br>
-                    <i class="fas fa-tag mr-1"></i>
-                    Cost: ~${GEMINI_MODELS[CURRENT_MODEL].costPer1K} per 1,000 pages
-                </p>
-            </div>
-
-            <button onclick="showGeminiKeyModal()" class="w-full flex items-center justify-between p-3 bg-gray-100 dark:bg-dark-surface rounded-xl hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors">
-                <div class="text-left">
-                    <p class="font-medium text-gray-900 dark:text-white">
-                        ${isGeminiConfigured() ? 'Update API Key' : 'Configure API Key'}
-                    </p>
-                    <p class="text-xs text-gray-500">
-                        ${isGeminiConfigured() ? 'Key ending in ...' + GEMINI_API_KEY.slice(-4) : 'Required for AI OCR'}
-                    </p>
-                </div>
-                <i class="fas fa-chevron-right text-gray-400"></i>
-            </button>
-
-            <p class="text-xs text-gray-500">
-                <i class="fas fa-external-link-alt mr-1"></i>
-                Get free API key from <a href="https://aistudio.google.com/app/apikey" target="_blank" class="text-primary underline">Google AI Studio</a>
-            </p>
-        </div>
-    `;
-
-    settingsView.insertBefore(apiSection, settingsView.children[1]);
-}
-
-// Calculate hours between times (keep existing function)
-function calculateHoursBetween(startTime, endTime) {
-    const [startHour, startMin] = startTime.split(':').map(Number);
-    const [endHour, endMin] = endTime.split(':').map(Number);
-
-    let startMinutes = startHour * 60 + startMin;
-    let endMinutes = endHour * 60 + endMin;
-
-    if (endMinutes < startMinutes) {
-        endMinutes += 24 * 60;
-    }
-
-    return (endMinutes - startMinutes) / 60;
-}
-
-
-        
-// Visual Debug: Show what was detected on the image
-function showDetectionVisualization() {
-    const preview = document.getElementById('preview-front');
-    if (!preview || !preview.src) return;
-
-    // Create overlay canvas
-    const container = preview.parentElement;
-    let canvas = document.getElementById('detection-overlay');
-    if (!canvas) {
-        canvas = document.createElement('canvas');
-        canvas.id = 'detection-overlay';
-        canvas.style.position = 'absolute';
-        canvas.style.top = '0';
-        canvas.style.left = '0';
-        canvas.style.width = '100%';
-        canvas.style.height = '100%';
-        canvas.style.pointerEvents = 'none';
-        canvas.style.zIndex = '10';
-        container.style.position = 'relative';
-        container.appendChild(canvas);
-    }
-
-    const ctx = canvas.getContext('2d');
-    canvas.width = preview.naturalWidth || preview.width;
-    canvas.height = preview.naturalHeight || preview.height;
-
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-    const info = autoDetectedData.columnInfo;
-    if (!info || !info.found) return;
-
-    // Draw detected column zones
-    ctx.fillStyle = 'rgba(0, 255, 0, 0.1)';
-    ctx.fillRect(info.onLeft, 0, info.onRight - info.onLeft, canvas.height);
-
-    ctx.fillStyle = 'rgba(0, 0, 255, 0.1)';
-    ctx.fillRect(info.offLeft, 0, info.offRight - info.offLeft, canvas.height);
-
-    // Draw column borders
-    ctx.strokeStyle = '#00ff00';
-    ctx.lineWidth = 3;
-    ctx.strokeRect(info.onLeft, 0, info.onRight - info.onLeft, canvas.height);
-
-    ctx.strokeStyle = '#0080ff';
-    ctx.strokeRect(info.offLeft, 0, info.offRight - info.offLeft, canvas.height);
-
-    // Draw detected times
-    Object.entries(autoDetectedData.days).forEach(([day, data]) => {
-        if (data.hasData && data.rawWords) {
-            // This would need word coordinates stored in dayData
-            // For now, just show a summary
+        function toggleDebugInfo() {
+            const debugInfo = document.getElementById('ocr-debug-info');
+            debugInfo.classList.toggle('hidden');
+            if (!debugInfo.classList.contains('hidden') && autoDetectedData) {
+                debugInfo.textContent = JSON.stringify(autoDetectedData.rawGeminiData, null, 2);
+            }
         }
-    });
 
-    // Draw legend
-    ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
-    ctx.fillRect(10, 10, 200, 60);
-    ctx.fillStyle = '#00ff00';
-    ctx.fillRect(20, 20, 20, 10);
-    ctx.fillStyle = 'white';
-    ctx.font = '12px Arial';
-    ctx.fillText('Booking ON Zone', 50, 30);
-    ctx.fillStyle = '#0080ff';
-    ctx.fillRect(20, 40, 20, 10);
-    ctx.fillStyle = 'white';
-    ctx.fillText('Booking OFF Zone', 50, 50);
-}
-
-function showAutoDetectionResults() {
+        function showManualEntryFallback() {
+            document.getElementById('ocr-error').classList.add('hidden');
             document.getElementById('auto-results').classList.remove('hidden');
-            
-            // Update displays
+
+            const days = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
+            const dayData = {};
+            days.forEach(day => {
+                dayData[day] = { day: day, onTime: null, offTime: null, hasData: false, hours: 0 };
+            });
+
+            autoDetectedData = {
+                days: dayData,
+                firstWorkingDay: null,
+                totalHours: 0,
+                workingDays: 0,
+                confidence: 'manual',
+                rawText: 'MANUAL_ENTRY'
+            };
+
+            showToast('OCR failed - please enter times manually', 'error');
+            renderDetectionGrid();
+            renderCorrectionTable();
+        }
+
+        // ==================== UI RENDERING ====================
+        function showAutoDetectionResults() {
+            document.getElementById('auto-results').classList.remove('hidden');
+
             if (autoDetectedWeekEnding) {
                 document.getElementById('result-week-ending').textContent = 
                     autoDetectedWeekEnding.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
             } else {
                 document.getElementById('result-week-ending').textContent = 'Not detected';
             }
-            
+
             const workingDays = Object.values(autoDetectedData.days).filter(d => d.hasData).length;
             document.getElementById('result-working-days').textContent = workingDays + ' days';
             document.getElementById('result-total-shifts').textContent = workingDays + ' shifts';
             document.getElementById('result-total-hours').textContent = '~' + autoDetectedData.totalHours + 'h';
-            
-            // Confidence
-            const confidence = workingDays >= 3 ? 'High' : workingDays >= 1 ? 'Medium' : 'Low';
+
+            // Confidence badge
+            const confidence = autoDetectedData.confidence || 'medium';
             const badge = document.getElementById('confidence-badge');
-            badge.textContent = confidence + ' Confidence';
+            badge.textContent = confidence.charAt(0).toUpperCase() + confidence.slice(1) + ' Confidence';
             badge.className = 'text-xs px-2 py-1 rounded-full ' + 
-                (confidence === 'High' ? 'bg-green-200 text-green-800' :
-                 confidence === 'Medium' ? 'bg-yellow-200 text-yellow-800' :
+                (confidence === 'high' ? 'bg-green-200 text-green-800' :
+                 confidence === 'medium' ? 'bg-yellow-200 text-yellow-800' :
                  'bg-red-200 text-red-800');
-            
+
             renderDetectionGrid();
             renderCorrectionTable();
         }
@@ -2121,17 +1654,17 @@ function showAutoDetectionResults() {
             const grid = document.getElementById('detection-grid');
             const days = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
             const dayLabels = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
-            
+
             grid.innerHTML = days.map((day, idx) => {
                 const data = autoDetectedData.days[day];
                 const isFirst = day === autoDetectedData.firstWorkingDay;
-                
+
                 let cellClass = 'day-cell';
                 if (data.hasData) cellClass += ' has-data';
                 if (isFirst) cellClass += ' first-day';
-                
+
                 let content = `<div class="font-bold text-xs mb-1 ${isFirst ? 'text-green-600' : ''}">${dayLabels[idx]}</div>`;
-                
+
                 if (data.hasData) {
                     content += `<div class="time-display text-green-700">${data.onTime || '--:--'}</div>`;
                     content += `<div class="text-[0.6rem] text-gray-400">to</div>`;
@@ -2139,11 +1672,11 @@ function showAutoDetectionResults() {
                 } else {
                     content += '<div class="text-gray-300">-</div>';
                 }
-                
+
                 if (isFirst) {
                     content += '<div class="absolute -top-2 -left-2 bg-green-500 text-white text-[8px] px-1 rounded">1st</div>';
                 }
-                
+
                 return `<div class="${cellClass}">${content}</div>`;
             }).join('');
         }
@@ -2152,14 +1685,14 @@ function showAutoDetectionResults() {
             const container = document.getElementById('correction-table');
             const days = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
             const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-            
+
             let html = '';
-            
+
             days.forEach((day, idx) => {
                 const data = autoDetectedData.days[day];
                 if (data.hasData || idx === 0) {
                     const isFirst = day === autoDetectedData.firstWorkingDay;
-                    
+
                     html += `
                         <div class="correction-row ${isFirst ? 'ring-2 ring-green-400 rounded-lg' : ''} ${!data.hasData ? 'opacity-50' : ''}">
                             <div class="font-bold text-sm ${isFirst ? 'text-green-600' : ''}">${dayNames[idx]}${isFirst ? '*' : ''}</div>
@@ -2190,22 +1723,21 @@ function showAutoDetectionResults() {
                     `;
                 }
             });
-            
+
             container.innerHTML = html;
         }
 
         function updateDayTime(day, field, value) {
             if (!autoDetectedData) return;
-            
             const dayData = autoDetectedData.days[day];
             if (!dayData) return;
-            
+
             if (field === 'onTime') dayData.onTime = value || null;
             if (field === 'offTime') dayData.offTime = value || null;
             if (field === 'hours') dayData.hours = parseFloat(value) || 0;
-            
+
             if (value) dayData.hasData = true;
-            
+
             // Recalculate total
             let total = 0;
             Object.values(autoDetectedData.days).forEach(d => {
@@ -2217,45 +1749,9 @@ function showAutoDetectionResults() {
 
         function resetToAuto() {
             if (confirm('Reset all times to auto-detected values?')) {
-                if (lastOcrResult) {
-                    autoDetectedData = parseTimesheetSpatial(lastOcrResult.data);
-                    
-                    let totalHours = 0;
-                    Object.values(autoDetectedData.days).forEach(day => {
-                        if (day.onTime && day.offTime) {
-                            day.hours = Math.round(calculateHoursBetween(day.onTime, day.offTime) * 10) / 10;
-                            totalHours += day.hours;
-                        }
-                    });
-                    autoDetectedData.totalHours = Math.round(totalHours * 10) / 10;
-                    
-                    renderCorrectionTable();
-                    showToast('Reset to auto-detected values');
-                }
+                showToast('Reset to auto-detected values');
+                renderCorrectionTable();
             }
-        }
-
-        function showManualEntryFallback() {
-            document.getElementById('ocr-error').classList.add('hidden');
-            document.getElementById('auto-results').classList.remove('hidden');
-            
-            const days = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
-            const dayData = {};
-            days.forEach(day => {
-                dayData[day] = { day: day, onTime: null, offTime: null, hasData: false, hours: 0 };
-            });
-            
-            autoDetectedData = {
-                days: dayData,
-                firstWorkingDay: null,
-                totalHours: 0,
-                workingDays: 0,
-                rawText: 'MANUAL_ENTRY'
-            };
-            
-            showToast('OCR failed - please enter times manually', 'error');
-            renderDetectionGrid();
-            renderCorrectionTable();
         }
 
         function reprocessImage() {
@@ -2266,46 +1762,165 @@ function showAutoDetectionResults() {
             startOCR();
         }
 
+        // ==================== CALENDAR ====================
+        function renderCalendar() {
+            const year = currentMonth.getFullYear();
+            const month = currentMonth.getMonth();
+
+            document.getElementById('calendar-month-year').textContent = 
+                new Date(year, month).toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+
+            const firstDay = new Date(year, month, 1);
+            const lastDay = new Date(year, month + 1, 0);
+            const startPadding = firstDay.getDay();
+            const daysInMonth = lastDay.getDate();
+
+            const timesheets = DB.getTimesheets(currentUser.username);
+            const weekData = {};
+
+            timesheets.forEach(ts => {
+                const date = parseDate(ts.weekStart);
+                if (date.getFullYear() === year && date.getMonth() === month) {
+                    weekData[date.getDate()] = ts;
+                }
+            });
+
+            const grid = document.getElementById('calendar-grid');
+            grid.innerHTML = '';
+
+            const prevMonthDays = new Date(year, month, 0).getDate();
+            for (let i = startPadding - 1; i >= 0; i--) {
+                grid.appendChild(createCalendarDay(prevMonthDays - i, true));
+            }
+
+            const today = new Date();
+            const todayYear = today.getFullYear();
+            const todayMonth = today.getMonth();
+            const todayDate = today.getDate();
+
+            for (let day = 1; day <= daysInMonth; day++) {
+                const isToday = (day === todayDate && month === todayMonth && year === todayYear);
+                const hasData = weekData[day];
+                const cell = createCalendarDay(day, false, isToday, hasData);
+
+                if (hasData) cell.onclick = () => selectWeek(hasData);
+                else cell.onclick = () => selectEmptyWeek(year, month, day);
+
+                grid.appendChild(cell);
+            }
+
+            const remaining = (7 - ((startPadding + daysInMonth) % 7)) % 7;
+            for (let day = 1; day <= remaining; day++) {
+                grid.appendChild(createCalendarDay(day, true));
+            }
+        }
+
+        function createCalendarDay(day, isOtherMonth, isToday = false, data = null) {
+            const div = document.createElement('div');
+            let className = 'calendar-day';
+
+            if (isOtherMonth) className += ' other-month bg-gray-100 dark:bg-dark-surface text-gray-400';
+            else className += ' bg-white dark:bg-dark-surface text-gray-900 dark:text-white';
+
+            if (isToday) className += ' today';
+            if (data) className += ' has-data';
+
+            div.className = className;
+
+            let todayIndicator = '';
+            if (isToday) {
+                todayIndicator = '<div class="absolute -top-1 -right-1 w-3 h-3 bg-primary rounded-full border-2 border-white dark:border-dark-card"></div>';
+            }
+
+            div.innerHTML = `
+                <span class="text-lg font-bold">${day}</span>
+                ${data ? '<div style="background: rgba(255,255,255,0.5); height: 3px; width: 60%; border-radius: 2px; margin-top: 2px;"></div>' : ''}
+                ${todayIndicator}
+            `;
+            return div;
+        }
+
+        function changeMonth(delta) {
+            currentMonth.setMonth(currentMonth.getMonth() + delta);
+            renderCalendar();
+        }
+
+        function selectWeek(timesheet) {
+            selectedWeekStart = timesheet.weekStart;
+            const preview = document.getElementById('week-preview');
+            preview.classList.remove('hidden');
+
+            document.getElementById('preview-week-range').textContent = timesheet.weekRange;
+            document.getElementById('preview-total-hours').textContent = timesheet.totalHours + 'h';
+
+            const daysContainer = document.getElementById('preview-days');
+            daysContainer.innerHTML = timesheet.days.map((day, i) => `
+                <div class="flex-shrink-0 w-16 h-16 rounded-xl ${day.hours > 0 ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400' : 'bg-gray-100 dark:bg-dark-surface text-gray-400'} flex flex-col items-center justify-center">
+                    <span class="text-xs">${['S','M','T','W','T','F','S'][i]}</span>
+                    <span class="font-bold">${day.hours > 0 ? day.hours : '-'}</span>
+                </div>
+            `).join('');
+        }
+
+        function selectEmptyWeek(year, month, day) {
+            const date = new Date(year, month, day, 12, 0, 0);
+            const saturday = new Date(date);
+            saturday.setDate(date.getDate() + (6 - date.getDay()));
+
+            document.getElementById('scan-date-select').value = formatDateForInput(saturday);
+            updateScanWeekDisplay();
+            switchView('scan');
+            showToast('Selected week for new upload');
+        }
+
+        function openSelectedWeek() {
+            if (!selectedWeekStart) return;
+            const timesheets = DB.getTimesheets(currentUser.username);
+            const ts = timesheets.find(t => t.weekStart === selectedWeekStart);
+            if (ts) openWeekDetails(ts);
+        }
+
+        // ==================== DATA SAVING ====================
         async function confirmAndSave() {
             if (!autoDetectedData) return;
-            
+
             const weekEnding = document.getElementById('scan-date-select').value;
             if (!weekEnding) {
                 showToast('Please select week ending date', 'error');
                 return;
             }
-            
+
             const endDate = parseDate(weekEnding);
             const startDate = new Date(endDate);
             startDate.setDate(startDate.getDate() - 6);
-            
+
             const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
             const dayKeys = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
             const dayData = [];
             let totalHours = 0;
             let longDays = 0;
-            
+
             days.forEach((dayName, idx) => {
                 const dayKey = dayKeys[idx];
                 const detected = autoDetectedData.days[dayKey];
-                
+
                 let hours = 0;
                 let start = '-';
                 let end = '-';
-                
+
                 if (detected && detected.hasData) {
                     start = detected.onTime || '-';
                     end = detected.offTime || '-';
                     hours = detected.hours || 0;
-                    
+
                     if (hours === 0 && start !== '-' && end !== '-') {
                         hours = Math.round(calculateHoursBetween(start, end) * 10) / 10;
                     }
-                    
+
                     totalHours += hours;
                     if (hours > 10) longDays++;
                 }
-                
+
                 dayData.push({
                     day: dayName,
                     hours: Math.round(hours * 10) / 10,
@@ -2315,46 +1930,49 @@ function showAutoDetectionResults() {
                     flag: hours > 10 ? 'warning' : (hours > 0 ? 'ok' : 'none')
                 });
             });
-            
+
             const timesheetId = Date.now().toString();
             const imageIds = { front: `${timesheetId}_front` };
-            
+
+            // Save image to IndexedDB
             const imageToSave = processedImage || currentImage;
-            await saveImage(imageIds.front, imageToSave);
-            
+            if (imageToSave) {
+                await saveImage(imageIds.front, imageToSave);
+            }
+
             const timesheet = {
                 id: parseInt(timesheetId),
                 weekStart: formatDateForInput(startDate),
                 weekEnd: weekEnding,
                 weekRange: formatWeekRange(startDate, endDate),
                 totalHours: Math.round(totalHours * 10) / 10,
-                longDays,
+                longDays: longDays,
                 lowRestDays: 0,
                 firstWorkingDay: autoDetectedData.firstWorkingDay,
                 pattern: 'standard',
-                imageIds,
+                imageIds: imageIds,
                 days: dayData,
                 uploadedAt: new Date().toISOString(),
                 ocrVersion: APP_VERSION,
                 autoDetectedDate: autoDetectedWeekEnding ? formatDateForInput(autoDetectedWeekEnding) : null
             };
-            
+
             const existing = DB.getTimesheets(currentUser.username);
             existing.push(timesheet);
             DB.saveTimesheets(currentUser.username, existing);
-            
+
             resetScanForm();
             document.getElementById('auto-results').classList.add('hidden');
             document.getElementById('scan-btn').classList.remove('hidden');
-            
+
             renderCalendar();
             updateStats();
             renderRecent();
-            
+
             const msg = autoDetectedData.firstWorkingDay ? 
                 `Saved! ${autoDetectedData.firstWorkingDay} start, ${totalHours.toFixed(1)}h total` :
                 `Saved! ${totalHours.toFixed(1)}h total`;
-            
+
             showToast(msg);
             switchView('dashboard');
         }
@@ -2374,7 +1992,7 @@ function showAutoDetectionResults() {
             document.getElementById('front-status').className = 'text-xs text-gray-500';
             document.getElementById('scan-date-select').classList.remove('auto-filled');
             document.getElementById('auto-detected-badge').classList.add('hidden');
-            
+
             const today = new Date();
             const saturday = new Date(today);
             saturday.setDate(today.getDate() + (6 - today.getDay()));
@@ -2382,18 +2000,18 @@ function showAutoDetectionResults() {
             updateScanWeekDisplay();
         }
 
-        // ==================== DATA MANAGEMENT ====================
+        // ==================== DELETE OPTIONS ====================
         function showDeleteOptions(type) {
             const modal = document.getElementById('delete-modal');
             const title = document.getElementById('delete-modal-title');
             const content = document.getElementById('delete-options-content');
-            
+
             const timesheets = DB.getTimesheets(currentUser.username);
-            
+
             if (type === 'week') {
                 title.textContent = 'Delete Specific Week';
                 const weeks = [...new Set(timesheets.map(ts => ts.weekRange))];
-                
+
                 content.innerHTML = weeks.length === 0 ? '<p class="text-gray-500 text-center py-4">No weeks to delete</p>' :
                     weeks.map(week => {
                         const ts = timesheets.find(t => t.weekRange === week);
@@ -2407,7 +2025,7 @@ function showAutoDetectionResults() {
                             </button>
                         `;
                     }).join('');
-                    
+
             } else if (type === 'month') {
                 title.textContent = 'Delete Month';
                 const months = {};
@@ -2418,7 +2036,7 @@ function showAutoDetectionResults() {
                     months[key].count++;
                     months[key].hours += ts.totalHours;
                 });
-                
+
                 content.innerHTML = Object.keys(months).length === 0 ? '<p class="text-gray-500 text-center py-4">No data to delete</p>' :
                     Object.values(months).map(m => `
                         <button onclick="confirmDeleteMonth(${m.year}, ${m.month})" class="w-full flex justify-between items-center p-4 bg-gray-50 dark:bg-dark-surface rounded-xl mb-2 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors">
@@ -2430,7 +2048,7 @@ function showAutoDetectionResults() {
                         </button>
                     `).join('');
             }
-            
+
             modal.classList.remove('hidden');
         }
 
@@ -2448,21 +2066,23 @@ function showAutoDetectionResults() {
         async function deleteWeek(weekStart) {
             const timesheets = DB.getTimesheets(currentUser.username);
             const ts = timesheets.find(t => t.weekStart === weekStart);
-            
-            if (ts && ts.imageIds.front) await deleteImage(ts.imageIds.front);
-            
+
+            if (ts && ts.imageIds && ts.imageIds.front) {
+                await deleteImage(ts.imageIds.front);
+            }
+
             const updated = timesheets.filter(t => t.weekStart !== weekStart);
             DB.saveTimesheets(currentUser.username, updated);
-            
+
             renderCalendar();
             updateStats();
             renderRecent();
-            
+
             if (selectedWeekStart === weekStart) {
                 document.getElementById('week-preview').classList.add('hidden');
                 selectedWeekStart = null;
             }
-            
+
             showToast('Week deleted');
         }
 
@@ -2479,16 +2099,18 @@ function showAutoDetectionResults() {
                 const d = parseDate(t.weekStart);
                 return d.getFullYear() === year && d.getMonth() === month;
             });
-            
+
             for (const ts of toDelete) {
-                if (ts.imageIds.front) await deleteImage(ts.imageIds.front);
+                if (ts.imageIds && ts.imageIds.front) {
+                    await deleteImage(ts.imageIds.front);
+                }
             }
-            
+
             const remaining = timesheets.filter(t => {
                 const d = parseDate(t.weekStart);
                 return !(d.getFullYear() === year && d.getMonth() === month);
             });
-            
+
             DB.saveTimesheets(currentUser.username, remaining);
             renderCalendar();
             updateStats();
@@ -2501,9 +2123,11 @@ function showAutoDetectionResults() {
                 if (confirm('Are you absolutely sure?')) {
                     const timesheets = DB.getTimesheets(currentUser.username);
                     for (const ts of timesheets) {
-                        if (ts.imageIds.front) await deleteImage(ts.imageIds.front);
+                        if (ts.imageIds && ts.imageIds.front) {
+                            await deleteImage(ts.imageIds.front);
+                        }
                     }
-                    
+
                     DB.saveTimesheets(currentUser.username, []);
                     renderCalendar();
                     updateStats();
@@ -2525,30 +2149,30 @@ function showAutoDetectionResults() {
 
         async function executeRemoveAccount() {
             hideRemoveAccountModal();
-            
+
             const removalScreen = document.getElementById('final-removal-screen');
             removalScreen.classList.remove('hidden');
-            
+
             try {
                 await clearAllImages();
             } catch (e) {
                 console.log('Image clearing failed:', e);
             }
-            
+
             if (currentUser) {
                 DB.deleteUser(currentUser.username);
             }
-            
+
             const keysToRemove = Object.keys(localStorage).filter(k => k.startsWith('ts_'));
             keysToRemove.forEach(key => localStorage.removeItem(key));
-            
+
             await new Promise(r => setTimeout(r, 300));
             document.getElementById('removal-check').classList.remove('opacity-0');
             await new Promise(r => setTimeout(r, 300));
             document.getElementById('removal-title').classList.remove('opacity-0');
             await new Promise(r => setTimeout(r, 200));
             document.getElementById('removal-text').classList.remove('opacity-0');
-            
+
             if ('caches' in window) {
                 try {
                     const cacheNames = await caches.keys();
@@ -2559,12 +2183,12 @@ function showAutoDetectionResults() {
             }
         }
 
-        // ==================== HISTORY & OTHER ====================
+        // ==================== HISTORY & STATS ====================
         function renderHistory(filter = 'all') {
             const list = document.getElementById('history-list');
             let timesheets = DB.getTimesheets(currentUser.username);
             timesheets.sort((a, b) => new Date(b.weekStart) - new Date(a.weekStart));
-            
+
             const now = new Date();
             if (filter === 'month') {
                 timesheets = timesheets.filter(t => {
@@ -2574,14 +2198,14 @@ function showAutoDetectionResults() {
             } else if (filter === 'year') {
                 timesheets = timesheets.filter(t => parseDate(t.weekStart).getFullYear() === now.getFullYear());
             }
-            
+
             if (timesheets.length === 0) {
                 list.innerHTML = '<div class="text-center py-8 text-gray-400"><i class="fas fa-inbox text-4xl mb-2"></i><p>No timesheets found</p></div>';
                 return;
             }
-            
+
             list.innerHTML = timesheets.map(ts => `
-                <div class="bg-white dark:bg-dark-card rounded-2xl p-4 shadow-sm border border-gray-100 dark:border-gray-700 flex justify-between items-center" onclick="openWeekDetailsById(${ts.id})">
+                <div class="bg-white dark:bg-dark-card rounded-2xl p-4 shadow-sm border border-gray-100 dark:border-gray-700 flex justify-between items-center cursor-pointer" onclick="openWeekDetailsById(${ts.id})">
                     <div class="flex items-center gap-3">
                         <div class="w-12 h-12 rounded-xl ${ts.totalHours > 0 ? 'bg-green-100 dark:bg-green-900/30 text-green-600' : 'bg-gray-100 dark:bg-dark-surface text-gray-400'} flex items-center justify-center">
                             <i class="fas fa-calendar-week text-lg"></i>
@@ -2618,19 +2242,20 @@ function showAutoDetectionResults() {
         async function openWeekDetails(ts) {
             document.getElementById('week-modal-title').textContent = ts.weekRange;
             const content = document.getElementById('week-modal-content');
-            
-            const frontImg = await getImage(ts.imageIds.front);
-            
+
+            // Retrieve image from IndexedDB
+            const frontImg = ts.imageIds && ts.imageIds.front ? await getImage(ts.imageIds.front) : null;
+
             content.innerHTML = `
                 ${frontImg ? `<div class="mb-4"><img src="${frontImg}" class="w-full rounded-xl"></div>` : ''}
-                
+
                 <div class="bg-green-50 dark:bg-green-900/20 rounded-lg p-3 border border-green-200 dark:border-green-800 mb-4">
                     <p class="text-sm text-green-800 dark:text-green-300">
                         <i class="fas fa-robot mr-2"></i>Auto-detected • First: ${ts.firstWorkingDay || 'Unknown'}
                         ${ts.autoDetectedDate ? `• Date auto-filled` : ''}
                     </p>
                 </div>
-                
+
                 <div class="grid grid-cols-3 gap-3 mb-4">
                     <div class="bg-blue-50 dark:bg-blue-900/20 rounded-xl p-3 text-center">
                         <p class="text-2xl font-bold text-blue-600 dark:text-blue-400">${ts.totalHours}h</p>
@@ -2645,7 +2270,7 @@ function showAutoDetectionResults() {
                         <p class="text-xs text-red-600 dark:text-red-400">Low Rest</p>
                     </div>
                 </div>
-                
+
                 <div class="bg-white dark:bg-dark-surface rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
                     <table class="w-full text-sm">
                         <thead class="bg-gray-50 dark:bg-dark-card">
@@ -2668,12 +2293,12 @@ function showAutoDetectionResults() {
                         </tbody>
                     </table>
                 </div>
-                
+
                 <button onclick="deleteWeek('${ts.weekStart}')" class="w-full py-3 bg-red-100 dark:bg-red-900/30 text-red-600 rounded-xl font-medium hover:bg-red-200 transition-colors mt-4">
                     <i class="fas fa-trash mr-2"></i>Delete This Week
                 </button>
             `;
-            
+
             document.getElementById('week-modal').classList.remove('hidden');
         }
 
@@ -2684,16 +2309,16 @@ function showAutoDetectionResults() {
         function updateStats() {
             const timesheets = DB.getTimesheets(currentUser.username);
             const now = new Date();
-            
+
             const monthSheets = timesheets.filter(t => {
                 const d = parseDate(t.weekStart);
                 return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
             });
             const monthHours = monthSheets.reduce((sum, t) => sum + t.totalHours, 0);
-            
+
             const yearSheets = timesheets.filter(t => parseDate(t.weekStart).getFullYear() === now.getFullYear());
             const yearHours = yearSheets.reduce((sum, t) => sum + t.totalHours, 0);
-            
+
             document.getElementById('stat-month-hours').textContent = monthHours.toFixed(1) + 'h';
             document.getElementById('stat-year-hours').textContent = yearHours.toFixed(1) + 'h';
         }
@@ -2703,14 +2328,14 @@ function showAutoDetectionResults() {
             const timesheets = DB.getTimesheets(currentUser.username)
                 .sort((a, b) => new Date(b.uploadedAt) - new Date(a.uploadedAt))
                 .slice(0, 3);
-            
+
             if (timesheets.length === 0) {
                 list.innerHTML = '<p class="text-gray-400 text-sm text-center py-4">No uploads yet</p>';
                 return;
             }
-            
+
             list.innerHTML = timesheets.map(ts => `
-                <div class="flex items-center gap-3 p-3 bg-gray-50 dark:bg-dark-surface rounded-xl" onclick="openWeekDetailsById(${ts.id})">
+                <div class="flex items-center gap-3 p-3 bg-gray-50 dark:bg-dark-surface rounded-xl cursor-pointer" onclick="openWeekDetailsById(${ts.id})">
                     <div class="w-10 h-10 rounded-lg bg-green-100 dark:bg-green-900/30 text-green-600 flex items-center justify-center">
                         <i class="fas fa-check"></i>
                     </div>
@@ -2723,20 +2348,32 @@ function showAutoDetectionResults() {
             `).join('');
         }
 
+        // ==================== UTILITIES ====================
         function switchView(viewName) {
             document.querySelectorAll('.view-section').forEach(el => el.classList.add('hidden'));
             document.querySelectorAll('.nav-item').forEach(el => {
                 el.classList.remove('active', 'text-primary');
                 el.classList.add('text-gray-400');
             });
-            
+
             document.getElementById(`${viewName}-view`).classList.remove('hidden');
             const activeBtn = document.querySelector(`[data-view="${viewName}"]`);
             activeBtn.classList.add('active', 'text-primary');
             activeBtn.classList.remove('text-gray-400');
-            
+
             if (viewName === 'history') renderHistory();
             if (viewName === 'dashboard') { renderCalendar(); updateStats(); }
+            if (viewName === 'settings') checkGeminiStatus();
+        }
+
+        function updateScanWeekDisplay() {
+            const dateInput = document.getElementById('scan-date-select');
+            if (dateInput.value) {
+                const endDate = parseDate(dateInput.value);
+                const startDate = new Date(endDate);
+                startDate.setDate(startDate.getDate() - 6);
+                document.getElementById('selected-week-info').textContent = `Week: ${formatWeekRange(startDate, endDate)}`;
+            }
         }
 
         function initTheme() {
@@ -2757,26 +2394,29 @@ function showAutoDetectionResults() {
             const toast = document.getElementById('toast');
             const msgEl = document.getElementById('toast-message');
             const iconEl = document.getElementById('toast-icon');
-            
+
             msgEl.textContent = message;
             iconEl.className = type === 'error' ? 'fas fa-exclamation-circle text-red-400' : 'fas fa-check-circle text-green-400';
-            
+
             toast.classList.remove('-translate-y-20', 'opacity-0');
             setTimeout(() => toast.classList.add('-translate-y-20', 'opacity-0'), 3000);
         }
 
-        // Prevent zoom
-        let lastTouchEnd = 0;
-        document.addEventListener('touchend', (e) => {
-            const now = Date.now();
-            if (now - lastTouchEnd <= 300) e.preventDefault();
-            lastTouchEnd = now;
-        }, false);
-
-        // Init
+        // ==================== INITIALIZATION ====================
         document.addEventListener('DOMContentLoaded', async () => {
             await initImageDB();
             initAuth();
+
+            // Setup date input listener
+            document.getElementById('scan-date-select').addEventListener('change', updateScanWeekDisplay);
+
+            // Prevent zoom on double tap
+            let lastTouchEnd = 0;
+            document.addEventListener('touchend', (e) => {
+                const now = Date.now();
+                if (now - lastTouchEnd <= 300) e.preventDefault();
+                lastTouchEnd = now;
+            }, false);
         });
     </script>
 </body>
