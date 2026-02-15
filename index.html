@@ -4,11 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="theme-color" content="#3B82F6">
-    <title>Driver Timesheet Pro v2.4.0</title>
+    <title>Driver Timesheet Pro v2.5.0</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
-    <!-- UPGRADED: Tesseract.js v5 for iOS 17+ compatibility -->
     <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
     
     <script>
@@ -117,7 +116,6 @@
             border-color: #dc2626;
         }
         
-        /* New styles for improved UI */
         .ocr-debug-info {
             font-family: 'Courier New', monospace;
             font-size: 0.75rem;
@@ -164,6 +162,11 @@
             font-size: 0.75rem;
             font-weight: 600;
         }
+
+        .auto-filled {
+            background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
+            border-color: #3B82F6;
+        }
     </style>
 </head>
 <body class="bg-gray-50 dark:bg-dark text-gray-800 dark:text-gray-100 transition-colors duration-300 min-h-screen pb-20">
@@ -177,8 +180,8 @@
                 </div>
                 <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Driver Timesheet Pro</h1>
                 <p class="text-gray-500 dark:text-gray-400 mt-2 flex items-center justify-center gap-2">
-                    <span class="text-xs bg-primary/10 text-primary px-2 py-1 rounded" id="version-display">v2.4.0</span>
-                    <span class="text-xs bg-green-100 text-green-700 px-2 py-1 rounded">Tesseract v5 iOS Fix</span>
+                    <span class="text-xs bg-primary/10 text-primary px-2 py-1 rounded" id="version-display">v2.5.0</span>
+                    <span class="text-xs bg-green-100 text-green-700 px-2 py-1 rounded">Smart Parser</span>
                 </p>
             </div>
 
@@ -222,9 +225,9 @@
                 
                 <div class="bg-blue-50 dark:bg-blue-900/20 rounded-xl p-4 border border-blue-200 dark:border-blue-800">
                     <label class="block text-sm font-medium text-blue-900 dark:text-blue-300 mb-2">
-                        <i class="fas fa-magic mr-2"></i>Tesseract.js v5 - iOS 17+ Compatible
+                        <i class="fas fa-magic mr-2"></i>Smart Timesheet Parser
                     </label>
-                    <p class="text-xs text-blue-700 dark:text-blue-400">Upgraded to Tesseract.js v5 with LSTM-only engine for iOS 17+ compatibility. Smaller file sizes, lower memory usage, and better error handling.</p>
+                    <p class="text-xs text-blue-700 dark:text-blue-400">Automatically extracts booking on/off times and week ending dates from standard driver timesheets.</p>
                 </div>
                 
                 <div class="flex gap-3">
@@ -321,26 +324,31 @@
             <div id="scan-view" class="view-section hidden fade-in space-y-4">
                 <div class="text-center mb-4">
                     <h2 class="text-xl font-bold text-gray-900 dark:text-white">Scan Timesheet</h2>
-                    <p class="text-sm text-gray-500 dark:text-gray-400">Tesseract.js v5 - iOS 17+ Optimized</p>
+                    <p class="text-sm text-gray-500 dark:text-gray-400">Auto-extracts booking times & week ending</p>
                 </div>
 
                 <!-- Smart Detection Info -->
                 <div class="bg-gradient-to-r from-green-50 to-blue-50 dark:from-green-900/20 dark:to-blue-900/20 rounded-2xl p-4 border border-green-200 dark:border-green-800">
                     <div class="flex items-center gap-3">
                         <div class="w-10 h-10 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center">
-                            <i class="fas fa-mobile-alt text-green-600"></i>
+                            <i class="fas fa-magic text-green-600"></i>
                         </div>
                         <div>
-                            <p class="text-sm font-bold text-gray-900 dark:text-white">iOS 17+ Compatible</p>
-                            <p class="text-xs text-gray-500">Tesseract.js v5 • LSTM Engine • 54% Smaller</p>
+                            <p class="text-sm font-bold text-gray-900 dark:text-white">Smart Parser Active</p>
+                            <p class="text-xs text-gray-500">Detects: WEEK ENDING date + BOOKING ON/OFF times</p>
                         </div>
                     </div>
                 </div>
 
                 <div class="bg-white dark:bg-dark-card rounded-2xl p-4 shadow-sm border border-gray-100 dark:border-gray-700 mb-4">
-                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Week Ending Date (Saturday)</label>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        Week Ending Date (Saturday) 
+                        <span id="auto-detected-badge" class="hidden ml-2 text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full">
+                            <i class="fas fa-robot mr-1"></i>Auto-detected
+                        </span>
+                    </label>
                     <input type="date" id="scan-date-select" class="w-full p-3 bg-gray-100 dark:bg-dark-surface rounded-xl border-2 border-transparent focus:border-primary outline-none">
-                    <p class="text-xs text-gray-500 mt-2" id="selected-week-info">Select the Saturday date from your timesheet</p>
+                    <p class="text-xs text-gray-500 mt-2" id="selected-week-info">Select the Saturday date from your timesheet, or let OCR auto-detect it</p>
                 </div>
 
                 <!-- Upload Zone -->
@@ -356,7 +364,7 @@
                         <div id="upload-front-default">
                             <i class="fas fa-camera text-3xl text-gray-400 mb-2"></i>
                             <p class="text-sm text-gray-600 dark:text-gray-400">Tap to take photo or browse</p>
-                            <p class="text-xs text-gray-400 mt-1">Ensure all 7 days are visible</p>
+                            <p class="text-xs text-gray-400 mt-1">Ensure "BOOKING ON/OFF" columns are visible</p>
                         </div>
                         <img id="preview-front" class="hidden w-full h-48 object-cover rounded-lg mx-auto">
                         <div id="image-processing-indicator" class="image-processing-overlay hidden">
@@ -370,7 +378,7 @@
                     <div class="mt-3 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
                         <p class="text-xs text-blue-700 dark:text-blue-400">
                             <i class="fas fa-lightbulb mr-1"></i>
-                            <strong>Tips:</strong> Ensure good lighting, flat paper, and all text is visible. Avoid shadows and glare.
+                            <strong>Tips:</strong> Ensure "WEEK ENDING" and "BOOKING ON/OFF" text is clearly visible. Good lighting helps OCR accuracy.
                         </p>
                     </div>
                 </div>
@@ -431,8 +439,8 @@
                         </div>
                         <div class="grid grid-cols-2 gap-2 text-sm">
                             <div>
-                                <span class="text-gray-500 dark:text-gray-400">First Shift:</span>
-                                <span class="font-bold text-gray-900 dark:text-white ml-1" id="result-first-day">Thursday AM</span>
+                                <span class="text-gray-500 dark:text-gray-400">Week Ending:</span>
+                                <span class="font-bold text-gray-900 dark:text-white ml-1" id="result-week-ending">14 Feb 2026</span>
                             </div>
                             <div>
                                 <span class="text-gray-500 dark:text-gray-400">Working Days:</span>
@@ -456,8 +464,8 @@
                             <!-- Generated by JS -->
                         </div>
                         <div class="flex gap-4 mt-3 text-xs justify-center">
-                            <div class="flex items-center gap-1"><div class="w-3 h-3 bg-amber-200 rounded"></div><span>AM Start</span></div>
-                            <div class="flex items-center gap-1"><div class="w-3 h-3 bg-indigo-200 rounded"></div><span>PM End</span></div>
+                            <div class="flex items-center gap-1"><div class="w-3 h-3 bg-amber-200 rounded"></div><span>Start (ON)</span></div>
+                            <div class="flex items-center gap-1"><div class="w-3 h-3 bg-indigo-200 rounded"></div><span>End (OFF)</span></div>
                             <div class="flex items-center gap-1"><div class="w-3 h-3 bg-gradient-to-r from-amber-200 to-indigo-200 rounded"></div><span>Both</span></div>
                         </div>
                     </div>
@@ -521,9 +529,9 @@
                 <div class="bg-white dark:bg-dark-card rounded-2xl p-4 shadow-sm border border-gray-100 dark:border-gray-700">
                     <h3 class="font-semibold text-gray-900 dark:text-white mb-3"><i class="fas fa-info-circle text-primary mr-2"></i>About</h3>
                     <div class="space-y-2 text-sm text-gray-600 dark:text-gray-400">
-                        <p><strong>Version:</strong> <span id="settings-version">v2.4.0</span></p>
-                        <p><strong>OCR Engine:</strong> Tesseract.js v5 (iOS 17+ Compatible)</p>
-                        <p class="text-xs">Upgraded from v4 to v5 for iOS 17+ compatibility. Uses LSTM-only engine with 54% smaller file sizes and 47% lower memory usage.</p>
+                        <p><strong>Version:</strong> <span id="settings-version">v2.5.0</span></p>
+                        <p><strong>OCR Engine:</strong> Tesseract.js v5 with Smart Parser</p>
+                        <p class="text-xs">Extracts booking on/off times and auto-detects week ending dates from driver timesheets.</p>
                     </div>
                 </div>
 
@@ -690,7 +698,7 @@
 
     <script>
         // ==================== CONFIG ====================
-        const APP_VERSION = '2.4.0';
+        const APP_VERSION = '2.5.0';
         let currentUser = null;
         let currentMonth = new Date();
         let selectedWeekStart = null;
@@ -699,7 +707,8 @@
         let imageDB = null;
         let autoDetectedData = null;
         let ocrWorker = null;
-        let ocrAttempts = 0; // Track OCR attempts for debugging
+        let ocrAttempts = 0;
+        let autoDetectedWeekEnding = null; // Store auto-detected week ending
 
         // ==================== INDEXEDDB ====================
         const DB_NAME = 'TimesheetImagesDB';
@@ -782,6 +791,64 @@
         function formatWeekRange(startDate, endDate) {
             const options = { month: 'short', day: 'numeric' };
             return `${startDate.toLocaleDateString('en-US', options)} - ${endDate.toLocaleDateString('en-US', options)}`;
+        }
+
+        // Parse week ending date from various formats (14-2-26, 14/02/2026, etc.)
+        function parseWeekEndingDate(text) {
+            // Clean up common OCR errors in dates
+            const cleaned = text
+                .replace(/[Oo]/g, '0')
+                .replace(/[lI]/g, '1')
+                .replace(/[S]/g, '5')
+                .replace(/[Z]/g, '2');
+            
+            // Pattern 1: DD-MM-YY or DD/MM/YY (most common in timesheets)
+            // Matches: 14-2-26, 14/02/26, 14.02.26
+            const pattern1 = /(\d{1,2})[-\/.](\d{1,2})[-\/.](\d{2,4})/;
+            
+            // Pattern 2: Full year format
+            const pattern2 = /(\d{1,2})[-\/.](\d{1,2})[-\/.](20\d{2})/;
+            
+            // Pattern 3: Week ending specific formats
+            const pattern3 = /WEEK\s*ENDING\s*:?\s*(\d{1,2})[-\/.](\d{1,2})[-\/.]?(\d{2,4})?/i;
+            
+            // Look for "WEEK ENDING" context first
+            const weekEndingMatch = cleaned.match(pattern3);
+            if (weekEndingMatch) {
+                const day = parseInt(weekEndingMatch[1]);
+                const month = parseInt(weekEndingMatch[2]) - 1; // 0-indexed
+                let year = weekEndingMatch[3] ? parseInt(weekEndingMatch[3]) : new Date().getFullYear();
+                
+                // Handle 2-digit year
+                if (year < 100) {
+                    year = year < 50 ? 2000 + year : 1900 + year;
+                }
+                
+                const date = new Date(year, month, day);
+                if (date.getDate() === day && date.getMonth() === month) {
+                    return date;
+                }
+            }
+            
+            // General date search
+            const match = cleaned.match(pattern1) || cleaned.match(pattern2);
+            if (match) {
+                const day = parseInt(match[1]);
+                const month = parseInt(match[2]) - 1;
+                let year = match[3] ? parseInt(match[3]) : new Date().getFullYear();
+                
+                if (year < 100) {
+                    year = year < 50 ? 2000 + year : 1900 + year;
+                }
+                
+                const date = new Date(year, month, day);
+                // Validate it's a Saturday (week ending)
+                if (date.getDay() === 6 || date.getDate() === day) {
+                    return date;
+                }
+            }
+            
+            return null;
         }
 
         // ==================== DATA STORE ====================
@@ -1042,7 +1109,6 @@
                         const canvas = document.createElement('canvas');
                         const ctx = canvas.getContext('2d');
                         
-                        // Resize if too large (Tesseract works best at 300 DPI equivalent)
                         const maxWidth = 2000;
                         let width = img.width;
                         let height = img.height;
@@ -1055,33 +1121,25 @@
                         canvas.width = width;
                         canvas.height = height;
                         
-                        // Fill white background first (helps with transparent images)
                         ctx.fillStyle = '#FFFFFF';
                         ctx.fillRect(0, 0, width, height);
                         
-                        // Increase contrast and brightness for better OCR
                         ctx.filter = 'contrast(1.2) brightness(1.1)';
                         ctx.drawImage(img, 0, 0, width, height);
                         
                         const processed = canvas.toDataURL('image/jpeg', 0.9);
-                        console.log('Image preprocessed successfully:', width, 'x', height);
                         resolve(processed);
                     } catch (err) {
-                        console.error('Image preprocessing error:', err);
-                        resolve(imageDataUrl); // Fallback to original
+                        resolve(imageDataUrl);
                     }
                 };
                 
-                img.onerror = (err) => {
-                    console.error('Image load error:', err);
-                    resolve(imageDataUrl); // Fallback to original
-                };
-                
+                img.onerror = () => resolve(imageDataUrl);
                 img.src = imageDataUrl;
             });
         }
 
-        // ==================== SCAN & OCR (TESSERACT.JS V5 - iOS 17+ COMPATIBLE) ====================
+        // ==================== SCAN & OCR ====================
         function handleDragOver(e) {
             e.preventDefault();
             e.currentTarget.classList.add('active');
@@ -1104,22 +1162,18 @@
         }
 
         async function processFile(file) {
-            // Validate file
-            const MAX_SIZE = 10 * 1024 * 1024; // 10MB
+            const MAX_SIZE = 10 * 1024 * 1024;
             if (file.size > MAX_SIZE) {
                 showToast('Image too large (max 10MB)', 'error');
                 return;
             }
             
-            // Show processing indicator
             document.getElementById('image-processing-indicator').classList.remove('hidden');
             
             const reader = new FileReader();
             reader.onload = async (e) => {
                 try {
                     currentImage = e.target.result;
-                    
-                    // Preprocess image for better OCR
                     processedImage = await preprocessImage(currentImage);
                     
                     document.getElementById('preview-front').src = processedImage;
@@ -1128,8 +1182,6 @@
                     document.getElementById('front-status').textContent = 'Ready';
                     document.getElementById('front-status').className = 'text-xs text-green-600 font-medium';
                 } catch (err) {
-                    console.error('Image processing error:', err);
-                    // Fallback to original
                     processedImage = currentImage;
                     document.getElementById('preview-front').src = currentImage;
                     document.getElementById('preview-front').classList.remove('hidden');
@@ -1145,22 +1197,15 @@
             reader.readAsDataURL(file);
         }
 
-        // TESSERACT.JS V5: Simplified worker creation for iOS 17+ compatibility
         async function startOCR() {
             if (!processedImage && !currentImage) return showToast('Please upload timesheet image', 'error');
             
-            const weekEnding = document.getElementById('scan-date-select').value;
-            if (!weekEnding) return showToast('Please select week ending date', 'error');
-            
-            // Use processed image if available, otherwise original
             const imageToProcess = processedImage || currentImage;
             
-            // Reset error state
             document.getElementById('ocr-error').classList.add('hidden');
             document.getElementById('scan-btn').classList.add('hidden');
             document.getElementById('ocr-progress').classList.remove('hidden');
             
-            // Initialize debug info at the start so it's available in catch block
             let debugInfo = {
                 attempt: ++ocrAttempts,
                 stage: 'initializing',
@@ -1174,38 +1219,22 @@
             let worker = null;
             
             try {
-                updateOcrProgress(5, 'Initializing OCR engine (attempt ' + debugInfo.attempt + ')...');
+                updateOcrProgress(5, 'Initializing OCR engine...');
                 
-                // Check if Tesseract is loaded
                 if (typeof Tesseract === 'undefined') {
-                    throw new Error('Tesseract.js library not loaded. Please check your internet connection and refresh the page.');
-                }
-                
-                // Check if createWorker exists
-                if (!Tesseract.createWorker) {
-                    throw new Error('Tesseract.js API not available. Please refresh the page.');
+                    throw new Error('Tesseract.js library not loaded.');
                 }
                 
                 updateOcrProgress(10, 'Creating worker...');
                 debugInfo.stage = 'creating_worker';
                 
-                // TESSERACT.JS V5: Simplified worker creation
-                // V5 combines createWorker + loadLanguage + initialize into one call
-                // This is the key fix for iOS 17+ compatibility
                 try {
                     worker = await Promise.race([
-                        // V5 Syntax: createWorker(language, oem, options)
-                        // oem: 1 = LSTM_ONLY (default in v5, required for iOS 17+)
                         Tesseract.createWorker('eng', 1, {
                             logger: m => {
-                                console.log('Tesseract:', m);
                                 if (m.status === 'recognizing text') {
                                     updateOcrProgress(20 + Math.round(m.progress * 60), 'Reading timesheet...');
                                 }
-                            },
-                            errorHandler: err => {
-                                console.error('Tesseract worker error:', err);
-                                debugInfo.error = err;
                             }
                         }),
                         new Promise((_, reject) => 
@@ -1215,69 +1244,66 @@
                     
                     debugInfo.workerCreated = true;
                 } catch (workerErr) {
-                    console.error('Worker creation failed:', workerErr);
-                    throw new Error(`Failed to create OCR worker: ${workerErr.message}. This may be due to network issues or browser compatibility.`);
+                    throw new Error(`Failed to create OCR worker: ${workerErr.message}`);
                 }
                 
                 updateOcrProgress(30, 'Starting text recognition...');
                 debugInfo.stage = 'recognizing';
                 debugInfo.recognitionStarted = true;
                 
-                // Recognize with timeout
                 let result;
                 try {
                     result = await Promise.race([
                         worker.recognize(imageToProcess),
                         new Promise((_, reject) => 
-                            setTimeout(() => reject(new Error('OCR recognition timeout - took too long')), 60000)
+                            setTimeout(() => reject(new Error('OCR recognition timeout')), 60000)
                         )
                     ]);
                     debugInfo.recognitionCompleted = true;
                 } catch (recognizeErr) {
-                    console.error('Recognition failed:', recognizeErr);
                     throw new Error(`Text recognition failed: ${recognizeErr.message}`);
                 }
                 
                 updateOcrProgress(95, 'Processing results...');
                 debugInfo.stage = 'processing';
                 
-                // Validate result
-                if (!result) {
-                    throw new Error('OCR returned no result object');
+                if (!result || !result.data) {
+                    throw new Error('OCR returned no data');
                 }
                 
-                if (!result.data) {
-                    throw new Error('OCR returned no data object');
-                }
-                
-                // Store raw text for debug
                 debugInfo.rawText = result.data.text || '';
-                console.log('Raw OCR result:', result);
-                console.log('Raw OCR text:', debugInfo.rawText);
                 
-                // Check if we got meaningful text
                 if (!debugInfo.rawText || debugInfo.rawText.trim().length < 3) {
-                    throw new Error('No readable text found in image. The OCR engine could not detect any text. Please ensure the image is clear, well-lit, and contains text.');
+                    throw new Error('No readable text found in image.');
                 }
                 
-                // Parse with improved logic
-                autoDetectedData = parseTimesheetImproved(debugInfo.rawText);
+                // Parse with SMART parser - extracts week ending and booking times
+                autoDetectedData = parseTimesheetSmart(debugInfo.rawText);
                 
-                if (!autoDetectedData.firstWorkingDay) {
-                    throw new Error('Could not detect any working days. The timesheet may be in an unexpected format or the text may be unclear. Please enter times manually.');
+                // Auto-detect week ending date
+                autoDetectedWeekEnding = parseWeekEndingDate(debugInfo.rawText);
+                
+                if (autoDetectedWeekEnding) {
+                    // Update the date input with auto-detected value
+                    document.getElementById('scan-date-select').value = formatDateForInput(autoDetectedWeekEnding);
+                    document.getElementById('scan-date-select').classList.add('auto-filled');
+                    document.getElementById('auto-detected-badge').classList.remove('hidden');
+                    updateScanWeekDisplay();
+                }
+                
+                // Check if we found any working days
+                const workingDays = Object.values(autoDetectedData.days).filter(d => d.hasData).length;
+                if (workingDays === 0) {
+                    throw new Error('Could not detect any booking times. Please ensure the "BOOKING ON/OFF" columns are clearly visible.');
                 }
                 
                 // Calculate hours
                 let totalHours = 0;
-                let workingDays = 0;
                 Object.values(autoDetectedData.days).forEach(day => {
-                    if (day.hasData) {
-                        workingDays++;
-                        if (day.amTime && day.pmTime) {
-                            const hours = calculateHoursBetween(day.amTime, day.pmTime);
-                            day.hours = Math.round(hours * 10) / 10;
-                            totalHours += day.hours;
-                        }
+                    if (day.hasData && day.startTime && day.endTime) {
+                        const hours = calculateHoursBetween(day.startTime, day.endTime);
+                        day.hours = Math.round(hours * 10) / 10;
+                        totalHours += day.hours;
                     }
                 });
                 
@@ -1286,7 +1312,6 @@
                 
                 updateOcrProgress(100, 'Complete!');
                 
-                // Cleanup - V5 uses terminate() same as v4
                 try {
                     await worker.terminate();
                 } catch (termErr) {
@@ -1302,7 +1327,6 @@
                 console.error('OCR Error:', err);
                 debugInfo.error = err;
                 
-                // Ensure cleanup happens even on error
                 if (worker) {
                     try { 
                         await worker.terminate(); 
@@ -1314,22 +1338,11 @@
                 document.getElementById('ocr-progress').classList.add('hidden');
                 document.getElementById('ocr-error').classList.remove('hidden');
                 
-                // Better error message handling
                 let errorMsg = err.message || 'Failed to extract times. Please try again or enter manually.';
-                
-                // Check for specific error types
-                if (err.message && err.message.includes('network')) {
-                    errorMsg = 'Network error loading OCR engine. Please check your internet connection.';
-                } else if (err.message && err.message.includes('timeout')) {
-                    errorMsg = 'OCR took too long. Try with a smaller image or better lighting.';
-                } else if (err.message && err.message.includes('not loaded')) {
-                    errorMsg = 'OCR library failed to load. Please refresh the page.';
-                }
                 
                 document.getElementById('error-message').textContent = errorMsg;
                 document.getElementById('scan-btn').classList.remove('hidden');
                 
-                // Build comprehensive debug info
                 const debugText = `OCR Debug Info:
 ==================
 Attempt: ${debugInfo.attempt}
@@ -1339,9 +1352,8 @@ Recognition Started: ${debugInfo.recognitionStarted}
 Recognition Completed: ${debugInfo.recognitionCompleted}
 
 Error: ${err.message || 'Unknown error'}
-Error Stack: ${err.stack ? err.stack.substring(0, 500) : 'No stack trace'}
 
-Raw OCR Text: ${debugInfo.rawText ? debugInfo.rawText.substring(0, 500) : '[NO TEXT CAPTURED]'}
+Raw OCR Text: ${debugInfo.rawText ? debugInfo.rawText.substring(0, 800) : '[NO TEXT CAPTURED]'}
 
 Browser Info: ${navigator.userAgent.substring(0, 100)}
 Tesseract Version: ${typeof Tesseract !== 'undefined' ? (Tesseract.version || 'v5.x') : 'NOT LOADED'}
@@ -1350,11 +1362,6 @@ Tesseract Version: ${typeof Tesseract !== 'undefined' ? (Tesseract.version || 'v
                 const debugDiv = document.getElementById('ocr-debug-info');
                 if (debugDiv) {
                     debugDiv.textContent = debugText;
-                }
-                
-                // Auto-fallback to manual entry after 2 failed attempts
-                if (debugInfo.attempt >= 2) {
-                    console.log('Auto-fallback to manual entry after', debugInfo.attempt, 'attempts');
                 }
                 
                 showToast(errorMsg, 'error');
@@ -1377,9 +1384,9 @@ Tesseract Version: ${typeof Tesseract !== 'undefined' ? (Tesseract.version || 'v
             document.getElementById('ocr-stage').textContent = stage;
         }
 
-        // IMPROVED: Robust parser with OCR error correction
-        function parseTimesheetImproved(ocrText) {
-            // Clean up common OCR errors
+        // SMART PARSER: Extracts booking on/off times and ignores noise
+        function parseTimesheetSmart(ocrText) {
+            // Clean up common OCR errors but preserve structure
             let cleanedText = ocrText
                 .replace(/[Oo]/g, '0')  // O -> 0
                 .replace(/[lI]/g, '1')  // l, I -> 1
@@ -1389,92 +1396,129 @@ Tesseract Version: ${typeof Tesseract !== 'undefined' ? (Tesseract.version || 'v
                 .toUpperCase();
             
             const lines = cleanedText.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+            
             const days = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
             const dayData = {};
             
             // Initialize all days
             days.forEach(day => {
                 dayData[day] = { 
-                    amTime: null, 
-                    pmTime: null, 
+                    startTime: null, 
+                    endTime: null, 
                     hasData: false,
                     hours: 0,
-                    rawMatches: []
+                    location: ''
                 };
             });
             
-            // More flexible patterns for day detection
-            const dayPatterns = days.map(day => ({
-                day: day,
-                amRegex: new RegExp(`${day}[\\s_]*AM|${day}AM|${day}.*AM`, 'i'),
-                pmRegex: new RegExp(`${day}[\\s_]*PM|${day}PM|${day}.*PM`, 'i'),
-                genericRegex: new RegExp(`\\b${day}\\b`, 'i')
-            }));
+            // Find the table structure - look for "BOOKING ON" or "BOOKING OFF" headers
+            let tableStartIndex = -1;
+            let dayColumnIndices = {};
             
-            // Process each line
             for (let i = 0; i < lines.length; i++) {
                 const line = lines[i];
-                const nextLine = i + 1 < lines.length ? lines[i + 1] : '';
-                const combinedText = line + ' ' + nextLine;
                 
-                dayPatterns.forEach(({ day, amRegex, pmRegex }) => {
-                    // Check for AM shift
-                    if (amRegex.test(line) || (line.includes(day) && line.includes('AM'))) {
-                        const times = extractTimesFlexible(combinedText);
-                        const amTime = findAmTime(times);
-                        if (amTime && !dayData[day].amTime) {
-                            dayData[day].amTime = amTime;
-                            dayData[day].hasData = true;
-                            dayData[day].rawMatches.push(`AM:${amTime}`);
+                // Detect table header with booking columns
+                if (line.includes('BOOKING') && (line.includes('ON') || line.includes('OFF'))) {
+                    tableStartIndex = i;
+                    
+                    // Try to find day positions in this header line
+                    days.forEach(day => {
+                        const pos = line.indexOf(day);
+                        if (pos !== -1) {
+                            dayColumnIndices[day] = pos;
+                        }
+                    });
+                    
+                    // Also check next few lines for day names if not found in header
+                    if (Object.keys(dayColumnIndices).length === 0) {
+                        for (let j = i + 1; j < Math.min(i + 5, lines.length); j++) {
+                            const checkLine = lines[j];
+                            days.forEach(day => {
+                                if (checkLine.includes(day) && !dayColumnIndices[day]) {
+                                    dayColumnIndices[day] = checkLine.indexOf(day);
+                                }
+                            });
                         }
                     }
                     
-                    // Check for PM shift
-                    if (pmRegex.test(line) || (line.includes(day) && line.includes('PM'))) {
-                        const times = extractTimesFlexible(combinedText);
-                        const pmTime = findPmTime(times);
-                        if (pmTime && !dayData[day].pmTime) {
-                            dayData[day].pmTime = pmTime;
-                            dayData[day].hasData = true;
-                            dayData[day].rawMatches.push(`PM:${pmTime}`);
-                        }
-                    }
-                });
+                    break;
+                }
             }
             
-            // Fallback: If no explicit AM/PM labels, look for day + time patterns
-            days.forEach(day => {
-                if (!dayData[day].hasData) {
-                    // Search all lines for day name followed by times
-                    for (let i = 0; i < lines.length; i++) {
-                        if (lines[i].includes(day)) {
-                            const times = extractTimesFlexible(lines[i] + ' ' + (lines[i+1] || ''));
-                            if (times.length >= 2 && !dayData[day].hasData) {
-                                dayData[day].amTime = times[0];
-                                dayData[day].pmTime = times[1];
+            // If we found a table structure, extract times based on column positions
+            if (tableStartIndex !== -1) {
+                // Process lines after the header
+                for (let i = tableStartIndex + 1; i < lines.length; i++) {
+                    const line = lines[i];
+                    
+                    // Skip empty lines and headers
+                    if (line.length < 3 || line.includes('BOOKING') || line.includes('LOCATION')) continue;
+                    
+                    // Check if this line contains day names with times
+                    days.forEach(day => {
+                        if (line.includes(day)) {
+                            // Extract times from this line
+                            const times = extractTimesFromLine(line);
+                            
+                            if (times.length >= 2) {
+                                dayData[day].startTime = times[0];
+                                dayData[day].endTime = times[1];
                                 dayData[day].hasData = true;
-                            } else if (times.length === 1 && !dayData[day].hasData) {
-                                // Single time - determine if AM or PM based on value
-                                const hour = parseInt(times[0].split(':')[0]);
-                                if (hour < 12) dayData[day].amTime = times[0];
-                                else dayData[day].pmTime = times[0];
+                            } else if (times.length === 1) {
+                                // Single time - could be start or end
+                                dayData[day].startTime = times[0];
                                 dayData[day].hasData = true;
                             }
                         }
+                    });
+                    
+                    // Alternative: Look for lines that start with day names
+                    const dayMatch = line.match(/^(MON|TUE|WED|THU|FRI|SAT|SUN)[\s:,-]+(.+)/);
+                    if (dayMatch) {
+                        const day = dayMatch[1];
+                        const rest = dayMatch[2];
+                        const times = extractTimesFromLine(rest);
+                        
+                        if (times.length >= 2) {
+                            dayData[day].startTime = times[0];
+                            dayData[day].endTime = times[1];
+                            dayData[day].hasData = true;
+                        } else if (times.length === 1) {
+                            dayData[day].startTime = times[0];
+                            dayData[day].hasData = true;
+                        }
                     }
                 }
-            });
+            }
             
-            // Find first working day
+            // Fallback: Search entire text for day + time patterns if table parsing failed
+            const workingDaysFound = Object.values(dayData).filter(d => d.hasData).length;
+            if (workingDaysFound === 0) {
+                // Look for any line containing a day name and times
+                lines.forEach(line => {
+                    days.forEach(day => {
+                        // Pattern: DAY followed by times anywhere in the line
+                        const dayRegex = new RegExp(`\\b${day}\\b[\\s:,-]*(.+)`, 'i');
+                        const match = line.match(dayRegex);
+                        
+                        if (match) {
+                            const times = extractTimesFromLine(match[1]);
+                            if (times.length >= 2 && !dayData[day].hasData) {
+                                dayData[day].startTime = times[0];
+                                dayData[day].endTime = times[1];
+                                dayData[day].hasData = true;
+                            }
+                        }
+                    });
+                });
+            }
+            
+            // Find first working day for display
             let firstWorkingDay = null;
-            let firstShiftType = null;
-            
             for (const day of days) {
                 if (dayData[day].hasData) {
                     firstWorkingDay = day;
-                    if (dayData[day].amTime && !dayData[day].pmTime) firstShiftType = 'AM';
-                    else if (!dayData[day].amTime && dayData[day].pmTime) firstShiftType = 'PM';
-                    else firstShiftType = 'BOTH';
                     break;
                 }
             }
@@ -1482,7 +1526,7 @@ Tesseract Version: ${typeof Tesseract !== 'undefined' ? (Tesseract.version || 'v
             // Detect pattern
             let doubleShiftDays = 0;
             days.forEach(day => {
-                if (dayData[day].amTime && dayData[day].pmTime) doubleShiftDays++;
+                if (dayData[day].startTime && dayData[day].endTime) doubleShiftDays++;
             });
             
             let pattern = 'single';
@@ -1492,7 +1536,6 @@ Tesseract Version: ${typeof Tesseract !== 'undefined' ? (Tesseract.version || 'v
             return {
                 days: dayData,
                 firstWorkingDay: firstWorkingDay,
-                firstShiftType: firstShiftType,
                 pattern: pattern,
                 doubleShiftDays: doubleShiftDays,
                 rawText: ocrText,
@@ -1500,19 +1543,19 @@ Tesseract Version: ${typeof Tesseract !== 'undefined' ? (Tesseract.version || 'v
             };
         }
 
-        // Flexible time extraction with multiple patterns
-        function extractTimesFlexible(text) {
+        // Extract times from a single line of text
+        function extractTimesFromLine(text) {
             const times = [];
             const seen = new Set();
             
-            // Pattern 1: HH:MM (most common)
+            // Pattern 1: HH:MM (24-hour format)
             const pattern1 = /(\d{1,2})[:.](\d{2})/g;
             let match;
             while ((match = pattern1.exec(text)) !== null) {
                 let hour = parseInt(match[1]);
                 let minute = parseInt(match[2]);
                 
-                // Validate
+                // Validate 24-hour format
                 if (hour >= 0 && hour <= 23 && minute >= 0 && minute <= 59) {
                     // Skip if looks like a year (2000-2030)
                     if (hour === 20 && minute <= 30) continue;
@@ -1525,15 +1568,15 @@ Tesseract Version: ${typeof Tesseract !== 'undefined' ? (Tesseract.version || 'v
                 }
             }
             
-            // Pattern 2: HHMM (4 digits, common in tables)
-            // Look for spaces around to avoid matching random numbers
+            // Pattern 2: HHMM (4 digits without colon, common in tables)
+            // Only match if surrounded by whitespace or line boundaries
             const pattern2 = /(?:^|\s)(\d{2})(\d{2})(?:\s|$)/g;
             while ((match = pattern2.exec(text)) !== null) {
                 let hour = parseInt(match[1]);
                 let minute = parseInt(match[2]);
                 
+                // Validate and ensure it's likely a time (not a date or other number)
                 if (hour >= 4 && hour <= 23 && minute >= 0 && minute <= 59 && minute % 5 === 0) {
-                    // Likely a time if minute is multiple of 5 (00, 05, 10, etc.)
                     const timeStr = `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
                     if (!seen.has(timeStr)) {
                         times.push(timeStr);
@@ -1545,22 +1588,6 @@ Tesseract Version: ${typeof Tesseract !== 'undefined' ? (Tesseract.version || 'v
             return times.sort();
         }
 
-        function findAmTime(times) {
-            // AM times are typically 04:00-11:59
-            return times.find(t => {
-                const h = parseInt(t.split(':')[0]);
-                return h >= 4 && h < 12;
-            }) || times[0]; // fallback to first time
-        }
-
-        function findPmTime(times) {
-            // PM times are typically 12:00-23:59, or could be morning times if PM labeled
-            return times.find(t => {
-                const h = parseInt(t.split(':')[0]);
-                return h >= 12 || h < 4; // Afternoon or late night
-            }) || times[times.length - 1]; // fallback to last time
-        }
-
         function calculateHoursBetween(startTime, endTime) {
             const [startHour, startMin] = startTime.split(':').map(Number);
             const [endHour, endMin] = endTime.split(':').map(Number);
@@ -1568,7 +1595,7 @@ Tesseract Version: ${typeof Tesseract !== 'undefined' ? (Tesseract.version || 'v
             let startMinutes = startHour * 60 + startMin;
             let endMinutes = endHour * 60 + endMin;
             
-            // Handle overnight
+            // Handle overnight shifts
             if (endMinutes < startMinutes) {
                 endMinutes += 24 * 60;
             }
@@ -1584,12 +1611,17 @@ Tesseract Version: ${typeof Tesseract !== 'undefined' ? (Tesseract.version || 'v
                 'WED': 'Wednesday', 'THU': 'Thursday', 'FRI': 'Friday', 'SAT': 'Saturday'
             };
             
+            // Update week ending display
+            if (autoDetectedWeekEnding) {
+                document.getElementById('result-week-ending').textContent = 
+                    autoDetectedWeekEnding.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+            } else {
+                document.getElementById('result-week-ending').textContent = 'Manual entry';
+            }
+            
             const firstDayFull = autoDetectedData.firstWorkingDay ? 
                 dayNames[autoDetectedData.firstWorkingDay] : 'Unknown';
-            const shiftType = autoDetectedData.firstShiftType || '';
             
-            document.getElementById('result-first-day').textContent = 
-                firstDayFull + (shiftType ? ` ${shiftType}` : '');
             document.getElementById('result-total-days').textContent = autoDetectedData.workingDays + ' days';
             document.getElementById('result-pattern').textContent = 
                 autoDetectedData.pattern === 'double' ? 'Double Shifts' : 
@@ -1620,17 +1652,17 @@ Tesseract Version: ${typeof Tesseract !== 'undefined' ? (Tesseract.version || 'v
                 const isFirst = day === autoDetectedData.firstWorkingDay;
                 
                 let cellClass = 'day-cell';
-                if (data.amTime && data.pmTime) cellClass += ' has-both';
-                else if (data.amTime) cellClass += ' has-am';
-                else if (data.pmTime) cellClass += ' has-pm';
+                if (data.startTime && data.endTime) cellClass += ' has-both';
+                else if (data.startTime) cellClass += ' has-am';
+                else if (data.endTime) cellClass += ' has-pm';
                 if (isFirst) cellClass += ' first-day';
                 
                 return `
                     <div class="${cellClass}">
                         <div class="font-bold text-xs mb-1 ${isFirst ? 'text-green-600' : ''}">${dayLabels[idx]}</div>
-                        ${data.amTime ? `<div class="time-display text-amber-700">${data.amTime}</div>` : ''}
-                        ${data.pmTime ? `<div class="time-display text-indigo-700">${data.pmTime}</div>` : ''}
-                        ${!data.amTime && !data.pmTime ? '<div class="text-gray-300">-</div>' : ''}
+                        ${data.startTime ? `<div class="time-display text-amber-700">${data.startTime}</div>` : ''}
+                        ${data.endTime ? `<div class="time-display text-indigo-700">${data.endTime}</div>` : ''}
+                        ${!data.startTime && !data.endTime ? '<div class="text-gray-300">-</div>' : ''}
                         ${isFirst ? '<div class="absolute -top-2 -left-2 bg-green-500 text-white text-[8px] px-1 rounded">1st</div>' : ''}
                     </div>
                 `;
@@ -1643,8 +1675,6 @@ Tesseract Version: ${typeof Tesseract !== 'undefined' ? (Tesseract.version || 'v
             const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
             
             const workingDays = days.filter(day => autoDetectedData.days[day].hasData);
-            
-            // If no working days detected, show all days for manual entry
             const daysToShow = workingDays.length > 0 ? workingDays : days;
             
             container.innerHTML = daysToShow.map(day => {
@@ -1656,16 +1686,16 @@ Tesseract Version: ${typeof Tesseract !== 'undefined' ? (Tesseract.version || 'v
                     <div class="correction-row ${isFirst ? 'ring-2 ring-green-400 rounded-lg' : ''}">
                         <div class="font-bold text-sm ${isFirst ? 'text-green-600' : ''}">${dayNames[idx]}${isFirst ? '*' : ''}</div>
                         <div>
-                            <label class="text-xs text-gray-500">Start (AM)</label>
+                            <label class="text-xs text-gray-500">Booking ON</label>
                             <input type="time" class="w-full p-1 text-sm border rounded" 
-                                value="${data.amTime || ''}" 
-                                onchange="updateCorrectedTime('${day}', 'am', this.value)">
+                                value="${data.startTime || ''}" 
+                                onchange="updateCorrectedTime('${day}', 'start', this.value)">
                         </div>
                         <div>
-                            <label class="text-xs text-gray-500">End (PM)</label>
+                            <label class="text-xs text-gray-500">Booking OFF</label>
                             <input type="time" class="w-full p-1 text-sm border rounded" 
-                                value="${data.pmTime || ''}" 
-                                onchange="updateCorrectedTime('${day}', 'pm', this.value)">
+                                value="${data.endTime || ''}" 
+                                onchange="updateCorrectedTime('${day}', 'end', this.value)">
                         </div>
                         <div>
                             <label class="text-xs text-gray-500">Hrs</label>
@@ -1682,14 +1712,12 @@ Tesseract Version: ${typeof Tesseract !== 'undefined' ? (Tesseract.version || 'v
         function updateCorrectedTime(day, field, value) {
             if (!autoDetectedData) return;
             
-            if (field === 'am') autoDetectedData.days[day].amTime = value || null;
-            if (field === 'pm') autoDetectedData.days[day].pmTime = value || null;
+            if (field === 'start') autoDetectedData.days[day].startTime = value || null;
+            if (field === 'end') autoDetectedData.days[day].endTime = value || null;
             if (field === 'hours') autoDetectedData.days[day].hours = parseFloat(value) || 0;
             
-            // Mark as hasData if any value entered
             if (value) autoDetectedData.days[day].hasData = true;
             
-            // Recalculate
             let total = 0;
             Object.values(autoDetectedData.days).forEach(d => {
                 if (d.hours) total += d.hours;
@@ -1700,15 +1728,13 @@ Tesseract Version: ${typeof Tesseract !== 'undefined' ? (Tesseract.version || 'v
 
         function resetToAuto() {
             if (confirm('Reset all times to auto-detected values?')) {
-                // Re-parse from raw text
                 if (autoDetectedData && autoDetectedData.rawText) {
-                    autoDetectedData = parseTimesheetImproved(autoDetectedData.rawText);
+                    autoDetectedData = parseTimesheetSmart(autoDetectedData.rawText);
                     
-                    // Recalculate
                     let totalHours = 0;
                     Object.values(autoDetectedData.days).forEach(day => {
-                        if (day.amTime && day.pmTime) {
-                            day.hours = Math.round(calculateHoursBetween(day.amTime, day.pmTime) * 10) / 10;
+                        if (day.startTime && day.endTime) {
+                            day.hours = Math.round(calculateHoursBetween(day.startTime, day.endTime) * 10) / 10;
                             totalHours += day.hours;
                         }
                     });
@@ -1720,24 +1746,21 @@ Tesseract Version: ${typeof Tesseract !== 'undefined' ? (Tesseract.version || 'v
             }
         }
 
-        // Manual entry fallback when OCR fails
         function showManualEntryFallback() {
             document.getElementById('ocr-error').classList.add('hidden');
             document.getElementById('auto-results').classList.remove('hidden');
             
-            // Create empty template for manual entry
             autoDetectedData = {
                 days: {
-                    'SUN': {amTime: null, pmTime: null, hasData: false, hours: 0},
-                    'MON': {amTime: null, pmTime: null, hasData: false, hours: 0},
-                    'TUE': {amTime: null, pmTime: null, hasData: false, hours: 0},
-                    'WED': {amTime: null, pmTime: null, hasData: false, hours: 0},
-                    'THU': {amTime: null, pmTime: null, hasData: false, hours: 0},
-                    'FRI': {amTime: null, pmTime: null, hasData: false, hours: 0},
-                    'SAT': {amTime: null, pmTime: null, hasData: false, hours: 0}
+                    'SUN': {startTime: null, endTime: null, hasData: false, hours: 0},
+                    'MON': {startTime: null, endTime: null, hasData: false, hours: 0},
+                    'TUE': {startTime: null, endTime: null, hasData: false, hours: 0},
+                    'WED': {startTime: null, endTime: null, hasData: false, hours: 0},
+                    'THU': {startTime: null, endTime: null, hasData: false, hours: 0},
+                    'FRI': {startTime: null, endTime: null, hasData: false, hours: 0},
+                    'SAT': {startTime: null, endTime: null, hasData: false, hours: 0}
                 },
                 firstWorkingDay: null,
-                firstShiftType: null,
                 pattern: 'manual',
                 totalHours: 0,
                 workingDays: 0,
@@ -1746,12 +1769,15 @@ Tesseract Version: ${typeof Tesseract !== 'undefined' ? (Tesseract.version || 'v
             
             showToast('OCR failed - please enter times manually', 'error');
             renderDetectionGrid();
-            renderCorrectionTable(); // Show empty table for manual entry
+            renderCorrectionTable();
         }
 
         function reprocessImage() {
             document.getElementById('auto-results').classList.add('hidden');
             document.getElementById('scan-btn').classList.remove('hidden');
+            // Reset auto-detected styling
+            document.getElementById('scan-date-select').classList.remove('auto-filled');
+            document.getElementById('auto-detected-badge').classList.add('hidden');
             startOCR();
         }
 
@@ -1759,11 +1785,15 @@ Tesseract Version: ${typeof Tesseract !== 'undefined' ? (Tesseract.version || 'v
             if (!autoDetectedData) return;
             
             const weekEnding = document.getElementById('scan-date-select').value;
+            if (!weekEnding) {
+                showToast('Please select week ending date', 'error');
+                return;
+            }
+            
             const endDate = parseDate(weekEnding);
             const startDate = new Date(endDate);
             startDate.setDate(startDate.getDate() - 6);
             
-            // Build final data
             const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
             const dayKeys = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
             const dayData = [];
@@ -1779,8 +1809,8 @@ Tesseract Version: ${typeof Tesseract !== 'undefined' ? (Tesseract.version || 'v
                 let end = '-';
                 
                 if (detected && detected.hasData) {
-                    start = detected.amTime || detected.pmTime || '-';
-                    end = detected.pmTime || detected.amTime || '-';
+                    start = detected.startTime || '-';
+                    end = detected.endTime || '-';
                     hours = detected.hours || 0;
                     
                     if (hours === 0 && start !== '-' && end !== '-') {
@@ -1801,11 +1831,9 @@ Tesseract Version: ${typeof Tesseract !== 'undefined' ? (Tesseract.version || 'v
                 });
             });
             
-            // Save
             const timesheetId = Date.now().toString();
             const imageIds = { front: `${timesheetId}_front` };
             
-            // Save processed image if available, otherwise original
             const imageToSave = processedImage || currentImage;
             await saveImage(imageIds.front, imageToSave);
             
@@ -1818,12 +1846,12 @@ Tesseract Version: ${typeof Tesseract !== 'undefined' ? (Tesseract.version || 'v
                 longDays,
                 lowRestDays: 0,
                 firstWorkingDay: autoDetectedData.firstWorkingDay,
-                firstShiftType: autoDetectedData.firstShiftType,
                 pattern: autoDetectedData.pattern,
                 imageIds,
                 days: dayData,
                 uploadedAt: new Date().toISOString(),
-                ocrVersion: APP_VERSION
+                ocrVersion: APP_VERSION,
+                autoDetectedDate: autoDetectedWeekEnding ? formatDateForInput(autoDetectedWeekEnding) : null
             };
             
             const existing = DB.getTimesheets(currentUser.username);
@@ -1840,7 +1868,7 @@ Tesseract Version: ${typeof Tesseract !== 'undefined' ? (Tesseract.version || 'v
             renderRecent();
             
             const msg = autoDetectedData.firstWorkingDay ? 
-                `Saved! ${autoDetectedData.firstWorkingDay} ${autoDetectedData.firstShiftType} start, ${totalHours.toFixed(1)}h total` :
+                `Saved! ${autoDetectedData.firstWorkingDay} start, ${totalHours.toFixed(1)}h total` :
                 `Saved! ${totalHours.toFixed(1)}h total (manual entry)`;
             
             showToast(msg);
@@ -1851,18 +1879,28 @@ Tesseract Version: ${typeof Tesseract !== 'undefined' ? (Tesseract.version || 'v
             currentImage = null;
             processedImage = null;
             autoDetectedData = null;
-            ocrAttempts = 0; // Reset attempt counter
+            autoDetectedWeekEnding = null;
+            ocrAttempts = 0;
             document.getElementById('preview-front').src = '';
             document.getElementById('preview-front').classList.add('hidden');
             document.getElementById('upload-front-default').classList.remove('hidden');
             document.getElementById('file-front').value = '';
             document.getElementById('front-status').textContent = 'Required';
             document.getElementById('front-status').className = 'text-xs text-gray-500';
+            document.getElementById('scan-date-select').classList.remove('auto-filled');
+            document.getElementById('auto-detected-badge').classList.add('hidden');
             const debugDiv = document.getElementById('ocr-debug-info');
             if (debugDiv) {
                 debugDiv.textContent = '';
                 debugDiv.classList.add('hidden');
             }
+            
+            // Reset date to upcoming Saturday
+            const today = new Date();
+            const saturday = new Date(today);
+            saturday.setDate(today.getDate() + (6 - today.getDay()));
+            document.getElementById('scan-date-select').value = formatDateForInput(saturday);
+            updateScanWeekDisplay();
         }
 
         // ==================== DATA MANAGEMENT ====================
@@ -1984,7 +2022,6 @@ Tesseract Version: ${typeof Tesseract !== 'undefined' ? (Tesseract.version || 'v
                 return d.getFullYear() === year && d.getMonth() === month;
             });
             
-            // Delete images
             for (const ts of toDelete) {
                 if (ts.imageIds.front) await deleteImage(ts.imageIds.front);
             }
@@ -2062,23 +2099,19 @@ Tesseract Version: ${typeof Tesseract !== 'undefined' ? (Tesseract.version || 'v
             
             removalScreen.classList.remove('hidden');
             
-            // Delete all images
             try {
                 await clearAllImages();
             } catch (e) {
                 console.log('Image clearing failed:', e);
             }
             
-            // Delete user data
             if (currentUser) {
                 DB.deleteUser(currentUser.username);
             }
             
-            // Clear all app data
             const keysToRemove = Object.keys(localStorage).filter(k => k.startsWith('ts_'));
             keysToRemove.forEach(key => localStorage.removeItem(key));
             
-            // Animate
             await new Promise(r => setTimeout(r, 300));
             check.classList.remove('opacity-0');
             check.classList.add('animate-bounce');
@@ -2092,7 +2125,6 @@ Tesseract Version: ${typeof Tesseract !== 'undefined' ? (Tesseract.version || 'v
             await new Promise(r => setTimeout(r, 300));
             instructions.classList.remove('opacity-0');
             
-            // Clear caches
             if ('caches' in window) {
                 try {
                     const cacheNames = await caches.keys();
@@ -2132,7 +2164,7 @@ Tesseract Version: ${typeof Tesseract !== 'undefined' ? (Tesseract.version || 'v
                         </div>
                         <div>
                             <h4 class="font-semibold text-gray-900 dark:text-white text-sm">${ts.weekRange}</h4>
-                            <p class="text-xs text-gray-500">${ts.totalHours}h • ${ts.firstWorkingDay || '?'} ${ts.firstShiftType || ''}</p>
+                            <p class="text-xs text-gray-500">${ts.totalHours}h • ${ts.firstWorkingDay || '?'} start</p>
                         </div>
                     </div>
                     <i class="fas fa-chevron-right text-gray-400"></i>
@@ -2170,9 +2202,9 @@ Tesseract Version: ${typeof Tesseract !== 'undefined' ? (Tesseract.version || 'v
                 
                 <div class="bg-green-50 dark:bg-green-900/20 rounded-lg p-3 border border-green-200 dark:border-green-800 mb-4">
                     <p class="text-sm text-green-800 dark:text-green-300">
-                        <i class="fas fa-robot mr-2"></i>Auto-detected • First: ${ts.firstWorkingDay || 'Unknown'} ${ts.firstShiftType || ''}
+                        <i class="fas fa-robot mr-2"></i>Auto-detected • First: ${ts.firstWorkingDay || 'Unknown'}
                         ${ts.pattern ? `• Pattern: ${ts.pattern}` : ''}
-                        ${ts.ocrVersion ? `• v${ts.ocrVersion}` : ''}
+                        ${ts.autoDetectedDate ? `• Date auto-filled` : ''}
                     </p>
                 </div>
                 
@@ -2196,8 +2228,8 @@ Tesseract Version: ${typeof Tesseract !== 'undefined' ? (Tesseract.version || 'v
                         <thead class="bg-gray-50 dark:bg-dark-card">
                             <tr>
                                 <th class="text-left p-3 text-gray-500 font-medium">Day</th>
-                                <th class="text-left p-3 text-gray-500 font-medium">Start</th>
-                                <th class="text-left p-3 text-gray-500 font-medium">End</th>
+                                <th class="text-left p-3 text-gray-500 font-medium">Booking On</th>
+                                <th class="text-left p-3 text-gray-500 font-medium">Booking Off</th>
                                 <th class="text-right p-3 text-gray-500 font-medium">Hours</th>
                             </tr>
                         </thead>
