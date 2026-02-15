@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="theme-color" content="#3B82F6">
-    <title>Driver Timesheet Pro v4.1.0</title>
+    <title>Driver Timesheet Pro v5.0.0</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
@@ -52,12 +52,15 @@
         
         .calendar-day:active { transform: scale(0.95); }
         .calendar-day.has-data { background: linear-gradient(135deg, #10B981 0%, #059669 100%); color: white; box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3); }
+        .calendar-day.has-docs { background: linear-gradient(135deg, #8B5CF6 0%, #7C3AED 100%); color: white; box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3); }
+        .calendar-day.has-data.has-docs { background: linear-gradient(135deg, #10B981 0%, #8B5CF6 100%); }
         .calendar-day.today { box-shadow: 0 0 0 3px #3B82F6, 0 0 0 5px rgba(59, 130, 246, 0.3); z-index: 10; }
         .calendar-day.today.has-data { box-shadow: 0 0 0 3px #3B82F6, 0 0 0 5px rgba(59, 130, 246, 0.5); }
         .calendar-day.other-month { opacity: 0.3; }
         
         .upload-zone { transition: all 0.3s ease; border: 2px dashed #cbd5e1; }
         .upload-zone.active { border-color: #3B82F6; background-color: rgba(59, 130, 246, 0.05); transform: scale(1.02); }
+        .upload-zone.has-file { border-color: #10B981; background-color: rgba(16, 185, 129, 0.05); }
         
         .nav-item { transition: all 0.3s ease; }
         .nav-item.active { color: #3B82F6; }
@@ -83,7 +86,6 @@
             position: relative;
         }
         
-        /* Dark mode for day-cell */
         .dark .day-cell {
             background: #1E293B;
             border-color: #334155;
@@ -95,7 +97,6 @@
             border-color: #3B82F6; 
         }
         
-        /* Dark mode for has-data */
         .dark .day-cell.has-data {
             background: linear-gradient(135deg, #1e3a5f 0%, #14532d 100%);
             border-color: #3B82F6;
@@ -109,7 +110,6 @@
             font-size: 0.65rem;
         }
         
-        /* Correction row - FIXED for dark mode */
         .correction-row {
             display: grid;
             grid-template-columns: 60px 1fr 1fr 60px;
@@ -122,25 +122,21 @@
             border: 1px solid #e5e7eb;
         }
         
-        /* Dark mode correction row */
         .dark .correction-row {
             background: #1E293B;
             border-color: #334155;
         }
         
-        /* First day highlight - light mode */
         .correction-row.ring-2 {
             background: #f0fdf4;
             border-color: #10B981;
         }
         
-        /* First day highlight - dark mode */
         .dark .correction-row.ring-2 {
             background: #064e3b;
             border-color: #10B981;
         }
         
-        /* Day label in correction row */
         .correction-row .day-label {
             font-weight: 600;
             color: #374151;
@@ -150,7 +146,6 @@
             color: #e2e8f0;
         }
         
-        /* First day label */
         .correction-row .day-label.first-day {
             color: #059669;
         }
@@ -159,7 +154,6 @@
             color: #34d399;
         }
         
-        /* Input fields in correction row - FIXED */
         .correction-row input[type="time"],
         .correction-row input[type="number"] {
             background: white;
@@ -171,7 +165,6 @@
             width: 100%;
         }
         
-        /* Dark mode inputs */
         .dark .correction-row input[type="time"],
         .dark .correction-row input[type="number"] {
             background: #0F172A;
@@ -179,7 +172,6 @@
             color: #f1f5f9;
         }
         
-        /* Input focus states */
         .correction-row input:focus {
             outline: none;
             border-color: #3B82F6;
@@ -191,7 +183,6 @@
             box-shadow: 0 0 0 3px rgba(96, 165, 250, 0.2);
         }
         
-        /* Labels in correction row */
         .correction-row label {
             font-size: 0.75rem;
             color: #6b7280;
@@ -203,7 +194,6 @@
             color: #94a3b8;
         }
         
-        /* Column indicators */
         .column-indicator {
             display: inline-block;
             width: 8px;
@@ -214,7 +204,6 @@
         .col-on { background: #10B981; }
         .col-off { background: #EF4444; }
         
-        /* Danger zone */
         .danger-zone {
             background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
             border: 2px solid #ef4444;
@@ -225,7 +214,6 @@
             border-color: #dc2626;
         }
         
-        /* OCR debug info */
         .ocr-debug-info {
             font-family: 'Courier New', monospace;
             font-size: 0.75rem;
@@ -274,7 +262,6 @@
             border-color: #60a5fa !important;
         }
 
-        /* Word box for OCR visualization */
         .word-box {
             position: absolute;
             border: 1px solid rgba(59, 130, 246, 0.5);
@@ -284,7 +271,6 @@
             pointer-events: none;
         }
 
-        /* Loading animation */
         .scanning-pulse {
             animation: pulse-ring 2s cubic-bezier(0.215, 0.61, 0.355, 1) infinite;
         }
@@ -306,17 +292,14 @@
             100% { background-position: 0 0; }
         }
 
-        /* Section headers in dark mode */
         .dark h3 {
             color: #f1f5f9;
         }
 
-        /* Card backgrounds in dark mode */
         .dark .bg-white {
             background-color: #1E293B;
         }
 
-        /* Text colors in dark mode for cards */
         .dark .text-gray-900 {
             color: #f1f5f9;
         }
@@ -329,7 +312,6 @@
             color: #94a3b8;
         }
 
-        /* Border colors in dark mode */
         .dark .border-gray-100 {
             border-color: #334155;
         }
@@ -342,7 +324,6 @@
             border-color: #475569;
         }
 
-        /* Additional dark mode fixes for review section */
         .dark .bg-gray-50 {
             background-color: #1E293B;
         }
@@ -358,7 +339,112 @@
         .dark .hover\:bg-gray-100:hover {
             background-color: #475569;
         }
+
+        /* Document upload specific styles */
+        .doc-upload-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+        }
+        
+        .doc-upload-item {
+            aspect-ratio: 1;
+            border-radius: 12px;
+            border: 2px dashed #cbd5e1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .doc-upload-item:hover {
+            border-color: #3B82F6;
+            background-color: rgba(59, 130, 246, 0.05);
+        }
+        
+        .doc-upload-item.has-file {
+            border-color: #10B981;
+            background-color: rgba(16, 185, 129, 0.1);
+        }
+        
+        .doc-upload-item i {
+            font-size: 1.5rem;
+            margin-bottom: 4px;
+        }
+        
+        .doc-upload-item .doc-label {
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+        
+        .doc-upload-item .doc-status {
+            font-size: 0.65rem;
+            color: #6b7280;
+        }
+        
+        .doc-preview-thumb {
+            position: absolute;
+            inset: 0;
+            object-fit: cover;
+            width: 100%;
+            height: 100%;
+        }
+        
+        .doc-remove-btn {
+            position: absolute;
+            top: 4px;
+            right: 4px;
+            width: 20px;
+            height: 20px;
+            background: rgba(239, 68, 68, 0.9);
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 10px;
+            cursor: pointer;
+            z-index: 10;
+        }
+
+        /* Archive styles */
+        .archive-item {
+            opacity: 0.7;
+            position: relative;
+        }
+        
+        .archive-item::before {
+            content: 'ARCHIVED';
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            background: #6B7280;
+            color: white;
+            font-size: 0.65rem;
+            padding: 2px 6px;
+            border-radius: 4px;
+            z-index: 5;
+        }
+
+        .storage-bar {
+            height: 8px;
+            background: #e5e7eb;
+            border-radius: 4px;
+            overflow: hidden;
+            margin-top: 8px;
+        }
+        
+        .storage-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #3B82F6, #10B981);
+            transition: width 0.3s ease;
+        }
     </style>
+<base target="_blank">
 <base target="_blank">
 </head>
 <body class="bg-gray-50 dark:bg-dark text-gray-800 dark:text-gray-100 transition-colors duration-300 min-h-screen pb-20">
@@ -372,8 +458,8 @@
                 </div>
                 <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Driver Timesheet Pro</h1>
                 <p class="text-gray-500 dark:text-gray-400 mt-2 flex items-center justify-center gap-2">
-                    <span class="text-xs bg-primary/10 text-primary px-2 py-1 rounded" id="version-display">v4.1.0</span>
-                    <span class="text-xs bg-green-100 text-green-700 px-2 py-1 rounded">Gemini AI</span>
+                    <span class="text-xs bg-primary/10 text-primary px-2 py-1 rounded" id="version-display">v5.0.0</span>
+                    <span class="text-xs bg-green-100 text-green-700 px-2 py-1 rounded">Gemini AI + Archive</span>
                 </p>
             </div>
 
@@ -417,9 +503,9 @@
                 
                 <div class="bg-blue-50 dark:bg-blue-900/20 rounded-xl p-4 border border-blue-200 dark:border-blue-800">
                     <label class="block text-sm font-medium text-blue-900 dark:text-blue-300 mb-2">
-                        <i class="fas fa-brain mr-2"></i>Gemini AI OCR
+                        <i class="fas fa-brain mr-2"></i>Gemini AI OCR + Document Storage
                     </label>
-                    <p class="text-xs text-blue-700 dark:text-blue-400">Uses Google Gemini 2.0 Flash for accurate handwritten text recognition.</p>
+                    <p class="text-xs text-blue-700 dark:text-blue-400">Uses Google Gemini 2.0 Flash for timesheets. Additional documents stored securely in IndexedDB.</p>
                 </div>
                 
                 <div class="flex gap-3">
@@ -441,7 +527,7 @@
                     </div>
                     <div>
                         <h1 class="text-lg font-bold text-gray-900 dark:text-white leading-tight" id="header-username">Driver</h1>
-                        <p class="text-xs text-gray-500 dark:text-gray-400" id="sync-status"><i class="fas fa-shield-alt text-green-500"></i> Local Storage</p>
+                        <p class="text-xs text-gray-500 dark:text-gray-400" id="sync-status"><i class="fas fa-database text-green-500"></i> IndexedDB Storage</p>
                     </div>
                 </div>
                 <button onclick="logout()" class="touch-btn flex items-center justify-center text-gray-500 hover:text-red-500 transition-colors">
@@ -477,9 +563,10 @@
                     
                     <div id="calendar-grid" class="calendar-grid"></div>
                     
-                    <div class="flex items-center justify-center gap-4 mt-4 text-xs text-gray-500 dark:text-gray-400">
-                        <div class="flex items-center gap-1"><div class="w-3 h-3 rounded bg-green-500"></div><span>Complete</span></div>
-                        <div class="flex items-center gap-1"><div class="w-3 h-3 rounded bg-gray-300 dark:bg-gray-600"></div><span>Empty</span></div>
+                    <div class="flex items-center justify-center gap-4 mt-4 text-xs text-gray-500 dark:text-gray-400 flex-wrap">
+                        <div class="flex items-center gap-1"><div class="w-3 h-3 rounded bg-green-500"></div><span>Timesheet</span></div>
+                        <div class="flex items-center gap-1"><div class="w-3 h-3 rounded bg-purple-500"></div><span>Documents</span></div>
+                        <div class="flex items-center gap-1"><div class="w-3 h-3 rounded bg-gradient-to-r from-green-500 to-purple-500"></div><span>Both</span></div>
                         <div class="flex items-center gap-1"><div class="w-3 h-3 rounded-full bg-primary ring-2 ring-primary ring-offset-2"></div><span>Today</span></div>
                     </div>
                 </div>
@@ -490,9 +577,23 @@
                         <span class="text-sm font-bold text-primary" id="preview-total-hours">60h</span>
                     </div>
                     <div class="flex gap-2 overflow-x-auto pb-2" id="preview-days"></div>
-                    <button onclick="openSelectedWeek()" class="w-full mt-3 py-3 bg-primary/10 dark:bg-primary/20 text-primary font-semibold rounded-xl hover:bg-primary/20 transition-colors">
-                        View Full Details
-                    </button>
+                    
+                    <!-- Document indicators -->
+                    <div id="preview-documents" class="flex gap-2 mt-3 mb-3 hidden">
+                        <div class="flex items-center gap-2 text-xs text-purple-600 bg-purple-50 dark:bg-purple-900/20 px-3 py-1.5 rounded-full">
+                            <i class="fas fa-paperclip"></i>
+                            <span id="preview-doc-count">3 docs attached</span>
+                        </div>
+                    </div>
+                    
+                    <div class="flex gap-2 mt-3">
+                        <button onclick="openSelectedWeek()" class="flex-1 py-3 bg-primary/10 dark:bg-primary/20 text-primary font-semibold rounded-xl hover:bg-primary/20 transition-colors">
+                            View Details
+                        </button>
+                        <button onclick="archiveSelectedWeek()" id="archive-btn" class="px-4 py-3 bg-gray-100 dark:bg-dark-surface text-gray-600 dark:text-gray-400 rounded-xl hover:bg-gray-200 transition-colors" title="Archive Week">
+                            <i class="fas fa-archive"></i>
+                        </button>
+                    </div>
                 </div>
 
                 <div class="grid grid-cols-2 gap-3">
@@ -501,8 +602,11 @@
                         <p class="text-2xl font-bold text-gray-900 dark:text-white" id="stat-month-hours">0h</p>
                     </div>
                     <div class="bg-white dark:bg-dark-card rounded-2xl p-4 shadow-sm border border-gray-100 dark:border-gray-700">
-                        <p class="text-xs text-gray-500 dark:text-gray-400 mb-1">This Year</p>
-                        <p class="text-2xl font-bold text-gray-900 dark:text-white" id="stat-year-hours">0h</p>
+                        <p class="text-xs text-gray-500 dark:text-gray-400 mb-1">Storage Used</p>
+                        <p class="text-2xl font-bold text-gray-900 dark:text-white" id="stat-storage-used">0 MB</p>
+                        <div class="storage-bar">
+                            <div class="storage-fill" id="storage-bar-fill" style="width: 0%"></div>
+                        </div>
                     </div>
                 </div>
 
@@ -515,8 +619,8 @@
             <!-- Scan View -->
             <div id="scan-view" class="view-section hidden fade-in space-y-4">
                 <div class="text-center mb-4">
-                    <h2 class="text-xl font-bold text-gray-900 dark:text-white">Scan Timesheet</h2>
-                    <p class="text-sm text-gray-500 dark:text-gray-400">Powered by Gemini 2.0 Flash AI</p>
+                    <h2 class="text-xl font-bold text-gray-900 dark:text-white">Scan Timesheet & Docs</h2>
+                    <p class="text-sm text-gray-500 dark:text-gray-400">Timesheet uses Gemini AI • Documents save directly</p>
                 </div>
 
                 <!-- API Key Warning -->
@@ -545,20 +649,23 @@
                     <p class="text-xs text-gray-500 mt-2" id="selected-week-info">Week ending auto-detected from timesheet</p>
                 </div>
 
-                <!-- Upload Zone -->
+                <!-- Timesheet Upload (OCR) -->
                 <div class="bg-white dark:bg-dark-card rounded-2xl p-4 shadow-sm border border-gray-100 dark:border-gray-700">
                     <div class="flex items-center justify-between mb-3">
-                        <h3 class="font-medium text-gray-900 dark:text-white">Timesheet Image <span class="text-red-500">*</span></h3>
-                        <span class="text-xs text-gray-500" id="front-status">Required</span>
+                        <h3 class="font-medium text-gray-900 dark:text-white flex items-center gap-2">
+                            <i class="fas fa-clock text-primary"></i>
+                            Timesheet <span class="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded">OCR</span>
+                        </h3>
+                        <span class="text-xs text-gray-500" id="front-status">Optional</span>
                     </div>
                     <div class="upload-zone rounded-xl p-6 text-center cursor-pointer relative overflow-hidden bg-gray-50 dark:bg-dark-surface image-preview-container" 
                          onclick="document.getElementById('file-front').click()"
-                         ondrop="handleDrop(event)" ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)">
-                        <input type="file" id="file-front" class="hidden" accept="image/*" capture="environment" onchange="handleFileSelect(event)">
+                         ondrop="handleDrop(event, 'front')" ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)">
+                        <input type="file" id="file-front" class="hidden" accept="image/*" capture="environment" onchange="handleFileSelect(event, 'front')">
                         <div id="upload-front-default">
                             <i class="fas fa-camera text-3xl text-gray-400 mb-2"></i>
-                            <p class="text-sm text-gray-600 dark:text-gray-400">Tap to take photo or browse</p>
-                            <p class="text-xs text-gray-400 mt-1">Ensure "WEEK ENDING" and booking columns are visible</p>
+                            <p class="text-sm text-gray-600 dark:text-gray-400">Tap for timesheet photo</p>
+                            <p class="text-xs text-gray-400 mt-1">Gemini AI will extract times</p>
                         </div>
                         <img id="preview-front" class="hidden w-full h-48 object-cover rounded-lg mx-auto">
                         <div id="image-processing-indicator" class="image-processing-overlay hidden">
@@ -568,12 +675,52 @@
                             </div>
                         </div>
                     </div>
-                    <!-- Tips -->
-                    <div class="mt-3 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
-                        <p class="text-xs text-blue-700 dark:text-blue-400">
-                            <i class="fas fa-lightbulb mr-1"></i>
-                            <strong>Tip:</strong> Hold camera directly above. Ensure "WEEK ENDING" date in top-right is visible.
-                        </p>
+                </div>
+
+                <!-- Additional Documents (No OCR) -->
+                <div class="bg-white dark:bg-dark-card rounded-2xl p-4 shadow-sm border border-gray-100 dark:border-gray-700">
+                    <div class="flex items-center justify-between mb-3">
+                        <h3 class="font-medium text-gray-900 dark:text-white flex items-center gap-2">
+                            <i class="fas fa-file-alt text-purple-500"></i>
+                            Additional Documents
+                        </h3>
+                        <span class="text-xs text-purple-600 bg-purple-50 dark:bg-purple-900/20 px-2 py-1 rounded-full">Direct Save</span>
+                    </div>
+                    <p class="text-xs text-gray-500 dark:text-gray-400 mb-3">These documents are saved directly to your device without processing</p>
+                    
+                    <div class="doc-upload-grid">
+                        <div class="doc-upload-item" id="doc-1-item" onclick="document.getElementById('file-doc-1').click()">
+                            <input type="file" id="file-doc-1" class="hidden" accept="image/*,application/pdf" onchange="handleDocSelect(event, 1)">
+                            <i class="fas fa-file-image text-gray-400" id="doc-1-icon"></i>
+                            <span class="doc-label text-gray-600 dark:text-gray-300">Doc 1</span>
+                            <span class="doc-status" id="doc-1-status">Tap to add</span>
+                            <img id="doc-1-preview" class="doc-preview-thumb hidden">
+                            <div class="doc-remove-btn hidden" id="doc-1-remove" onclick="removeDoc(event, 1)">
+                                <i class="fas fa-times"></i>
+                            </div>
+                        </div>
+                        
+                        <div class="doc-upload-item" id="doc-2-item" onclick="document.getElementById('file-doc-2').click()">
+                            <input type="file" id="file-doc-2" class="hidden" accept="image/*,application/pdf" onchange="handleDocSelect(event, 2)">
+                            <i class="fas fa-file-image text-gray-400" id="doc-2-icon"></i>
+                            <span class="doc-label text-gray-600 dark:text-gray-300">Doc 2</span>
+                            <span class="doc-status" id="doc-2-status">Tap to add</span>
+                            <img id="doc-2-preview" class="doc-preview-thumb hidden">
+                            <div class="doc-remove-btn hidden" id="doc-2-remove" onclick="removeDoc(event, 2)">
+                                <i class="fas fa-times"></i>
+                            </div>
+                        </div>
+                        
+                        <div class="doc-upload-item" id="doc-3-item" onclick="document.getElementById('file-doc-3').click()">
+                            <input type="file" id="file-doc-3" class="hidden" accept="image/*,application/pdf" onchange="handleDocSelect(event, 3)">
+                            <i class="fas fa-file-image text-gray-400" id="doc-3-icon"></i>
+                            <span class="doc-label text-gray-600 dark:text-gray-300">Doc 3</span>
+                            <span class="doc-status" id="doc-3-status">Tap to add</span>
+                            <img id="doc-3-preview" class="doc-preview-thumb hidden">
+                            <div class="doc-remove-btn hidden" id="doc-3-remove" onclick="removeDoc(event, 3)">
+                                <i class="fas fa-times"></i>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
@@ -653,9 +800,7 @@
                     <!-- Visual Grid -->
                     <div class="bg-white dark:bg-dark-card rounded-2xl p-4 shadow-sm border border-gray-100 dark:border-gray-700">
                         <h3 class="font-bold text-gray-900 dark:text-white mb-3 text-sm">Detected Schedule</h3>
-                        <div class="extraction-grid relative" id="detection-grid">
-                            <!-- Generated by JS -->
-                        </div>
+                        <div class="extraction-grid relative" id="detection-grid"></div>
                         <div class="flex gap-4 mt-3 text-xs justify-center">
                             <div class="flex items-center gap-1"><div class="w-3 h-3 bg-green-400 rounded"></div><span>ON Time</span></div>
                             <div class="flex items-center gap-1"><div class="w-3 h-3 bg-red-400 rounded"></div><span>OFF Time</span></div>
@@ -669,9 +814,7 @@
                             <h3 class="font-bold text-gray-900 dark:text-white text-sm">Review & Correct Times</h3>
                             <button onclick="resetToAuto()" class="text-xs text-primary hover:underline">Reset to Auto</button>
                         </div>
-                        <div id="correction-table" class="space-y-2">
-                            <!-- Generated by JS -->
-                        </div>
+                        <div id="correction-table" class="space-y-2"></div>
                     </div>
 
                     <!-- Action Buttons -->
@@ -680,7 +823,7 @@
                             <i class="fas fa-redo mr-2"></i>Re-scan
                         </button>
                         <button onclick="confirmAndSave()" class="flex-1 py-3 bg-primary text-white rounded-xl font-semibold hover:bg-blue-600 shadow-lg shadow-blue-500/30 transition-colors">
-                            <i class="fas fa-save mr-2"></i>Save Timesheet
+                            <i class="fas fa-save mr-2"></i>Save All
                         </button>
                     </div>
                 </div>
@@ -688,11 +831,20 @@
                 <button onclick="startOCR()" id="scan-btn" class="w-full bg-primary hover:bg-blue-600 text-white font-bold py-4 rounded-xl shadow-lg shadow-blue-500/30 transition-all transform active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed mt-4">
                     <i class="fas fa-magic mr-2"></i>Auto-Extract Times
                 </button>
+                
+                <button onclick="saveDocumentsOnly()" id="save-docs-btn" class="w-full bg-purple-600 hover:bg-purple-700 text-white font-bold py-4 rounded-xl shadow-lg shadow-purple-500/30 transition-all transform active:scale-95 mt-2 hidden">
+                    <i class="fas fa-file-archive mr-2"></i>Save Documents Only
+                </button>
             </div>
 
             <!-- History View -->
             <div id="history-view" class="view-section hidden fade-in">
-                <h2 class="text-xl font-bold text-gray-900 dark:text-white mb-4">All Timesheets</h2>
+                <div class="flex items-center justify-between mb-4">
+                    <h2 class="text-xl font-bold text-gray-900 dark:text-white">All Timesheets</h2>
+                    <button onclick="showArchiveView()" class="text-sm text-primary hover:underline">
+                        <i class="fas fa-archive mr-1"></i>View Archive
+                    </button>
+                </div>
                 <div class="flex gap-2 mb-4 overflow-x-auto pb-2">
                     <button onclick="filterHistory('all')" class="filter-btn active px-4 py-2 rounded-full bg-primary text-white text-sm font-medium whitespace-nowrap" data-filter="all">All</button>
                     <button onclick="filterHistory('month')" class="filter-btn px-4 py-2 rounded-full bg-gray-200 dark:bg-dark-surface text-gray-700 dark:text-gray-300 text-sm font-medium whitespace-nowrap" data-filter="month">This Month</button>
@@ -701,9 +853,44 @@
                 <div id="history-list" class="space-y-3"></div>
             </div>
 
+            <!-- Archive View -->
+            <div id="archive-view" class="view-section hidden fade-in">
+                <div class="flex items-center justify-between mb-4">
+                    <h2 class="text-xl font-bold text-gray-900 dark:text-white">Archived Weeks</h2>
+                    <button onclick="switchView('history')" class="text-sm text-primary hover:underline">
+                        <i class="fas fa-arrow-left mr-1"></i>Back to Active
+                    </button>
+                </div>
+                <p class="text-sm text-gray-500 dark:text-gray-400 mb-4">Archived weeks are stored locally but hidden from main views to improve performance.</p>
+                <div id="archive-list" class="space-y-3"></div>
+            </div>
+
             <!-- Settings View -->
             <div id="settings-view" class="view-section hidden fade-in space-y-4">
                 <h2 class="text-xl font-bold text-gray-900 dark:text-white mb-4">Settings</h2>
+
+                <!-- Storage Info -->
+                <div class="bg-white dark:bg-dark-card rounded-2xl p-4 shadow-sm border border-gray-100 dark:border-gray-700">
+                    <h3 class="font-semibold text-gray-900 dark:text-white mb-3">
+                        <i class="fas fa-database text-primary mr-2"></i>Storage Status
+                    </h3>
+                    <div class="space-y-3">
+                        <div class="flex justify-between text-sm">
+                            <span class="text-gray-600 dark:text-gray-400">Used Space</span>
+                            <span class="font-bold text-gray-900 dark:text-white" id="storage-used">0 MB</span>
+                        </div>
+                        <div class="flex justify-between text-sm">
+                            <span class="text-gray-600 dark:text-gray-400">Available</span>
+                            <span class="font-bold text-gray-900 dark:text-white" id="storage-available">Unknown</span>
+                        </div>
+                        <div class="storage-bar">
+                            <div class="storage-fill" id="settings-storage-bar" style="width: 0%"></div>
+                        </div>
+                        <button onclick="checkStorageQuota()" class="w-full py-2 bg-gray-100 dark:bg-dark-surface rounded-lg text-sm text-gray-600 dark:text-gray-400 hover:bg-gray-200 transition-colors">
+                            <i class="fas fa-sync-alt mr-2"></i>Refresh Storage Info
+                        </button>
+                    </div>
+                </div>
 
                 <!-- Gemini API Settings -->
                 <div class="bg-white dark:bg-dark-card rounded-2xl p-4 shadow-sm border border-gray-100 dark:border-gray-700">
@@ -756,9 +943,10 @@
                 <div class="bg-white dark:bg-dark-card rounded-2xl p-4 shadow-sm border border-gray-100 dark:border-gray-700">
                     <h3 class="font-semibold text-gray-900 dark:text-white mb-3"><i class="fas fa-info-circle text-primary mr-2"></i>About</h3>
                     <div class="space-y-2 text-sm text-gray-600 dark:text-gray-400">
-                        <p><strong>Version:</strong> <span id="settings-version">v4.1.0 (Gemini 2.0 Flash)</span></p>
+                        <p><strong>Version:</strong> <span id="settings-version">v5.0.0 (Gemini + Archive)</span></p>
                         <p><strong>OCR Engine:</strong> Google Gemini 2.0 Flash AI</p>
-                        <p class="text-xs">Uses advanced AI for handwritten text recognition on timesheets.</p>
+                        <p><strong>Storage:</strong> IndexedDB (Local Device)</p>
+                        <p class="text-xs">Supports timesheet OCR + 3 additional document uploads per week. Archive feature for old data.</p>
                     </div>
                 </div>
 
@@ -779,6 +967,14 @@
                             <div>
                                 <p class="font-medium text-gray-900 dark:text-white">Delete Month</p>
                                 <p class="text-xs text-gray-500">Remove all data for a month</p>
+                            </div>
+                            <i class="fas fa-chevron-right text-gray-400"></i>
+                        </button>
+
+                        <button onclick="manageArchives()" class="w-full flex items-center justify-between p-3 bg-gray-100 dark:bg-dark-surface rounded-xl hover:bg-purple-50 dark:hover:bg-purple-900/20 transition-colors text-left">
+                            <div>
+                                <p class="font-medium text-gray-900 dark:text-white">Manage Archives</p>
+                                <p class="text-xs text-gray-500">View or restore archived weeks</p>
                             </div>
                             <i class="fas fa-chevron-right text-gray-400"></i>
                         </button>
@@ -931,7 +1127,7 @@
 
     <script>
         // ==================== CONFIG ====================
-        const APP_VERSION = '4.1.0';
+        const APP_VERSION = '5.0.0';
         const GEMINI_MODEL = 'gemini-2.0-flash';
         
         let currentUser = null;
@@ -945,67 +1141,148 @@
         let ocrAttempts = 0;
         let lastOcrResult = null;
         let GEMINI_API_KEY = localStorage.getItem('gemini_api_key') || '';
+        
+        // Document storage (no OCR)
+        let currentDocs = {
+            1: null, // { file, preview, dataUrl }
+            2: null,
+            3: null
+        };
 
         // ==================== INDEXEDDB ====================
-        const DB_NAME = 'TimesheetImagesDB';
-        const STORE_NAME = 'images';
+        const DB_NAME = 'DriverTimesheetDB_v5';
+        const DB_VERSION = 2;
+        const STORES = {
+            images: 'images',
+            timesheets: 'timesheets',
+            archives: 'archives',
+            documents: 'documents'
+        };
         
-        function initImageDB() {
+        async function initImageDB() {
             return new Promise((resolve, reject) => {
-                const request = indexedDB.open(DB_NAME, 1);
+                const request = indexedDB.open(DB_NAME, DB_VERSION);
+                
                 request.onerror = () => reject(request.error);
-                request.onsuccess = () => { imageDB = request.result; resolve(imageDB); };
+                
+                request.onsuccess = () => { 
+                    imageDB = request.result; 
+                    resolve(imageDB); 
+                };
+                
                 request.onupgradeneeded = (event) => {
                     const db = event.target.result;
-                    if (!db.objectStoreNames.contains(STORE_NAME)) {
-                        db.createObjectStore(STORE_NAME, { keyPath: 'id' });
+                    
+                    // Images store for timesheet photos
+                    if (!db.objectStoreNames.contains(STORES.images)) {
+                        db.createObjectStore(STORES.images, { keyPath: 'id' });
+                    }
+                    
+                    // Documents store for additional docs
+                    if (!db.objectStoreNames.contains(STORES.documents)) {
+                        const docStore = db.createObjectStore(STORES.documents, { keyPath: 'id' });
+                        docStore.createIndex('weekStart', 'weekStart', { unique: false });
+                    }
+                    
+                    // Timesheets store
+                    if (!db.objectStoreNames.contains(STORES.timesheets)) {
+                        const tsStore = db.createObjectStore(STORES.timesheets, { keyPath: 'id' });
+                        tsStore.createIndex('weekStart', 'weekStart', { unique: false });
+                        tsStore.createIndex('archived', 'archived', { unique: false });
+                    }
+                    
+                    // Archives store for old data
+                    if (!db.objectStoreNames.contains(STORES.archives)) {
+                        db.createObjectStore(STORES.archives, { keyPath: 'id' });
                     }
                 };
             });
         }
 
-        async function saveImage(id, dataUrl) {
+        async function saveToStore(storeName, id, data) {
             if (!imageDB) await initImageDB();
             return new Promise((resolve, reject) => {
-                const transaction = imageDB.transaction([STORE_NAME], 'readwrite');
-                const store = transaction.objectStore(STORE_NAME);
-                const request = store.put({ id, data: dataUrl, timestamp: Date.now() });
+                const transaction = imageDB.transaction([storeName], 'readwrite');
+                const store = transaction.objectStore(storeName);
+                const request = store.put({ id, ...data, timestamp: Date.now() });
                 request.onsuccess = () => resolve();
                 request.onerror = () => reject(request.error);
             });
         }
 
-        async function getImage(id) {
+        async function getFromStore(storeName, id) {
             if (!imageDB) await initImageDB();
             return new Promise((resolve, reject) => {
-                const transaction = imageDB.transaction([STORE_NAME], 'readonly');
-                const store = transaction.objectStore(STORE_NAME);
+                const transaction = imageDB.transaction([storeName], 'readonly');
+                const store = transaction.objectStore(storeName);
                 const request = store.get(id);
-                request.onsuccess = () => resolve(request.result ? request.result.data : null);
+                request.onsuccess = () => resolve(request.result || null);
                 request.onerror = () => reject(request.error);
             });
         }
 
-        async function deleteImage(id) {
+        async function deleteFromStore(storeName, id) {
             if (!imageDB) await initImageDB();
             return new Promise((resolve, reject) => {
-                const transaction = imageDB.transaction([STORE_NAME], 'readwrite');
-                const store = transaction.objectStore(STORE_NAME);
+                const transaction = imageDB.transaction([storeName], 'readwrite');
+                const store = transaction.objectStore(storeName);
                 const request = store.delete(id);
                 request.onsuccess = () => resolve();
                 request.onerror = () => reject(request.error);
             });
         }
 
-        async function clearAllImages() {
+        async function getAllFromStore(storeName) {
             if (!imageDB) await initImageDB();
             return new Promise((resolve, reject) => {
-                const transaction = imageDB.transaction([STORE_NAME], 'readwrite');
-                const store = transaction.objectStore(STORE_NAME);
-                const request = store.clear();
-                request.onsuccess = () => resolve();
+                const transaction = imageDB.transaction([storeName], 'readonly');
+                const store = transaction.objectStore(storeName);
+                const request = store.getAll();
+                request.onsuccess = () => resolve(request.result || []);
                 request.onerror = () => reject(request.error);
             });
+        }
+
+        async function getDocumentsForWeek(weekStart) {
+            const allDocs = await getAllFromStore(STORES.documents);
+            return allDocs.filter(doc => doc.weekStart === weekStart);
+        }
+
+        async function clearAllStores() {
+            if (!imageDB) await initImageDB();
+            const stores = Object.values(STORES);
+            for (const storeName of stores) {
+                await new Promise((resolve, reject) => {
+                    const transaction = imageDB.transaction([storeName], 'readwrite');
+                    const store = transaction.objectStore(storeName);
+                    const request = store.clear();
+                    request.onsuccess = () => resolve();
+                    request.onerror = () => reject(request.error);
+                });
+            }
+        }
+
+        // Storage quota check
+        async function checkStorageQuota() {
+            if ('storage' in navigator && 'estimate' in navigator.storage) {
+                try {
+                    const { usage, quota } = await navigator.storage.estimate();
+                    const usedMB = (usage / (1024 * 1024)).toFixed(1);
+                    const quotaMB = quota ? (quota / (1024 * 1024)).toFixed(0) : 'Unknown';
+                    const percent = quota ? Math.round((usage / quota) * 100) : 0;
+                    
+                    document.getElementById('storage-used').textContent = `${usedMB} MB`;
+                    document.getElementById('storage-available').textContent = quota ? `${quotaMB} MB` : 'Unknown';
+                    document.getElementById('settings-storage-bar').style.width = `${percent}%`;
+                    document.getElementById('stat-storage-used').textContent = `${usedMB} MB`;
+                    document.getElementById('storage-bar-fill').style.width = `${percent}%`;
+                    
+                    return { usedMB, quotaMB, percent };
+                } catch (e) {
+                    console.error('Storage estimate failed:', e);
+                }
+            }
+            return null;
         }
 
         // ==================== DATE UTILITIES ====================
@@ -1029,8 +1306,8 @@
             return `${startDate.toLocaleDateString('en-US', options)} - ${endDate.toLocaleDateString('en-US', options)}`;
         }
 
-        // ==================== DATA STORE ====================
-        const DB = {
+        // ==================== DATA STORE (LocalStorage for metadata) ====================
+        const DB_LS = {
             getUsers: () => JSON.parse(localStorage.getItem('ts_users') || '[]'),
             saveUsers: (users) => localStorage.setItem('ts_users', JSON.stringify(users)),
             getTimesheets: (username) => JSON.parse(localStorage.getItem(`ts_data_${username}`) || '[]'),
@@ -1038,17 +1315,17 @@
             deleteUser: (username) => {
                 localStorage.removeItem(`ts_data_${username}`);
                 localStorage.removeItem(`ts_settings_${username}`);
-                const users = DB.getUsers().filter(u => u.username !== username);
-                DB.saveUsers(users);
+                const users = DB_LS.getUsers().filter(u => u.username !== username);
+                DB_LS.saveUsers(users);
             }
         };
 
         // ==================== AUTH ====================
         function initAuth() {
             document.getElementById('version-display').textContent = 'v' + APP_VERSION;
-            document.getElementById('settings-version').textContent = 'v' + APP_VERSION + ' (Gemini 2.0 Flash)';
+            document.getElementById('settings-version').textContent = 'v' + APP_VERSION + ' (Gemini + Archive)';
             
-            const users = DB.getUsers();
+            const users = DB_LS.getUsers();
             const select = document.getElementById('user-select');
             select.innerHTML = '<option value="">-- Select User --</option>' +
                 users.map(u => `<option value="${u.username}">${u.username}</option>`).join('');
@@ -1062,7 +1339,6 @@
                 document.getElementById('pin-section').classList.toggle('hidden', !this.value);
             });
 
-            // Check API key status
             updateApiKeyStatus();
         }
 
@@ -1101,7 +1377,7 @@
             if (!username) return showToast('Please select a user', 'error');
             if (!pin || pin.length !== 4) return showToast('Enter 4-digit PIN', 'error');
             
-            const users = DB.getUsers();
+            const users = DB_LS.getUsers();
             const user = users.find(u => u.username === username && u.pin === hashPin(pin));
             
             if (!user) {
@@ -1125,6 +1401,7 @@
             renderCalendar();
             updateStats();
             renderRecent();
+            checkStorageQuota();
             updateApiKeyStatus();
             
             showToast(`Welcome, ${user.username}`);
@@ -1160,11 +1437,11 @@
             if (!pin || pin.length !== 4) return showToast('PIN must be 4 digits', 'error');
             if (pin !== confirmPin) return showToast('PINs do not match', 'error');
             
-            const users = DB.getUsers();
+            const users = DB_LS.getUsers();
             if (users.find(u => u.username === username)) return showToast('User already exists', 'error');
             
             users.push({ username, pin: hashPin(pin), created: new Date().toISOString() });
-            DB.saveUsers(users);
+            DB_LS.saveUsers(users);
             
             showToast('Driver created successfully');
             hideCreateUser();
@@ -1191,7 +1468,7 @@
         }
 
         // ==================== CALENDAR ====================
-        function renderCalendar() {
+        async function renderCalendar() {
             const year = currentMonth.getFullYear();
             const month = currentMonth.getMonth();
             
@@ -1203,13 +1480,25 @@
             const startPadding = firstDay.getDay();
             const daysInMonth = lastDay.getDate();
             
-            const timesheets = DB.getTimesheets(currentUser.username);
+            const timesheets = DB_LS.getTimesheets(currentUser.username);
             const weekData = {};
+            const docData = {};
             
+            // Check for timesheets
             timesheets.forEach(ts => {
                 const date = parseDate(ts.weekStart);
                 if (date.getFullYear() === year && date.getMonth() === month) {
                     weekData[date.getDate()] = ts;
+                }
+            });
+            
+            // Check for documents
+            const allDocs = await getAllFromStore(STORES.documents);
+            allDocs.forEach(doc => {
+                const date = parseDate(doc.weekStart);
+                if (date.getFullYear() === year && date.getMonth() === month) {
+                    if (!docData[date.getDate()]) docData[date.getDate()] = 0;
+                    docData[date.getDate()]++;
                 }
             });
             
@@ -1229,9 +1518,10 @@
             for (let day = 1; day <= daysInMonth; day++) {
                 const isToday = (day === todayDate && month === todayMonth && year === todayYear);
                 const hasData = weekData[day];
-                const cell = createCalendarDay(day, false, isToday, hasData);
+                const hasDocs = docData[day] > 0;
+                const cell = createCalendarDay(day, false, isToday, hasData, hasDocs);
                 
-                if (hasData) cell.onclick = () => selectWeek(hasData);
+                if (hasData || hasDocs) cell.onclick = () => selectWeek(weekData[day], day, hasDocs);
                 else cell.onclick = () => selectEmptyWeek(year, month, day);
                 
                 grid.appendChild(cell);
@@ -1243,7 +1533,7 @@
             }
         }
 
-        function createCalendarDay(day, isOtherMonth, isToday = false, data = null) {
+        function createCalendarDay(day, isOtherMonth, isToday = false, hasData = false, hasDocs = false) {
             const div = document.createElement('div');
             let className = 'calendar-day';
             
@@ -1251,7 +1541,8 @@
             else className += ' bg-white dark:bg-dark-surface text-gray-900 dark:text-white';
             
             if (isToday) className += ' today';
-            if (data) className += ' has-data';
+            if (hasData) className += ' has-data';
+            if (hasDocs) className += ' has-docs';
             
             div.className = className;
             
@@ -1260,9 +1551,15 @@
                 todayIndicator = '<div class="absolute -top-1 -right-1 w-3 h-3 bg-primary rounded-full border-2 border-white dark:border-dark-card"></div>';
             }
             
+            let docIndicator = '';
+            if (hasDocs && !hasData) {
+                docIndicator = '<div class="absolute bottom-1 w-1.5 h-1.5 bg-purple-500 rounded-full"></div>';
+            }
+            
             div.innerHTML = `
                 <span class="text-lg font-bold">${day}</span>
-                ${data ? '<div style="background: rgba(255,255,255,0.5); height: 3px; width: 60%; border-radius: 2px; margin-top: 2px;"></div>' : ''}
+                ${hasData ? '<div style="background: rgba(255,255,255,0.5); height: 3px; width: 60%; border-radius: 2px; margin-top: 2px;"></div>' : ''}
+                ${docIndicator}
                 ${todayIndicator}
             `;
             return div;
@@ -1273,21 +1570,52 @@
             renderCalendar();
         }
 
-        function selectWeek(timesheet) {
-            selectedWeekStart = timesheet.weekStart;
+        async function selectWeek(timesheet, day, hasDocs) {
+            selectedWeekStart = timesheet ? timesheet.weekStart : 
+                formatDateForInput(new Date(currentMonth.getFullYear(), currentMonth.getMonth(), day));
+            
             const preview = document.getElementById('week-preview');
             preview.classList.remove('hidden');
             
-            document.getElementById('preview-week-range').textContent = timesheet.weekRange;
-            document.getElementById('preview-total-hours').textContent = timesheet.totalHours + 'h';
+            if (timesheet) {
+                document.getElementById('preview-week-range').textContent = timesheet.weekRange;
+                document.getElementById('preview-total-hours').textContent = timesheet.totalHours + 'h';
+                
+                const daysContainer = document.getElementById('preview-days');
+                daysContainer.innerHTML = timesheet.days.map((day, i) => `
+                    <div class="flex-shrink-0 w-16 h-16 rounded-xl ${day.hours > 0 ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400' : 'bg-gray-100 dark:bg-dark-surface text-gray-400'} flex flex-col items-center justify-center">
+                        <span class="text-xs">${['S','M','T','W','T','F','S'][i]}</span>
+                        <span class="font-bold">${day.hours > 0 ? day.hours : '-'}</span>
+                    </div>
+                `).join('');
+                
+                // Show archive button only if not archived
+                const archiveBtn = document.getElementById('archive-btn');
+                if (timesheet.archived) {
+                    archiveBtn.innerHTML = '<i class="fas fa-box-open"></i>';
+                    archiveBtn.onclick = () => unarchiveWeek(timesheet.weekStart);
+                    archiveBtn.title = 'Restore from Archive';
+                } else {
+                    archiveBtn.innerHTML = '<i class="fas fa-archive"></i>';
+                    archiveBtn.onclick = () => archiveSelectedWeek();
+                    archiveBtn.title = 'Archive Week';
+                }
+            } else {
+                document.getElementById('preview-week-range').textContent = 'Week of ' + 
+                    new Date(currentMonth.getFullYear(), currentMonth.getMonth(), day).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                document.getElementById('preview-total-hours').textContent = '-';
+                document.getElementById('preview-days').innerHTML = '<div class="text-gray-400 text-sm">No timesheet data</div>';
+            }
             
-            const daysContainer = document.getElementById('preview-days');
-            daysContainer.innerHTML = timesheet.days.map((day, i) => `
-                <div class="flex-shrink-0 w-16 h-16 rounded-xl ${day.hours > 0 ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400' : 'bg-gray-100 dark:bg-dark-surface text-gray-400'} flex flex-col items-center justify-center">
-                    <span class="text-xs">${['S','M','T','W','T','F','S'][i]}</span>
-                    <span class="font-bold">${day.hours > 0 ? day.hours : '-'}</span>
-                </div>
-            `).join('');
+            // Check for documents
+            const docs = await getDocumentsForWeek(selectedWeekStart);
+            const docPreview = document.getElementById('preview-documents');
+            if (docs.length > 0) {
+                docPreview.classList.remove('hidden');
+                document.getElementById('preview-doc-count').textContent = `${docs.length} doc${docs.length > 1 ? 's' : ''} attached`;
+            } else {
+                docPreview.classList.add('hidden');
+            }
         }
 
         function selectEmptyWeek(year, month, day) {
@@ -1303,9 +1631,10 @@
 
         function openSelectedWeek() {
             if (!selectedWeekStart) return;
-            const timesheets = DB.getTimesheets(currentUser.username);
+            const timesheets = DB_LS.getTimesheets(currentUser.username);
             const ts = timesheets.find(t => t.weekStart === selectedWeekStart);
             if (ts) openWeekDetails(ts);
+            else showToast('No timesheet data for this week', 'error');
         }
 
         // ==================== IMAGE PREPROCESSING ====================
@@ -1349,6 +1678,155 @@
             });
         }
 
+        // ==================== DOCUMENT HANDLING (No OCR) ====================
+        async function handleDocSelect(event, docNum) {
+            event.stopPropagation();
+            const file = event.target.files[0];
+            if (!file) return;
+            
+            const MAX_SIZE = 20 * 1024 * 1024; // 20MB limit per doc
+            
+            if (file.size > MAX_SIZE) {
+                showToast('File too large (max 20MB)', 'error');
+                return;
+            }
+            
+            // Show loading
+            const icon = document.getElementById(`doc-${docNum}-icon`);
+            const status = document.getElementById(`doc-${docNum}-status`);
+            const originalIcon = icon.className;
+            
+            icon.className = 'fas fa-spinner fa-spin text-primary';
+            status.textContent = 'Loading...';
+            
+            const reader = new FileReader();
+            reader.onload = async (e) => {
+                currentDocs[docNum] = {
+                    file: file,
+                    dataUrl: e.target.result,
+                    name: file.name,
+                    size: file.size,
+                    type: file.type
+                };
+                
+                // Update UI
+                updateDocUI(docNum);
+                showToast(`Document ${docNum} ready to save`);
+                
+                // Show save docs button if timesheet not present
+                document.getElementById('save-docs-btn').classList.remove('hidden');
+            };
+            
+            reader.onerror = () => {
+                icon.className = originalIcon;
+                status.textContent = 'Error';
+                showToast('Error reading file', 'error');
+            };
+            
+            reader.readAsDataURL(file);
+        }
+
+        function updateDocUI(docNum) {
+            const doc = currentDocs[docNum];
+            if (!doc) return;
+            
+            const item = document.getElementById(`doc-${docNum}-item`);
+            const icon = document.getElementById(`doc-${docNum}-icon`);
+            const status = document.getElementById(`doc-${docNum}-status`);
+            const preview = document.getElementById(`doc-${docNum}-preview`);
+            const removeBtn = document.getElementById(`doc-${docNum}-remove`);
+            
+            item.classList.add('has-file');
+            icon.className = 'hidden';
+            status.textContent = 'Ready';
+            
+            if (doc.type.startsWith('image/')) {
+                preview.src = doc.dataUrl;
+                preview.classList.remove('hidden');
+            } else {
+                icon.className = 'fas fa-file-pdf text-red-500';
+                icon.classList.remove('hidden');
+            }
+            
+            removeBtn.classList.remove('hidden');
+        }
+
+        function removeDoc(event, docNum) {
+            event.stopPropagation();
+            currentDocs[docNum] = null;
+            
+            const item = document.getElementById(`doc-${docNum}-item`);
+            const icon = document.getElementById(`doc-${docNum}-icon`);
+            const status = document.getElementById(`doc-${docNum}-status`);
+            const preview = document.getElementById(`doc-${docNum}-preview`);
+            const removeBtn = document.getElementById(`doc-${docNum}-remove`);
+            const input = document.getElementById(`file-doc-${docNum}`);
+            
+            item.classList.remove('has-file');
+            icon.className = 'fas fa-file-image text-gray-400';
+            icon.classList.remove('hidden');
+            status.textContent = 'Tap to add';
+            preview.src = '';
+            preview.classList.add('hidden');
+            removeBtn.classList.add('hidden');
+            input.value = '';
+            
+            // Check if any docs remain
+            const hasDocs = Object.values(currentDocs).some(d => d !== null);
+            if (!hasDocs) {
+                document.getElementById('save-docs-btn').classList.add('hidden');
+            }
+        }
+
+        async function saveDocumentsOnly() {
+            const weekEnding = document.getElementById('scan-date-select').value;
+            if (!weekEnding) {
+                showToast('Please select week ending date', 'error');
+                return;
+            }
+            
+            const endDate = parseDate(weekEnding);
+            const startDate = new Date(endDate);
+            startDate.setDate(startDate.getDate() - 6);
+            const weekStart = formatDateForInput(startDate);
+            
+            let savedCount = 0;
+            
+            for (let i = 1; i <= 3; i++) {
+                const doc = currentDocs[i];
+                if (doc) {
+                    const docId = `doc_${currentUser.username}_${weekStart}_${i}_${Date.now()}`;
+                    await saveToStore(STORES.documents, docId, {
+                        weekStart: weekStart,
+                        weekEnd: weekEnding,
+                        docNum: i,
+                        filename: doc.name,
+                        fileType: doc.type,
+                        fileSize: doc.size,
+                        data: doc.dataUrl,
+                        uploadedAt: new Date().toISOString()
+                    });
+                    savedCount++;
+                }
+            }
+            
+            if (savedCount > 0) {
+                showToast(`Saved ${savedCount} document(s) for week ending ${weekEnding}`);
+                resetDocForm();
+                renderCalendar();
+                updateStats();
+            } else {
+                showToast('No documents to save', 'error');
+            }
+        }
+
+        function resetDocForm() {
+            for (let i = 1; i <= 3; i++) {
+                removeDoc({ stopPropagation: () => {} }, i);
+            }
+            document.getElementById('save-docs-btn').classList.add('hidden');
+        }
+
         // ==================== SCAN & OCR ====================
         function handleDragOver(e) {
             e.preventDefault();
@@ -1359,19 +1837,19 @@
             e.currentTarget.classList.remove('active');
         }
 
-        function handleDrop(e) {
+        function handleDrop(e, type) {
             e.preventDefault();
             e.currentTarget.classList.remove('active');
             const file = e.dataTransfer.files[0];
-            if (file && file.type.startsWith('image/')) processFile(file);
+            if (file && file.type.startsWith('image/')) processFile(file, type);
         }
 
-        function handleFileSelect(e) {
+        function handleFileSelect(e, type) {
             const file = e.target.files[0];
-            if (file) processFile(file);
+            if (file) processFile(file, type);
         }
 
-        async function processFile(file) {
+        async function processFile(file, type) {
             const MAX_SIZE = 10 * 1024 * 1024;
             if (file.size > MAX_SIZE) {
                 showToast('Image too large (max 10MB)', 'error');
@@ -1392,7 +1870,7 @@
                     document.getElementById('front-status').textContent = 'Ready';
                     document.getElementById('front-status').className = 'text-xs text-green-600 font-medium';
                     
-                    showToast('Image loaded. Tap "Auto-Extract Times" to scan.');
+                    showToast('Timesheet loaded. Tap "Auto-Extract Times" to scan.');
                 } catch (err) {
                     processedImage = currentImage;
                     document.getElementById('preview-front').src = currentImage;
@@ -1458,9 +1936,6 @@
                 throw new Error('Gemini API key not configured. Please add your API key in settings.');
             }
 
-            console.log('🔮 Sending image to Gemini AI...');
-
-            // Convert data URL to base64
             const base64Image = imageDataUrl.split(',')[1];
             if (!base64Image) {
                 throw new Error('Invalid image format');
@@ -1527,7 +2002,7 @@ Rules:
 
             try {
                 const controller = new AbortController();
-                const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
+                const timeoutId = setTimeout(() => controller.abort(), 30000);
 
                 const response = await fetch(`${apiUrl}?key=${GEMINI_API_KEY}`, {
                     method: 'POST',
@@ -1542,7 +2017,6 @@ Rules:
 
                 if (!response.ok) {
                     const errorData = await response.json();
-                    console.error('Gemini API error response:', errorData);
                     
                     if (response.status === 400) {
                         throw new Error(`Invalid request: ${errorData.error?.message || 'Bad request'}`);
@@ -1562,19 +2036,15 @@ Rules:
                 }
 
                 const text = data.candidates[0].content.parts[0].text;
-                console.log('📝 Gemini response:', text);
 
-                // Parse the JSON response
                 let parsedData;
                 try {
-                    // Try to extract JSON if wrapped in markdown
                     const jsonMatch = text.match(/```json\s*([\s\S]*?)```/) || 
                                      text.match(/```\s*([\s\S]*?)```/) ||
                                      [null, text];
                     const jsonStr = jsonMatch[1] || text;
                     parsedData = JSON.parse(jsonStr);
                 } catch (e) {
-                    console.error('Failed to parse JSON, attempting regex extraction:', e);
                     parsedData = extractDataFromText(text);
                 }
 
@@ -1600,7 +2070,6 @@ Rules:
                 data.days[day] = { onTime: null, offTime: null, location: null };
             });
 
-            // Extract week ending
             const weekMatch = text.match(/weekEnding["\s:]+([^"\n,}]+)/i) ||
                              text.match(/week ending["\s:]+([^"\n,}]+)/i) ||
                              text.match(/(\d{1,2}[-/]\d{1,2}[-/]\d{2,4})/);
@@ -1608,7 +2077,6 @@ Rules:
                 data.weekEnding = weekMatch[1].trim();
             }
 
-            // Extract times for each day
             days.forEach(day => {
                 const dayPattern = new RegExp(`${day}["\\s:]+{([^}]+)}`, 'i');
                 const dayMatch = text.match(dayPattern);
@@ -1667,7 +2135,6 @@ Rules:
                 };
             });
 
-            // Parse week ending date
             let weekEndingDate = null;
             if (geminiData.weekEnding) {
                 weekEndingDate = parseWeekEndingDate(geminiData.weekEnding);
@@ -1685,7 +2152,6 @@ Rules:
         }
 
         function parseWeekEndingDate(dateStr) {
-            // Try various formats
             const formats = [
                 /(\d{1,2})[-/](\d{1,2})[-/](\d{2,4})/,
                 /(\d{1,2})[-/](\d{1,2})[-/](\d{2})/,
@@ -1698,13 +2164,11 @@ Rules:
                     let day, month, year;
                     
                     if (match[0].match(/\d{1,2}\s+\w+\s+\d{4}/)) {
-                        // Format: "14 Feb 2024"
                         day = parseInt(match[1]);
                         const monthNames = ['jan','feb','mar','apr','may','jun','jul','aug','sep','oct','nov','dec'];
                         month = monthNames.indexOf(match[2].toLowerCase());
                         year = parseInt(match[3]);
                     } else {
-                        // Format: DD-MM-YYYY or similar
                         day = parseInt(match[1]);
                         month = parseInt(match[2]) - 1;
                         year = parseInt(match[3]);
@@ -1736,13 +2200,12 @@ Rules:
             let endMinutes = endHour * 60 + endMin;
 
             if (endMinutes < startMinutes) {
-                endMinutes += 24 * 60; // Overnight shift
+                endMinutes += 24 * 60;
             }
 
             return (endMinutes - startMinutes) / 60;
         }
 
-        // Main OCR function with retry logic
         async function startOCR() {
             if (!processedImage && !currentImage) {
                 return showToast('Please upload timesheet image first', 'error');
@@ -1755,7 +2218,6 @@ Rules:
 
             const imageToProcess = processedImage || currentImage;
 
-            // Reset UI
             document.getElementById('ocr-error').classList.add('hidden');
             document.getElementById('scan-btn').classList.add('hidden');
             document.getElementById('ocr-progress').classList.remove('hidden');
@@ -1764,9 +2226,7 @@ Rules:
             updateOcrProgress(5, 'Preparing image...');
 
             try {
-                // Small delay to allow UI to update
                 await new Promise(r => setTimeout(r, 100));
-                
                 updateOcrProgress(15, 'Connecting to Gemini AI...');
                 
                 const geminiResult = await performGeminiOCR(imageToProcess);
@@ -1803,7 +2263,6 @@ Rules:
                 
                 let errorMsg = err.message || 'OCR failed. Please try again.';
                 
-                // User-friendly error messages
                 if (err.message.includes('API key')) {
                     errorMsg = 'Invalid API key. Please check your Gemini API key in Settings.';
                 } else if (err.message.includes('quota')) {
@@ -1816,7 +2275,6 @@ Rules:
 
                 document.getElementById('error-message').textContent = errorMsg;
                 
-                // Show debug info
                 const debugInfo = document.getElementById('ocr-debug-info');
                 debugInfo.textContent = `Error: ${err.message}\n\nStack: ${err.stack || 'No stack trace'}`;
                 
@@ -1832,7 +2290,6 @@ Rules:
         function showAutoDetectionResults() {
             document.getElementById('auto-results').classList.remove('hidden');
             
-            // Update displays
             if (autoDetectedWeekEnding) {
                 document.getElementById('result-week-ending').textContent = 
                     autoDetectedWeekEnding.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
@@ -1845,7 +2302,6 @@ Rules:
             document.getElementById('result-total-shifts').textContent = workingDays + ' shifts';
             document.getElementById('result-total-hours').textContent = '~' + autoDetectedData.totalHours + 'h';
             
-            // Confidence
             const confidence = workingDays >= 3 ? 'High' : workingDays >= 1 ? 'Medium' : 'Low';
             const badge = document.getElementById('confidence-badge');
             badge.textContent = confidence + ' Confidence';
@@ -1949,7 +2405,6 @@ Rules:
             
             if (value) dayData.hasData = true;
             
-            // Recalculate total
             let total = 0;
             Object.values(autoDetectedData.days).forEach(d => {
                 if (d.hours) total += d.hours;
@@ -2050,7 +2505,25 @@ Rules:
             const imageIds = { front: `${timesheetId}_front` };
             
             const imageToSave = processedImage || currentImage;
-            await saveImage(imageIds.front, imageToSave);
+            await saveToStore(STORES.images, imageIds.front, { data: imageToSave });
+            
+            // Save additional documents if present
+            for (let i = 1; i <= 3; i++) {
+                const doc = currentDocs[i];
+                if (doc) {
+                    const docId = `doc_${currentUser.username}_${formatDateForInput(startDate)}_${i}_${Date.now()}`;
+                    await saveToStore(STORES.documents, docId, {
+                        weekStart: formatDateForInput(startDate),
+                        weekEnd: weekEnding,
+                        docNum: i,
+                        filename: doc.name,
+                        fileType: doc.type,
+                        fileSize: doc.size,
+                        data: doc.dataUrl,
+                        uploadedAt: new Date().toISOString()
+                    });
+                }
+            }
             
             const timesheet = {
                 id: parseInt(timesheetId),
@@ -2066,12 +2539,13 @@ Rules:
                 days: dayData,
                 uploadedAt: new Date().toISOString(),
                 ocrVersion: APP_VERSION,
-                autoDetectedDate: autoDetectedWeekEnding ? formatDateForInput(autoDetectedWeekEnding) : null
+                autoDetectedDate: autoDetectedWeekEnding ? formatDateForInput(autoDetectedWeekEnding) : null,
+                archived: false
             };
             
-            const existing = DB.getTimesheets(currentUser.username);
+            const existing = DB_LS.getTimesheets(currentUser.username);
             existing.push(timesheet);
-            DB.saveTimesheets(currentUser.username, existing);
+            DB_LS.saveTimesheets(currentUser.username, existing);
             
             resetScanForm();
             document.getElementById('auto-results').classList.add('hidden');
@@ -2080,6 +2554,7 @@ Rules:
             renderCalendar();
             updateStats();
             renderRecent();
+            checkStorageQuota();
             
             const msg = autoDetectedData.firstWorkingDay ? 
                 `Saved! ${autoDetectedData.firstWorkingDay} start, ${totalHours.toFixed(1)}h total` :
@@ -2096,14 +2571,19 @@ Rules:
             autoDetectedWeekEnding = null;
             ocrAttempts = 0;
             lastOcrResult = null;
+            
+            // Reset timesheet upload
             document.getElementById('preview-front').src = '';
             document.getElementById('preview-front').classList.add('hidden');
             document.getElementById('upload-front-default').classList.remove('hidden');
             document.getElementById('file-front').value = '';
-            document.getElementById('front-status').textContent = 'Required';
+            document.getElementById('front-status').textContent = 'Optional';
             document.getElementById('front-status').className = 'text-xs text-gray-500';
             document.getElementById('scan-date-select').classList.remove('auto-filled');
             document.getElementById('auto-detected-badge').classList.add('hidden');
+            
+            // Reset documents
+            resetDocForm();
             
             const today = new Date();
             const saturday = new Date(today);
@@ -2117,13 +2597,110 @@ Rules:
             debugInfo.classList.toggle('hidden');
         }
 
+        // ==================== ARCHIVE FEATURE ====================
+        async function archiveSelectedWeek() {
+            if (!selectedWeekStart) return;
+            
+            const timesheets = DB_LS.getTimesheets(currentUser.username);
+            const tsIndex = timesheets.findIndex(t => t.weekStart === selectedWeekStart);
+            
+            if (tsIndex === -1) return;
+            
+            // Move to archive in IndexedDB
+            const ts = timesheets[tsIndex];
+            ts.archived = true;
+            ts.archivedAt = new Date().toISOString();
+            
+            await saveToStore(STORES.archives, `archive_${currentUser.username}_${ts.weekStart}`, ts);
+            
+            // Remove from active timesheets
+            timesheets.splice(tsIndex, 1);
+            DB_LS.saveTimesheets(currentUser.username, timesheets);
+            
+            document.getElementById('week-preview').classList.add('hidden');
+            selectedWeekStart = null;
+            
+            renderCalendar();
+            updateStats();
+            renderRecent();
+            showToast('Week archived successfully');
+        }
+
+        async function unarchiveWeek(weekStart) {
+            const archiveKey = `archive_${currentUser.username}_${weekStart}`;
+            const archived = await getFromStore(STORES.archives, archiveKey);
+            
+            if (!archived) {
+                showToast('Archive not found', 'error');
+                return;
+            }
+            
+            // Restore to active
+            delete archived.archived;
+            delete archived.archivedAt;
+            
+            const timesheets = DB_LS.getTimesheets(currentUser.username);
+            timesheets.push(archived);
+            DB_LS.saveTimesheets(currentUser.username, timesheets);
+            
+            // Remove from archive
+            await deleteFromStore(STORES.archives, archiveKey);
+            
+            renderCalendar();
+            updateStats();
+            renderRecent();
+            showToast('Week restored from archive');
+        }
+
+        function showArchiveView() {
+            switchView('archive');
+            renderArchiveList();
+        }
+
+        async function renderArchiveList() {
+            const list = document.getElementById('archive-list');
+            const archives = await getAllFromStore(STORES.archives);
+            const userArchives = archives.filter(a => a.id && a.id.includes(currentUser.username));
+            
+            if (userArchives.length === 0) {
+                list.innerHTML = '<div class="text-center py-8 text-gray-400"><i class="fas fa-archive text-4xl mb-2"></i><p>No archived weeks</p></div>';
+                return;
+            }
+            
+            list.innerHTML = userArchives.map(ts => `
+                <div class="archive-item bg-gray-100 dark:bg-dark-surface rounded-2xl p-4 border border-gray-200 dark:border-gray-700 flex justify-between items-center cursor-pointer" onclick="restoreArchivedWeek('${ts.weekStart}')">
+                    <div class="flex items-center gap-3">
+                        <div class="w-12 h-12 rounded-xl bg-gray-300 dark:bg-gray-600 text-gray-600 dark:text-gray-400 flex items-center justify-center">
+                            <i class="fas fa-archive text-lg"></i>
+                        </div>
+                        <div>
+                            <h4 class="font-semibold text-sm text-gray-700 dark:text-gray-300">${ts.weekRange}</h4>
+                            <p class="text-xs text-gray-500">${ts.totalHours}h • Archived ${new Date(ts.archivedAt).toLocaleDateString()}</p>
+                        </div>
+                    </div>
+                    <button class="px-3 py-1 bg-primary text-white text-xs rounded-lg" onclick="event.stopPropagation(); restoreArchivedWeek('${ts.weekStart}')">
+                        Restore
+                    </button>
+                </div>
+            `).join('');
+        }
+
+        async function restoreArchivedWeek(weekStart) {
+            await unarchiveWeek(weekStart);
+            switchView('history');
+        }
+
+        function manageArchives() {
+            showArchiveView();
+        }
+
         // ==================== DATA MANAGEMENT ====================
         function showDeleteOptions(type) {
             const modal = document.getElementById('delete-modal');
             const title = document.getElementById('delete-modal-title');
             const content = document.getElementById('delete-options-content');
             
-            const timesheets = DB.getTimesheets(currentUser.username);
+            const timesheets = DB_LS.getTimesheets(currentUser.username);
             
             if (type === 'week') {
                 title.textContent = 'Delete Specific Week';
@@ -2181,17 +2758,24 @@ Rules:
         }
 
         async function deleteWeek(weekStart) {
-            const timesheets = DB.getTimesheets(currentUser.username);
+            const timesheets = DB_LS.getTimesheets(currentUser.username);
             const ts = timesheets.find(t => t.weekStart === weekStart);
             
-            if (ts && ts.imageIds.front) await deleteImage(ts.imageIds.front);
+            if (ts && ts.imageIds.front) await deleteFromStore(STORES.images, ts.imageIds.front);
+            
+            // Also delete associated documents
+            const docs = await getDocumentsForWeek(weekStart);
+            for (const doc of docs) {
+                await deleteFromStore(STORES.documents, doc.id);
+            }
             
             const updated = timesheets.filter(t => t.weekStart !== weekStart);
-            DB.saveTimesheets(currentUser.username, updated);
+            DB_LS.saveTimesheets(currentUser.username, updated);
             
             renderCalendar();
             updateStats();
             renderRecent();
+            checkStorageQuota();
             
             if (selectedWeekStart === weekStart) {
                 document.getElementById('week-preview').classList.add('hidden');
@@ -2209,14 +2793,18 @@ Rules:
         }
 
         async function deleteMonthData(year, month) {
-            const timesheets = DB.getTimesheets(currentUser.username);
+            const timesheets = DB_LS.getTimesheets(currentUser.username);
             const toDelete = timesheets.filter(t => {
                 const d = parseDate(t.weekStart);
                 return d.getFullYear() === year && d.getMonth() === month;
             });
             
             for (const ts of toDelete) {
-                if (ts.imageIds.front) await deleteImage(ts.imageIds.front);
+                if (ts.imageIds.front) await deleteFromStore(STORES.images, ts.imageIds.front);
+                const docs = await getDocumentsForWeek(ts.weekStart);
+                for (const doc of docs) {
+                    await deleteFromStore(STORES.documents, doc.id);
+                }
             }
             
             const remaining = timesheets.filter(t => {
@@ -2224,27 +2812,26 @@ Rules:
                 return !(d.getFullYear() === year && d.getMonth() === month);
             });
             
-            DB.saveTimesheets(currentUser.username, remaining);
+            DB_LS.saveTimesheets(currentUser.username, remaining);
             renderCalendar();
             updateStats();
             renderRecent();
+            checkStorageQuota();
             showToast('Month deleted');
         }
 
         async function deleteAllData() {
-            if (confirm('DELETE ALL TIMESHEET DATA?\n\nThis will remove every timesheet. This cannot be undone.')) {
+            if (confirm('DELETE ALL TIMESHEET DATA?\n\nThis will remove every timesheet and document. This cannot be undone.')) {
                 if (confirm('Are you absolutely sure?')) {
-                    const timesheets = DB.getTimesheets(currentUser.username);
-                    for (const ts of timesheets) {
-                        if (ts.imageIds.front) await deleteImage(ts.imageIds.front);
-                    }
+                    await clearAllStores();
                     
-                    DB.saveTimesheets(currentUser.username, []);
+                    DB_LS.saveTimesheets(currentUser.username, []);
                     renderCalendar();
                     updateStats();
                     renderRecent();
                     document.getElementById('week-preview').classList.add('hidden');
-                    showToast('All timesheet data deleted');
+                    checkStorageQuota();
+                    showToast('All data deleted');
                 }
             }
         }
@@ -2265,13 +2852,13 @@ Rules:
             removalScreen.classList.remove('hidden');
             
             try {
-                await clearAllImages();
+                await clearAllStores();
             } catch (e) {
-                console.log('Image clearing failed:', e);
+                console.log('Store clearing failed:', e);
             }
             
             if (currentUser) {
-                DB.deleteUser(currentUser.username);
+                DB_LS.deleteUser(currentUser.username);
             }
             
             const keysToRemove = Object.keys(localStorage).filter(k => k.startsWith('ts_'));
@@ -2297,7 +2884,7 @@ Rules:
         // ==================== HISTORY & OTHER ====================
         function renderHistory(filter = 'all') {
             const list = document.getElementById('history-list');
-            let timesheets = DB.getTimesheets(currentUser.username);
+            let timesheets = DB_LS.getTimesheets(currentUser.username);
             timesheets.sort((a, b) => new Date(b.weekStart) - new Date(a.weekStart));
             
             const now = new Date();
@@ -2345,7 +2932,7 @@ Rules:
         }
 
         function openWeekDetailsById(id) {
-            const timesheets = DB.getTimesheets(currentUser.username);
+            const timesheets = DB_LS.getTimesheets(currentUser.username);
             const ts = timesheets.find(t => t.id === id);
             if (ts) openWeekDetails(ts);
         }
@@ -2354,10 +2941,39 @@ Rules:
             document.getElementById('week-modal-title').textContent = ts.weekRange;
             const content = document.getElementById('week-modal-content');
             
-            const frontImg = await getImage(ts.imageIds.front);
+            const frontImg = await getFromStore(STORES.images, ts.imageIds.front);
+            const docs = await getDocumentsForWeek(ts.weekStart);
+            
+            let docsHtml = '';
+            if (docs.length > 0) {
+                docsHtml = `
+                    <div class="bg-purple-50 dark:bg-purple-900/20 rounded-lg p-3 border border-purple-200 dark:border-purple-800 mb-4">
+                        <h4 class="font-semibold text-purple-800 dark:text-purple-300 mb-2">
+                            <i class="fas fa-paperclip mr-2"></i>Attached Documents (${docs.length})
+                        </h4>
+                        <div class="grid grid-cols-3 gap-2">
+                            ${docs.map((doc, idx) => `
+                                <div class="relative aspect-square rounded-lg overflow-hidden border border-purple-200 dark:border-purple-700 cursor-pointer" onclick="viewDocument('${doc.id}')">
+                                    ${doc.fileType.startsWith('image/') ? 
+                                        `<img src="${doc.data}" class="w-full h-full object-cover">` :
+                                        `<div class="w-full h-full flex items-center justify-center bg-red-100 dark:bg-red-900/30 text-red-600">
+                                            <i class="fas fa-file-pdf text-2xl"></i>
+                                        </div>`
+                                    }
+                                    <div class="absolute bottom-0 left-0 right-0 bg-black/50 text-white text-[10px] p-1 truncate">
+                                        ${doc.filename}
+                                    </div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                `;
+            }
             
             content.innerHTML = `
-                ${frontImg ? `<div class="mb-4"><img src="${frontImg}" class="w-full rounded-xl"></div>` : ''}
+                ${frontImg ? `<div class="mb-4"><img src="${frontImg.data}" class="w-full rounded-xl"></div>` : ''}
+                
+                ${docsHtml}
                 
                 <div class="bg-green-50 dark:bg-green-900/20 rounded-lg p-3 border border-green-200 dark:border-green-800 mb-4">
                     <p class="text-sm text-green-800 dark:text-green-300">
@@ -2404,12 +3020,61 @@ Rules:
                     </table>
                 </div>
                 
-                <button onclick="deleteWeek('${ts.weekStart}')" class="w-full py-3 bg-red-100 dark:bg-red-900/30 text-red-600 rounded-xl font-medium hover:bg-red-200 transition-colors mt-4">
-                    <i class="fas fa-trash mr-2"></i>Delete This Week
-                </button>
+                <div class="flex gap-2 mt-4">
+                    <button onclick="deleteWeek('${ts.weekStart}')" class="flex-1 py-3 bg-red-100 dark:bg-red-900/30 text-red-600 rounded-xl font-medium hover:bg-red-200 transition-colors">
+                        <i class="fas fa-trash mr-2"></i>Delete
+                    </button>
+                    ${!ts.archived ? `
+                        <button onclick="archiveWeekFromModal('${ts.weekStart}')" class="flex-1 py-3 bg-gray-100 dark:bg-dark-surface text-gray-600 dark:text-gray-400 rounded-xl font-medium hover:bg-gray-200 transition-colors">
+                            <i class="fas fa-archive mr-2"></i>Archive
+                        </button>
+                    ` : `
+                        <button onclick="unarchiveWeekFromModal('${ts.weekStart}')" class="flex-1 py-3 bg-primary/10 text-primary rounded-xl font-medium hover:bg-primary/20 transition-colors">
+                            <i class="fas fa-box-open mr-2"></i>Restore
+                        </button>
+                    `}
+                </div>
             `;
             
             document.getElementById('week-modal').classList.remove('hidden');
+        }
+
+        async function viewDocument(docId) {
+            const doc = await getFromStore(STORES.documents, docId);
+            if (!doc) return;
+            
+            if (doc.fileType.startsWith('image/')) {
+                // Show image in modal
+                const modal = document.createElement('div');
+                modal.className = 'fixed inset-0 z-[200] bg-black/90 flex items-center justify-center p-4';
+                modal.innerHTML = `
+                    <div class="relative max-w-4xl w-full">
+                        <button onclick="this.closest('.fixed').remove()" class="absolute -top-12 right-0 text-white text-2xl">
+                            <i class="fas fa-times"></i>
+                        </button>
+                        <img src="${doc.data}" class="w-full max-h-[80vh] object-contain rounded-lg">
+                        <p class="text-white text-center mt-4">${doc.filename}</p>
+                    </div>
+                `;
+                document.body.appendChild(modal);
+            } else {
+                // For PDFs, open in new tab
+                const link = document.createElement('a');
+                link.href = doc.data;
+                link.download = doc.filename;
+                link.click();
+            }
+        }
+
+        async function archiveWeekFromModal(weekStart) {
+            selectedWeekStart = weekStart;
+            await archiveSelectedWeek();
+            closeWeekModal();
+        }
+
+        async function unarchiveWeekFromModal(weekStart) {
+            await unarchiveWeek(weekStart);
+            closeWeekModal();
         }
 
         function closeWeekModal() {
@@ -2417,7 +3082,7 @@ Rules:
         }
 
         function updateStats() {
-            const timesheets = DB.getTimesheets(currentUser.username);
+            const timesheets = DB_LS.getTimesheets(currentUser.username);
             const now = new Date();
             
             const monthSheets = timesheets.filter(t => {
@@ -2426,16 +3091,12 @@ Rules:
             });
             const monthHours = monthSheets.reduce((sum, t) => sum + t.totalHours, 0);
             
-            const yearSheets = timesheets.filter(t => parseDate(t.weekStart).getFullYear() === now.getFullYear());
-            const yearHours = yearSheets.reduce((sum, t) => sum + t.totalHours, 0);
-            
             document.getElementById('stat-month-hours').textContent = monthHours.toFixed(1) + 'h';
-            document.getElementById('stat-year-hours').textContent = yearHours.toFixed(1) + 'h';
         }
 
         function renderRecent() {
             const list = document.getElementById('recent-list');
-            const timesheets = DB.getTimesheets(currentUser.username)
+            const timesheets = DB_LS.getTimesheets(currentUser.username)
                 .sort((a, b) => new Date(b.uploadedAt) - new Date(a.uploadedAt))
                 .slice(0, 3);
             
@@ -2459,21 +3120,27 @@ Rules:
         }
 
         function switchView(viewName) {
+            // Hide all views
             document.querySelectorAll('.view-section').forEach(el => el.classList.add('hidden'));
             document.querySelectorAll('.nav-item').forEach(el => {
                 el.classList.remove('active', 'text-primary');
                 el.classList.add('text-gray-400');
             });
             
+            // Show selected view
             document.getElementById(`${viewName}-view`).classList.remove('hidden');
             const activeBtn = document.querySelector(`[data-view="${viewName}"]`);
-            activeBtn.classList.add('active', 'text-primary');
-            activeBtn.classList.remove('text-gray-400');
+            if (activeBtn) {
+                activeBtn.classList.add('active', 'text-primary');
+                activeBtn.classList.remove('text-gray-400');
+            }
             
+            // View-specific initialization
             if (viewName === 'history') renderHistory();
             if (viewName === 'dashboard') { renderCalendar(); updateStats(); }
             if (viewName === 'scan') updateApiKeyStatus();
-            if (viewName === 'settings') updateApiKeyStatus();
+            if (viewName === 'settings') { updateApiKeyStatus(); checkStorageQuota(); }
+            if (viewName === 'archive') renderArchiveList();
         }
 
         function initTheme() {
@@ -2514,6 +3181,9 @@ Rules:
         document.addEventListener('DOMContentLoaded', async () => {
             await initImageDB();
             initAuth();
+            
+            // Update scan date listener
+            document.getElementById('scan-date-select').addEventListener('change', updateScanWeekDisplay);
         });
     </script>
 </body>
