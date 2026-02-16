@@ -22,7 +22,8 @@
                         dark: '#0F172A',
                         'dark-card': '#1E293B',
                         'dark-surface': '#334155',
-                        'vor-orange': '#F97316'
+                        'vor-orange': '#F97316',
+                        'biometric': '#8B5CF6'
                     }
                 }
             }
@@ -56,6 +57,7 @@
         .calendar-day.has-docs { background: linear-gradient(135deg, #8B5CF6 0%, #7C3AED 100%); color: white; box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3); }
         .calendar-day.has-data.has-docs { background: linear-gradient(135deg, #10B981 0%, #8B5CF6 100%); }
         .calendar-day.has-vor { background: linear-gradient(135deg, #F97316 0%, #EA580C 100%); color: white; box-shadow: 0 4px 12px rgba(249, 115, 22, 0.3); }
+        .calendar-day.has-biometric { background: linear-gradient(135deg, #8B5CF6 0%, #A78BFA 100%); color: white; box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3); }
         .calendar-day.today { box-shadow: 0 0 0 3px #3B82F6, 0 0 0 5px rgba(59, 130, 246, 0.3); z-index: 10; }
         .calendar-day.today.has-data { box-shadow: 0 0 0 3px #3B82F6, 0 0 0 5px rgba(59, 130, 246, 0.5); }
         .calendar-day.other-month { opacity: 0.3; }
@@ -70,6 +72,7 @@
         .nav-item { transition: all 0.3s ease; }
         .nav-item.active { color: #3B82F6; }
         .nav-item.active.vor-active { color: #F97316; }
+        .nav-item.active.biometric-active { color: #8B5CF6; }
         .nav-item.active i { transform: translateY(-2px); }
         
         .fade-in { animation: fadeIn 0.3s ease-out; }
@@ -715,6 +718,62 @@
             background: linear-gradient(135deg, #431407 0%, #7c2d12 100%);
             border-color: #ea580c;
         }
+
+        /* Biometric specific styles */
+        .biometric-badge {
+            background: linear-gradient(135deg, #8B5CF6 0%, #7C3AED 100%);
+        }
+        
+        .biometric-card {
+            border-left: 4px solid #8B5CF6;
+        }
+        
+        .biometric-pulse {
+            animation: biometric-pulse 2s infinite;
+        }
+        
+        @keyframes biometric-pulse {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(139, 92, 246, 0.4); }
+            50% { box-shadow: 0 0 0 10px rgba(139, 92, 246, 0); }
+        }
+        
+        .biometric-icon {
+            background: linear-gradient(135deg, #8B5CF6 0%, #A78BFA 100%);
+            color: white;
+        }
+        
+        .biometric-btn {
+            background: linear-gradient(135deg, #8B5CF6 0%, #7C3AED 100%);
+            color: white;
+            transition: all 0.3s ease;
+        }
+        
+        .biometric-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(139, 92, 246, 0.4);
+        }
+        
+        .biometric-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .biometric-status-available {
+            color: #10B981;
+        }
+        
+        .biometric-status-unavailable {
+            color: #EF4444;
+        }
+
+        .face-id-icon {
+            background: linear-gradient(135deg, #8B5CF6 0%, #EC4899 100%);
+        }
+        
+        .touch-id-icon {
+            background: linear-gradient(135deg, #3B82F6 0%, #8B5CF6 100%);
+        }
     </style>
     <!-- THEME INITIALIZATION SCRIPT - Runs immediately before page renders -->
     <script>
@@ -739,8 +798,8 @@
                 </div>
                 <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Driver Timesheet Pro</h1>
                 <p class="text-gray-500 dark:text-gray-400 mt-2 flex items-center justify-center gap-2">
-                    <span class="text-xs bg-primary/10 text-primary px-2 py-1 rounded" id="version-display">v5.2.3</span>
-                    <span class="text-xs bg-green-100 text-green-700 px-2 py-1 rounded">Gemini AI</span>
+                    <span class="text-xs bg-primary/10 text-primary px-2 py-1 rounded" id="version-display">v5.3.0</span>
+                    <span class="text-xs bg-purple-100 text-purple-700 px-2 py-1 rounded">Face ID Ready</span>
                 </p>
             </div>
 
@@ -758,8 +817,22 @@
                         placeholder="••••">
                 </div>
 
+                <!-- Biometric Login Option -->
+                <div id="biometric-login-section" class="hidden">
+                    <div class="relative my-4">
+                        <div class="absolute inset-0 flex items-center"><div class="w-full border-t border-gray-300 dark:border-gray-600"></div></div>
+                        <div class="relative flex justify-center text-sm"><span class="px-2 bg-white dark:bg-dark text-gray-500">or</span></div>
+                    </div>
+                    
+                    <button onclick="loginWithBiometric()" id="biometric-login-btn" class="w-full biometric-btn font-semibold py-4 rounded-xl shadow-lg flex items-center justify-center gap-3">
+                        <i class="fas fa-fingerprint text-xl"></i>
+                        <span id="biometric-btn-text">Login with Face ID / Touch ID</span>
+                    </button>
+                    <p class="text-xs text-center text-gray-500 mt-2" id="biometric-status-text">Face ID available on this device</p>
+                </div>
+
                 <button onclick="login()" id="login-btn" class="w-full bg-primary hover:bg-blue-600 text-white font-semibold py-4 rounded-xl shadow-lg shadow-blue-500/30 transition-all transform active:scale-95">
-                    Login
+                    Login with PIN
                 </button>
 
                 <div class="relative my-6">
@@ -781,6 +854,24 @@
                 <input type="password" id="new-pin" maxlength="4" inputmode="numeric" placeholder="Create 4-digit PIN" class="w-full p-4 bg-gray-100 dark:bg-dark-card rounded-xl border-2 border-transparent focus:border-primary outline-none text-center text-2xl tracking-widest text-gray-900 dark:text-white">
                 
                 <input type="password" id="confirm-pin" maxlength="4" inputmode="numeric" placeholder="Confirm PIN" class="w-full p-4 bg-gray-100 dark:bg-dark-card rounded-xl border-2 border-transparent focus:border-primary outline-none text-center text-2xl tracking-widest text-gray-900 dark:text-white">
+                
+                <!-- Biometric Registration Option -->
+                <div id="biometric-register-section" class="bg-purple-50 dark:bg-purple-900/20 rounded-xl p-4 border border-purple-200 dark:border-purple-800">
+                    <div class="flex items-center gap-3 mb-3">
+                        <div class="w-10 h-10 rounded-full biometric-icon flex items-center justify-center">
+                            <i class="fas fa-fingerprint"></i>
+                        </div>
+                        <div>
+                            <p class="text-sm font-bold text-purple-900 dark:text-purple-300">Enable Face ID / Touch ID</p>
+                            <p class="text-xs text-purple-700 dark:text-purple-400">Faster login on this device</p>
+                        </div>
+                    </div>
+                    <button onclick="registerBiometricForNewUser()" id="register-biometric-btn" class="w-full py-3 bg-white dark:bg-dark-card border-2 border-purple-500 text-purple-700 dark:text-purple-300 rounded-xl font-semibold hover:bg-purple-100 dark:hover:bg-purple-900/30 transition-all flex items-center justify-center gap-2">
+                        <i class="fas fa-fingerprint"></i>
+                        <span id="register-biometric-text">Set Up Face ID / Touch ID</span>
+                    </button>
+                    <p class="text-xs text-purple-600 dark:text-purple-400 mt-2 text-center" id="biometric-register-status"></p>
+                </div>
                 
                 <div class="bg-blue-50 dark:bg-blue-900/20 rounded-xl p-4 border border-blue-200 dark:border-blue-800">
                     <label class="block text-sm font-medium text-blue-900 dark:text-blue-300 mb-2">
@@ -1417,6 +1508,39 @@
             <div id="settings-view" class="view-section hidden fade-in space-y-4">
                 <h2 class="text-xl font-bold text-gray-900 dark:text-white mb-4">Settings</h2>
 
+                <!-- Biometric Authentication Settings -->
+                <div class="bg-white dark:bg-dark-card rounded-2xl p-4 shadow-sm border border-gray-100 dark:border-gray-700">
+                    <h3 class="font-semibold text-gray-900 dark:text-white mb-3">
+                        <i class="fas fa-fingerprint text-biometric mr-2"></i>Biometric Authentication
+                    </h3>
+                    
+                    <div class="space-y-3">
+                        <div class="flex items-center justify-between p-3 bg-gray-50 dark:bg-dark-surface rounded-xl">
+                            <div class="flex items-center gap-3">
+                                <div id="biometric-icon-status" class="w-10 h-10 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center">
+                                    <i class="fas fa-fingerprint text-gray-500"></i>
+                                </div>
+                                <div>
+                                    <p class="font-medium text-gray-900 dark:text-white text-sm" id="biometric-setting-title">Face ID / Touch ID</p>
+                                    <p class="text-xs text-gray-500" id="biometric-setting-status">Checking availability...</p>
+                                </div>
+                            </div>
+                            <div class="toggle-switch" id="biometric-toggle" onclick="toggleBiometricAuth()"></div>
+                        </div>
+
+                        <div id="biometric-info-box" class="bg-purple-50 dark:bg-purple-900/20 rounded-lg p-3 border border-purple-200 dark:border-purple-800 hidden">
+                            <p class="text-xs text-purple-700 dark:text-purple-400">
+                                <i class="fas fa-info-circle mr-1"></i>
+                                <span id="biometric-info-text">Enable to login with Face ID or Touch ID on this device.</span>
+                            </p>
+                        </div>
+
+                        <button onclick="setupBiometricNow()" id="setup-biometric-btn" class="w-full py-3 bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 rounded-xl font-medium hover:bg-purple-200 dark:hover:bg-purple-900/50 transition-colors hidden">
+                            <i class="fas fa-fingerprint mr-2"></i>Set Up Face ID / Touch ID
+                        </button>
+                    </div>
+                </div>
+
                 <!-- Storage Info -->
                 <div class="bg-white dark:bg-dark-card rounded-2xl p-4 shadow-sm border border-gray-100 dark:border-gray-700">
                     <h3 class="font-semibold text-gray-900 dark:text-white mb-3">
@@ -1505,11 +1629,12 @@
                 <div class="bg-white dark:bg-dark-card rounded-2xl p-4 shadow-sm border border-gray-100 dark:border-gray-700">
                     <h3 class="font-semibold text-gray-900 dark:text-white mb-3"><i class="fas fa-info-circle text-primary mr-2"></i>About</h3>
                     <div class="space-y-2 text-sm text-gray-600 dark:text-gray-400">
-                        <p><strong>Version:</strong> <span id="settings-version">v5.2.3 (Share Fix)</span></p>
+                        <p><strong>Version:</strong> <span id="settings-version">v5.3.0 (Biometric Edition)</span></p>
                         <p><strong>OCR Engine:</strong> Google Gemini 2.0 Flash AI</p>
                         <p><strong>Storage:</strong> IndexedDB (Local Device)</p>
                         <p class="text-xs">Required timesheet OCR + 3 additional document uploads per week.</p>
                         <p class="text-xs text-orange-600">VOR Defect reporting with AI extraction.</p>
+                        <p class="text-xs text-purple-600">Face ID / Touch ID biometric authentication.</p>
                     </div>
                 </div>
 
@@ -1646,6 +1771,51 @@
         </div>
     </div>
 
+    <!-- Biometric Setup Modal -->
+    <div id="biometric-setup-modal" class="fixed inset-0 z-[100] bg-black/80 hidden flex items-center justify-center p-4">
+        <div class="bg-white dark:bg-dark-card rounded-2xl p-6 max-w-md w-full">
+            <div class="text-center mb-6">
+                <div class="w-20 h-20 biometric-icon rounded-full flex items-center justify-center mx-auto mb-4 biometric-pulse">
+                    <i class="fas fa-fingerprint text-3xl"></i>
+                </div>
+                <h3 class="text-xl font-bold text-gray-900 dark:text-white">Set Up Biometric Login</h3>
+                <p class="text-gray-500 dark:text-gray-400 text-sm mt-2">
+                    Use Face ID, Touch ID, or fingerprint for faster, more secure login on this device.
+                </p>
+            </div>
+
+            <div class="space-y-4">
+                <div class="bg-purple-50 dark:bg-purple-900/20 rounded-lg p-4 border border-purple-200 dark:border-purple-800">
+                    <div class="flex items-center gap-3 mb-2">
+                        <i class="fas fa-shield-alt text-purple-600"></i>
+                        <span class="font-medium text-purple-900 dark:text-purple-300">Secure & Private</span>
+                    </div>
+                    <p class="text-xs text-purple-700 dark:text-purple-400">
+                        Your biometric data never leaves this device. It's stored securely in your device's hardware security module.
+                    </p>
+                </div>
+
+                <div class="bg-gray-50 dark:bg-dark-surface rounded-lg p-4">
+                    <p class="text-sm text-gray-700 dark:text-gray-300 mb-2">You'll need to:</p>
+                    <ul class="text-xs text-gray-600 dark:text-gray-400 space-y-1">
+                        <li class="flex items-center gap-2"><i class="fas fa-check text-green-500"></i> Verify with your PIN first</li>
+                        <li class="flex items-center gap-2"><i class="fas fa-check text-green-500"></i> Scan your biometric</li>
+                        <li class="flex items-center gap-2"><i class="fas fa-check text-green-500"></i> Use it for future logins</li>
+                    </ul>
+                </div>
+
+                <button onclick="startBiometricRegistration()" id="start-biometric-setup-btn" class="w-full biometric-btn font-bold py-4 rounded-xl shadow-lg flex items-center justify-center gap-2">
+                    <i class="fas fa-fingerprint"></i>
+                    <span>Set Up Now</span>
+                </button>
+
+                <button onclick="closeBiometricSetupModal()" class="w-full text-gray-500 py-2 text-sm">
+                    Maybe Later
+                </button>
+            </div>
+        </div>
+    </div>
+
     <!-- Full Screen Image Viewer - UPDATED WITH CLICK TO CLOSE -->
     <div id="fullscreen-viewer" class="fullscreen-image-viewer hidden" onclick="handleViewerBackdropClick(event)">
         <div class="viewer-header">
@@ -1709,7 +1879,7 @@
                 <i class="fas fa-exclamation-triangle text-3xl text-red-600"></i>
             </div>
             <h3 class="text-xl font-bold text-red-600 mb-2">Delete Account?</h3>
-            <p class="text-gray-600 dark:text-gray-400 text-sm mb-4">This will permanently delete all your data.</p>
+            <p class="text-gray-600 dark:text-gray-400 text-sm mb-4">This will permanently delete all your data including biometric credentials.</p>
             <button onclick="executeRemoveAccount()" class="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-3 rounded-xl mb-2">
                 Yes, Delete Everything
             </button>
@@ -1769,7 +1939,7 @@
 
     <script>
         // ==================== CONFIG ====================
-        const APP_VERSION = '5.2.3';
+        const APP_VERSION = '5.3.0';
         const GEMINI_MODEL = 'gemini-2.0-flash';
         
         let currentUser = null;
@@ -1798,6 +1968,12 @@
         let vorAdditionalImage = null;
         let vorAutoDetectedData = null;
 
+        // Biometric State
+        let biometricAvailable = false;
+        let biometricEnabled = false;
+        let pendingBiometricRegistration = false;
+        let tempUserForBiometric = null;
+
         const DOC_NAMES = {
             1: 'Timesheet Front',
             2: 'Fuel & Expense',
@@ -1814,15 +1990,457 @@
         let currentViewerDoc = null;
         let currentTimesheetForShare = null;
 
+        // ==================== BIOMETRIC AUTHENTICATION ====================
+        
+        // Check if biometric authentication is available
+        async function checkBiometricAvailability() {
+            if (!window.PublicKeyCredential) {
+                console.log('WebAuthn not supported');
+                return false;
+            }
+
+            try {
+                const available = await PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable();
+                console.log('Biometric available:', available);
+                return available;
+            } catch (e) {
+                console.error('Error checking biometric availability:', e);
+                return false;
+            }
+        }
+
+        // Get biometric credentials for user
+        async function getBiometricCredentials(username) {
+            if (!imageDB) await initImageDB();
+            return new Promise((resolve, reject) => {
+                const transaction = imageDB.transaction(['biometricCredentials'], 'readonly');
+                const store = transaction.objectStore('biometricCredentials');
+                const request = store.get(`biometric_${username}`);
+                request.onsuccess = () => resolve(request.result || null);
+                request.onerror = () => reject(request.error);
+            });
+        }
+
+        // Save biometric credential
+        async function saveBiometricCredential(username, credential) {
+            if (!imageDB) await initImageDB();
+            return new Promise((resolve, reject) => {
+                const transaction = imageDB.transaction(['biometricCredentials'], 'readwrite');
+                const store = transaction.objectStore('biometricCredentials');
+                const request = store.put({
+                    id: `biometric_${username}`,
+                    username: username,
+                    credentialId: credential.id,
+                    rawId: Array.from(new Uint8Array(credential.rawId)),
+                    type: credential.type,
+                    createdAt: new Date().toISOString()
+                });
+                request.onsuccess = () => resolve();
+                request.onerror = () => reject(request.error);
+            });
+        }
+
+        // Delete biometric credential
+        async function deleteBiometricCredential(username) {
+            if (!imageDB) await initImageDB();
+            return new Promise((resolve, reject) => {
+                const transaction = imageDB.transaction(['biometricCredentials'], 'readwrite');
+                const store = transaction.objectStore('biometricCredentials');
+                const request = store.delete(`biometric_${username}`);
+                request.onsuccess = () => resolve();
+                request.onerror = () => reject(request.error);
+            });
+        }
+
+        // Register biometric for user
+        async function registerBiometric(username) {
+            try {
+                // Create challenge
+                const challenge = new Uint8Array(32);
+                window.crypto.getRandomValues(challenge);
+
+                // Create user ID from username
+                const userId = new TextEncoder().encode(username);
+
+                const publicKeyCredentialCreationOptions = {
+                    challenge: challenge,
+                    rp: {
+                        name: 'Driver Timesheet Pro',
+                        id: window.location.hostname
+                    },
+                    user: {
+                        id: userId,
+                        name: username,
+                        displayName: username
+                    },
+                    pubKeyCredParams: [
+                        { alg: -7, type: 'public-key' },   // ES256
+                        { alg: -257, type: 'public-key' }  // RS256
+                    ],
+                    authenticatorSelection: {
+                        authenticatorAttachment: 'platform',
+                        userVerification: 'required',
+                        residentKey: 'preferred',
+                        requireResidentKey: false
+                    },
+                    attestation: 'none'
+                };
+
+                const credential = await navigator.credentials.create({
+                    publicKey: publicKeyCredentialCreationOptions
+                });
+
+                if (!credential) {
+                    throw new Error('Biometric registration cancelled');
+                }
+
+                // Save credential info
+                await saveBiometricCredential(username, credential);
+                
+                return true;
+            } catch (error) {
+                console.error('Biometric registration error:', error);
+                throw error;
+            }
+        }
+
+        // Authenticate with biometric
+        async function authenticateWithBiometric(username) {
+            try {
+                const storedCred = await getBiometricCredentials(username);
+                if (!storedCred) {
+                    throw new Error('No biometric credential found');
+                }
+
+                // Create challenge
+                const challenge = new Uint8Array(32);
+                window.crypto.getRandomValues(challenge);
+
+                const publicKeyCredentialRequestOptions = {
+                    challenge: challenge,
+                    allowCredentials: [{
+                        id: new Uint8Array(storedCred.rawId),
+                        type: 'public-key',
+                        transports: ['internal']
+                    }],
+                    userVerification: 'required',
+                    rpId: window.location.hostname
+                };
+
+                const assertion = await navigator.credentials.get({
+                    publicKey: publicKeyCredentialRequestOptions
+                });
+
+                if (!assertion) {
+                    throw new Error('Biometric authentication cancelled');
+                }
+
+                return true;
+            } catch (error) {
+                console.error('Biometric authentication error:', error);
+                throw error;
+            }
+        }
+
+        // Update biometric UI
+        function updateBiometricUI() {
+            const loginSection = document.getElementById('biometric-login-section');
+            const btn = document.getElementById('biometric-login-btn');
+            const btnText = document.getElementById('biometric-btn-text');
+            const statusText = document.getElementById('biometric-status-text');
+            const icon = btn.querySelector('i');
+
+            if (!biometricAvailable) {
+                if (loginSection) loginSection.classList.add('hidden');
+                return;
+            }
+
+            // Check if current user has biometric enabled
+            const select = document.getElementById('user-select');
+            const username = select.value;
+            
+            if (!username) {
+                if (loginSection) loginSection.classList.add('hidden');
+                return;
+            }
+
+            // Check if user has biometric registered
+            getBiometricCredentials(username).then(cred => {
+                if (cred && biometricEnabled) {
+                    if (loginSection) loginSection.classList.remove('hidden');
+                    
+                    // Detect device type for appropriate icon/text
+                    const isApple = /iPad|iPhone|iPod|Macintosh/.test(navigator.userAgent) && !window.MSStream;
+                    const hasFaceID = isApple && /iPhone|iPad/.test(navigator.userAgent);
+                    
+                    if (hasFaceID) {
+                        icon.className = 'fas fa-smile text-xl';
+                        btnText.textContent = 'Login with Face ID';
+                        statusText.textContent = 'Face ID available';
+                    } else if (isApple) {
+                        icon.className = 'fas fa-fingerprint text-xl';
+                        btnText.textContent = 'Login with Touch ID';
+                        statusText.textContent = 'Touch ID available';
+                    } else {
+                        icon.className = 'fas fa-fingerprint text-xl';
+                        btnText.textContent = 'Login with Biometrics';
+                        statusText.textContent = 'Biometric login available';
+                    }
+                } else {
+                    if (loginSection) loginSection.classList.add('hidden');
+                }
+            }).catch(() => {
+                if (loginSection) loginSection.classList.add('hidden');
+            });
+        }
+
+        // Login with biometric
+        async function loginWithBiometric() {
+            const username = document.getElementById('user-select').value;
+            if (!username) {
+                showToast('Please select a user first', 'error');
+                return;
+            }
+
+            const btn = document.getElementById('biometric-login-btn');
+            const originalText = btn.innerHTML;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Authenticating...';
+            btn.disabled = true;
+
+            try {
+                await authenticateWithBiometric(username);
+                
+                // Get user data
+                const users = DB_LS.getUsers();
+                const user = users.find(u => u.username === username);
+                
+                if (!user) {
+                    throw new Error('User not found');
+                }
+
+                currentUser = user;
+                document.getElementById('auth-screen').classList.add('hidden');
+                document.getElementById('main-app').classList.remove('hidden');
+                document.getElementById('header-username').textContent = user.username;
+                
+                const today = new Date();
+                const saturday = new Date(today);
+                saturday.setDate(today.getDate() + (6 - today.getDay()));
+                document.getElementById('scan-date-select').value = formatDateForInput(saturday);
+                updateScanWeekDisplay();
+                
+                document.getElementById('vor-date-select').value = formatDateForInput(today);
+                
+                const isDark = document.documentElement.classList.contains('dark');
+                document.getElementById('theme-label').textContent = isDark ? 'Light Mode' : 'Dark Mode';
+                
+                renderCalendar();
+                updateStats();
+                renderRecent();
+                checkStorageQuota();
+                updateApiKeyStatus();
+                updateStorageWidgetVisibility();
+                
+                showToast(`Welcome, ${user.username} (Face ID)`);
+                
+            } catch (error) {
+                console.error('Biometric login error:', error);
+                showToast('Biometric authentication failed. Use PIN instead.', 'error');
+            } finally {
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+            }
+        }
+
+        // Register biometric for new user
+        async function registerBiometricForNewUser() {
+            const username = document.getElementById('new-username').value.trim();
+            const pin = document.getElementById('new-pin').value;
+            const confirmPin = document.getElementById('confirm-pin').value;
+            
+            if (!username) {
+                showToast('Enter driver name first', 'error');
+                return;
+            }
+            if (!pin || pin.length !== 4) {
+                showToast('Create 4-digit PIN first', 'error');
+                return;
+            }
+            if (pin !== confirmPin) {
+                showToast('PINs do not match', 'error');
+                return;
+            }
+
+            const btn = document.getElementById('register-biometric-btn');
+            const status = document.getElementById('biometric-register-status');
+            const originalText = btn.innerHTML;
+            
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Setting up...';
+            btn.disabled = true;
+            status.textContent = 'Follow your device prompts...';
+
+            try {
+                // Store temp user data
+                tempUserForBiometric = { username, pin };
+                pendingBiometricRegistration = true;
+                
+                await registerBiometric(username);
+                
+                status.textContent = '✅ Face ID / Touch ID ready!';
+                status.className = 'text-xs text-green-600 dark:text-green-400 mt-2 text-center';
+                btn.innerHTML = '<i class="fas fa-check"></i> Setup Complete';
+                btn.classList.add('bg-green-100', 'text-green-700', 'border-green-500');
+                
+                showToast('Biometric login enabled for this device');
+                
+            } catch (error) {
+                console.error('Setup error:', error);
+                status.textContent = '❌ Setup failed. You can enable later in settings.';
+                status.className = 'text-xs text-red-600 dark:text-red-400 mt-2 text-center';
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+                pendingBiometricRegistration = false;
+                tempUserForBiometric = null;
+            }
+        }
+
+        // Toggle biometric authentication in settings
+        async function toggleBiometricAuth() {
+            if (!currentUser) return;
+            
+            const toggle = document.getElementById('biometric-toggle');
+            const isEnabled = toggle.classList.contains('active');
+            
+            if (isEnabled) {
+                // Disable biometric
+                if (confirm('Disable Face ID / Touch ID login?')) {
+                    await deleteBiometricCredential(currentUser.username);
+                    biometricEnabled = false;
+                    localStorage.setItem(`biometric_${currentUser.username}`, 'false');
+                    toggle.classList.remove('active');
+                    updateBiometricSettingsUI();
+                    showToast('Biometric login disabled');
+                }
+            } else {
+                // Enable biometric - show setup modal
+                showBiometricSetupModal();
+            }
+        }
+
+        // Show biometric setup modal
+        function showBiometricSetupModal() {
+            document.getElementById('biometric-setup-modal').classList.remove('hidden');
+        }
+
+        // Close biometric setup modal
+        function closeBiometricSetupModal() {
+            document.getElementById('biometric-setup-modal').classList.add('hidden');
+        }
+
+        // Start biometric registration from settings
+        async function startBiometricRegistration() {
+            const btn = document.getElementById('start-biometric-setup-btn');
+            const originalText = btn.innerHTML;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Setting up...';
+            btn.disabled = true;
+
+            try {
+                await registerBiometric(currentUser.username);
+                
+                biometricEnabled = true;
+                localStorage.setItem(`biometric_${currentUser.username}`, 'true');
+                
+                closeBiometricSetupModal();
+                
+                const toggle = document.getElementById('biometric-toggle');
+                toggle.classList.add('active');
+                updateBiometricSettingsUI();
+                
+                showToast('Face ID / Touch ID enabled successfully!');
+                
+            } catch (error) {
+                console.error('Setup error:', error);
+                showToast('Setup failed. Please try again.', 'error');
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+            }
+        }
+
+        // Setup biometric now from settings
+        function setupBiometricNow() {
+            showBiometricSetupModal();
+        }
+
+        // Update biometric settings UI
+        async function updateBiometricSettingsUI() {
+            if (!currentUser) return;
+            
+            const title = document.getElementById('biometric-setting-title');
+            const status = document.getElementById('biometric-setting-status');
+            const iconStatus = document.getElementById('biometric-icon-status');
+            const toggle = document.getElementById('biometric-toggle');
+            const infoBox = document.getElementById('biometric-info-box');
+            const infoText = document.getElementById('biometric-info-text');
+            const setupBtn = document.getElementById('setup-biometric-btn');
+
+            // Check device type
+            const isApple = /iPad|iPhone|iPod|Macintosh/.test(navigator.userAgent) && !window.MSStream;
+            const hasFaceID = isApple && /iPhone|iPad/.test(navigator.userAgent);
+            
+            const biometricName = hasFaceID ? 'Face ID' : isApple ? 'Touch ID' : 'Biometric Login';
+
+            if (!biometricAvailable) {
+                title.textContent = biometricName;
+                status.textContent = 'Not available on this device';
+                status.className = 'text-xs text-gray-500';
+                iconStatus.innerHTML = '<i class="fas fa-times text-gray-400"></i>';
+                iconStatus.className = 'w-10 h-10 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center';
+                toggle.classList.remove('active');
+                toggle.style.display = 'none';
+                infoBox.classList.remove('hidden');
+                infoText.textContent = 'Your device does not support biometric authentication or it is not enabled in system settings.';
+                setupBtn.classList.add('hidden');
+                return;
+            }
+
+            // Check if user has biometric registered
+            const cred = await getBiometricCredentials(currentUser.username);
+            const userEnabled = localStorage.getItem(`biometric_${currentUser.username}`) === 'true';
+
+            if (cred && userEnabled) {
+                title.textContent = biometricName;
+                status.textContent = 'Enabled and ready';
+                status.className = 'text-xs text-green-600 dark:text-green-400';
+                iconStatus.innerHTML = '<i class="fas fa-check text-white"></i>';
+                iconStatus.className = 'w-10 h-10 rounded-full bg-green-500 flex items-center justify-center';
+                toggle.classList.add('active');
+                toggle.style.display = 'block';
+                infoBox.classList.add('hidden');
+                setupBtn.classList.add('hidden');
+            } else {
+                title.textContent = biometricName;
+                status.textContent = 'Not set up';
+                status.className = 'text-xs text-gray-500';
+                iconStatus.innerHTML = '<i class="fas fa-fingerprint text-gray-400"></i>';
+                iconStatus.className = 'w-10 h-10 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center';
+                toggle.classList.remove('active');
+                toggle.style.display = 'block';
+                infoBox.classList.remove('hidden');
+                infoText.textContent = `Enable ${biometricName} for faster, more secure login on this device. Your biometric data never leaves this device.`;
+                setupBtn.classList.remove('hidden');
+            }
+        }
+
         // ==================== INDEXEDDB ====================
         const DB_NAME = 'DriverTimesheetDB_v5';
-        const DB_VERSION = 3; // Incremented for VOR store
+        const DB_VERSION = 4; // Incremented for biometric store
         const STORES = {
             images: 'images',
             timesheets: 'timesheets',
             archives: 'archives',
             documents: 'documents',
-            vorReports: 'vorReports'
+            vorReports: 'vorReports',
+            biometricCredentials: 'biometricCredentials'
         };
         
         async function initImageDB() {
@@ -1862,6 +2480,11 @@
                         const vorStore = db.createObjectStore(STORES.vorReports, { keyPath: 'id' });
                         vorStore.createIndex('defectNumber', 'defectNumber', { unique: false });
                         vorStore.createIndex('date', 'date', { unique: false });
+                    }
+
+                    // New store for biometric credentials
+                    if (!db.objectStoreNames.contains(STORES.biometricCredentials)) {
+                        db.createObjectStore(STORES.biometricCredentials, { keyPath: 'id' });
                     }
                 };
             });
@@ -1988,6 +2611,7 @@
             deleteUser: (username) => {
                 localStorage.removeItem(`ts_data_${username}`);
                 localStorage.removeItem(`ts_settings_${username}`);
+                localStorage.removeItem(`biometric_${username}`);
                 const users = DB_LS.getUsers().filter(u => u.username !== username);
                 DB_LS.saveUsers(users);
             }
@@ -1996,7 +2620,7 @@
         // ==================== AUTH ====================
         function initAuth() {
             document.getElementById('version-display').textContent = 'v' + APP_VERSION;
-            document.getElementById('settings-version').textContent = 'v' + APP_VERSION + ' (VOR Edition)';
+            document.getElementById('settings-version').textContent = 'v' + APP_VERSION + ' (Biometric Edition)';
             
             const users = DB_LS.getUsers();
             const select = document.getElementById('user-select');
@@ -2008,12 +2632,19 @@
                 document.getElementById('pin-section').classList.remove('hidden');
             }
             
-            select.addEventListener('change', function() {
+            select.addEventListener('change', async function() {
                 document.getElementById('pin-section').classList.toggle('hidden', !this.value);
+                updateBiometricUI();
             });
 
             updateApiKeyStatus();
             updateStorageWidgetToggle();
+            
+            // Check biometric availability
+            checkBiometricAvailability().then(available => {
+                biometricAvailable = available;
+                updateBiometricUI();
+            });
         }
 
         function updateStorageWidgetToggle() {
@@ -2087,6 +2718,17 @@
                 return;
             }
             
+            // Check if biometric registration is pending
+            if (pendingBiometricRegistration && tempUserForBiometric && tempUserForBiometric.username === username) {
+                // Complete registration after PIN verification
+                pendingBiometricRegistration = false;
+                tempUserForBiometric = null;
+            }
+            
+            completeLogin(user);
+        }
+
+        function completeLogin(user) {
             currentUser = user;
             document.getElementById('auth-screen').classList.add('hidden');
             document.getElementById('main-app').classList.remove('hidden');
@@ -2104,6 +2746,9 @@
             // Theme is already initialized by the inline script, just update the label
             const isDark = document.documentElement.classList.contains('dark');
             document.getElementById('theme-label').textContent = isDark ? 'Light Mode' : 'Dark Mode';
+            
+            // Check biometric status for this user
+            biometricEnabled = localStorage.getItem(`biometric_${user.username}`) === 'true';
             
             renderCalendar();
             updateStats();
@@ -2136,11 +2781,25 @@
         function showCreateUser() {
             document.getElementById('login-form').classList.add('hidden');
             document.getElementById('create-user-form').classList.remove('hidden');
+            
+            // Check biometric availability for registration UI
+            checkBiometricAvailability().then(available => {
+                biometricAvailable = available;
+                const regSection = document.getElementById('biometric-register-section');
+                if (available) {
+                    regSection.classList.remove('hidden');
+                } else {
+                    regSection.classList.add('hidden');
+                }
+            });
         }
 
         function hideCreateUser() {
             document.getElementById('create-user-form').classList.add('hidden');
             document.getElementById('login-form').classList.remove('hidden');
+            // Reset biometric registration state
+            pendingBiometricRegistration = false;
+            tempUserForBiometric = null;
         }
 
         function createUser() {
@@ -2158,6 +2817,13 @@
             users.push({ username, pin: hashPin(pin), created: new Date().toISOString() });
             DB_LS.saveUsers(users);
             
+            // If biometric was set up, mark it
+            if (pendingBiometricRegistration && tempUserForBiometric && tempUserForBiometric.username === username) {
+                localStorage.setItem(`biometric_${username}`, 'true');
+                pendingBiometricRegistration = false;
+                tempUserForBiometric = null;
+            }
+            
             showToast('Driver created successfully');
             hideCreateUser();
             initAuth();
@@ -2165,11 +2831,13 @@
 
         function logout() {
             currentUser = null;
+            biometricEnabled = false;
             document.getElementById('main-app').classList.add('hidden');
             document.getElementById('auth-screen').classList.remove('hidden');
             document.getElementById('pin-input').value = '';
             document.getElementById('pin-section').classList.add('hidden');
             document.getElementById('user-select').value = '';
+            document.getElementById('biometric-login-section').classList.add('hidden');
         }
 
         function hashPin(pin) {
@@ -4779,7 +5447,12 @@ Rules:
             if (viewName === 'history') renderHistory();
             if (viewName === 'dashboard') { renderCalendar(); updateStats(); }
             if (viewName === 'scan') updateApiKeyStatus();
-            if (viewName === 'settings') { updateApiKeyStatus(); checkStorageQuota(); updateStorageWidgetToggle(); }
+            if (viewName === 'settings') { 
+                updateApiKeyStatus(); 
+                checkStorageQuota(); 
+                updateStorageWidgetToggle();
+                updateBiometricSettingsUI();
+            }
             if (viewName === 'archive') renderArchiveList();
         }
 
