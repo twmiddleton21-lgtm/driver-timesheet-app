@@ -882,7 +882,7 @@
             background: #e5e7eb;
         }
 
-        /* Auto-login loading screen */
+        /* Auto-login loading screen - ENHANCED FOR IMMEDIATE AUTH */
         .auto-login-screen {
             position: fixed;
             inset: 0;
@@ -893,6 +893,12 @@
             align-items: center;
             justify-content: center;
             color: white;
+            transition: opacity 0.3s ease;
+        }
+
+        .auto-login-screen.hidden {
+            opacity: 0;
+            pointer-events: none;
         }
 
         .auto-login-icon {
@@ -934,6 +940,36 @@
         .auto-login-fallback:hover {
             background: rgba(255,255,255,0.3);
         }
+
+        /* Quick auth button for immediate biometric trigger */
+        .quick-auth-btn {
+            position: fixed;
+            bottom: 100px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(255,255,255,0.95);
+            color: #7C3AED;
+            padding: 16px 32px;
+            border-radius: 30px;
+            font-weight: 600;
+            font-size: 16px;
+            border: none;
+            cursor: pointer;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            z-index: 201;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            transition: all 0.2s ease;
+        }
+
+        .quick-auth-btn:active {
+            transform: translateX(-50%) scale(0.95);
+        }
+
+        .quick-auth-btn i {
+            font-size: 20px;
+        }
     </style>
     <!-- THEME INITIALIZATION SCRIPT - Runs immediately before page renders -->
     <script>
@@ -951,7 +987,7 @@
 
     <!-- Auto Login Screen (shown when attempting biometric auth on launch) -->
     <div id="auto-login-screen" class="auto-login-screen hidden">
-        <div class="auto-login-icon">
+        <div class="auto-login-icon" id="auto-login-icon">
             <i class="fas fa-fingerprint"></i>
         </div>
         <div class="auto-login-text" id="auto-login-text">Authenticating...</div>
@@ -960,6 +996,12 @@
             Use PIN Instead
         </button>
     </div>
+
+    <!-- Quick Auth Button (appears when auto-login is available but needs user gesture) -->
+    <button id="quick-auth-btn" class="quick-auth-btn hidden" onclick="triggerQuickAuth()">
+        <i class="fas fa-fingerprint"></i>
+        <span id="quick-auth-text">Tap to unlock with Face ID</span>
+    </button>
 
     <!-- Biometric Setup Prompt (shown after account creation) -->
     <div id="biometric-setup-prompt" class="biometric-prompt-overlay hidden">
@@ -1012,6 +1054,12 @@
 
                 <button onclick="loginWithPin()" id="login-btn" class="w-full bg-primary hover:bg-blue-600 text-white font-semibold py-4 rounded-xl shadow-lg shadow-blue-500/30 transition-all transform active:scale-95">
                     Login with PIN
+                </button>
+
+                <!-- Biometric Quick Login Button (shown when biometric is available) -->
+                <button id="biometric-quick-login-btn" onclick="triggerBiometricFromLogin()" class="hidden w-full bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 text-white font-semibold py-4 rounded-xl shadow-lg shadow-purple-500/30 transition-all transform active:scale-95">
+                    <i class="fas fa-fingerprint mr-2"></i>
+                    <span id="biometric-login-text">Login with Face ID</span>
                 </button>
 
                 <div class="relative my-6">
@@ -2129,12 +2177,14 @@
         let vorAdditionalImage = null;
         let vorAutoDetectedData = null;
 
-        // Biometric State
+        // Biometric State - ENHANCED
         let biometricAvailable = false;
         let biometricEnabled = false;
         let pendingBiometricRegistration = false;
         let tempUserForBiometric = null;
         let lastLoggedInUser = localStorage.getItem('lastLoggedInUser') || null;
+        let autoLoginAttempted = false;
+        let biometricCredentialId = null; // Store the credential ID for faster auth
 
         const DOC_NAMES = {
             1: 'Timesheet Front',
@@ -2152,9 +2202,9 @@
         let currentViewerDoc = null;
         let currentTimesheetForShare = null;
 
-        // ==================== BIOMETRIC AUTHENTICATION ====================
+        // ==================== ENHANCED BIOMETRIC AUTHENTICATION ====================
         
-        // Check if biometric authentication is available
+        // Check if biometric authentication is available with better detection
         async function checkBiometricAvailability() {
             if (!window.PublicKeyCredential) {
                 console.log('WebAuthn not supported');
@@ -2164,11 +2214,35 @@
             try {
                 const available = await PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable();
                 console.log('Biometric available:', available);
+                
+                // Also check if we can use conditional mediation
+                if (available && 'PublicKeyCredential' in window) {
+                    // Try to check for conditional UI support
+                    const conditionalSupported = await PublicKeyCredential.isConditionalMediationAvailable?.() || false;
+                    console.log('Conditional mediation available:', conditionalSupported);
+                }
+                
                 return available;
             } catch (e) {
                 console.error('Error checking biometric availability:', e);
                 return false;
             }
+        }
+
+        // Get device info for better UX
+        function getDeviceInfo() {
+            const ua = navigator.userAgent;
+            const isApple = /iPad|iPhone|iPod|Macintosh/.test(ua) && !window.MSStream;
+            const hasFaceID = isApple && /iPhone|iPad/.test(ua) && !/iPod/.test(ua);
+            const hasTouchID = isApple && (/Macintosh/.test(ua) || /iPhone|iPad|iPod/.test(ua));
+            
+            return {
+                isApple,
+                hasFaceID,
+                hasTouchID,
+                isIOS: /iPad|iPhone|iPod/.test(ua),
+                platform: isApple ? (hasFaceID ? 'Face ID' : 'Touch ID') : 'Biometric'
+            };
         }
 
         // Get biometric credentials for user
@@ -2178,15 +2252,22 @@
                 const transaction = imageDB.transaction(['biometricCredentials'], 'readonly');
                 const store = transaction.objectStore('biometricCredentials');
                 const request = store.get(`biometric_${username}`);
-                request.onsuccess = () => resolve(request.result || null);
+                request.onsuccess = () => {
+                    const result = request.result;
+                    if (result) {
+                        biometricCredentialId = result.credentialId;
+                    }
+                    resolve(result || null);
+                };
                 request.onerror = () => reject(request.error);
             });
         }
 
-        // Save biometric credential
+        // Save biometric credential with metadata
         async function saveBiometricCredential(username, credential) {
             if (!imageDB) await initImageDB();
             return new Promise((resolve, reject) => {
+                const deviceInfo = getDeviceInfo();
                 const transaction = imageDB.transaction(['biometricCredentials'], 'readwrite');
                 const store = transaction.objectStore('biometricCredentials');
                 const request = store.put({
@@ -2195,9 +2276,14 @@
                     credentialId: credential.id,
                     rawId: Array.from(new Uint8Array(credential.rawId)),
                     type: credential.type,
-                    createdAt: new Date().toISOString()
+                    deviceType: deviceInfo.platform,
+                    createdAt: new Date().toISOString(),
+                    lastUsed: new Date().toISOString()
                 });
-                request.onsuccess = () => resolve();
+                request.onsuccess = () => {
+                    biometricCredentialId = credential.id;
+                    resolve();
+                };
                 request.onerror = () => reject(request.error);
             });
         }
@@ -2209,21 +2295,27 @@
                 const transaction = imageDB.transaction(['biometricCredentials'], 'readwrite');
                 const store = transaction.objectStore('biometricCredentials');
                 const request = store.delete(`biometric_${username}`);
-                request.onsuccess = () => resolve();
+                request.onsuccess = () => {
+                    biometricCredentialId = null;
+                    resolve();
+                };
                 request.onerror = () => reject(request.error);
             });
         }
 
-        // Register biometric for user
+        // ENHANCED: Register biometric with better options for automatic auth
         async function registerBiometric(username) {
             try {
+                const deviceInfo = getDeviceInfo();
+                
                 // Create challenge
                 const challenge = new Uint8Array(32);
                 window.crypto.getRandomValues(challenge);
 
-                // Create user ID from username
+                // Create user ID from username (must be stable)
                 const userId = new TextEncoder().encode(username);
 
+                // Enhanced options for better UX
                 const publicKeyCredentialCreationOptions = {
                     challenge: challenge,
                     rp: {
@@ -2236,18 +2328,23 @@
                         displayName: username
                     },
                     pubKeyCredParams: [
-                        { alg: -7, type: 'public-key' },   // ES256
-                        { alg: -257, type: 'public-key' }  // RS256
+                        { alg: -7, type: 'public-key' },   // ES256 (widely supported)
+                        { alg: -257, type: 'public-key' }  // RS256 (fallback)
                     ],
                     authenticatorSelection: {
-                        authenticatorAttachment: 'platform',
-                        userVerification: 'required',
-                        residentKey: 'preferred',
-                        requireResidentKey: false
+                        authenticatorAttachment: 'platform', // Use built-in sensor (Face ID/Touch ID)
+                        userVerification: 'required',        // Always require biometric
+                        residentKey: 'required',             // Store credential on device for automatic use
+                        requireResidentKey: true
                     },
-                    attestation: 'none'
+                    attestation: 'none',
+                    extensions: {
+                        credProps: true
+                    }
                 };
 
+                console.log('Creating credential with options:', publicKeyCredentialCreationOptions);
+                
                 const credential = await navigator.credentials.create({
                     publicKey: publicKeyCredentialCreationOptions
                 });
@@ -2256,6 +2353,8 @@
                     throw new Error('Biometric registration cancelled');
                 }
 
+                console.log('Credential created:', credential.id);
+                
                 // Save credential info
                 await saveBiometricCredential(username, credential);
                 
@@ -2266,8 +2365,8 @@
             }
         }
 
-        // Authenticate with biometric
-        async function authenticateWithBiometric(username) {
+        // ENHANCED: Authenticate with biometric - optimized for automatic login
+        async function authenticateWithBiometric(username, isAutoLogin = false) {
             try {
                 const storedCred = await getBiometricCredentials(username);
                 if (!storedCred) {
@@ -2278,16 +2377,26 @@
                 const challenge = new Uint8Array(32);
                 window.crypto.getRandomValues(challenge);
 
+                // Build allowCredentials with the stored credential ID
+                const allowCredentials = [{
+                    id: new Uint8Array(storedCred.rawId),
+                    type: 'public-key',
+                    transports: ['internal'] // Platform authenticator only
+                }];
+
                 const publicKeyCredentialRequestOptions = {
                     challenge: challenge,
-                    allowCredentials: [{
-                        id: new Uint8Array(storedCred.rawId),
-                        type: 'public-key',
-                        transports: ['internal']
-                    }],
+                    allowCredentials: allowCredentials,
                     userVerification: 'required',
-                    rpId: window.location.hostname
+                    rpId: window.location.hostname,
+                    // For auto-login, we want to be more aggressive about using the credential
+                    ...(isAutoLogin && {
+                        // These hints help the browser understand we want immediate auth
+                        hints: ['hybrid'] // Prefer platform authenticator
+                    })
                 };
+
+                console.log('Authenticating with options:', publicKeyCredentialRequestOptions);
 
                 const assertion = await navigator.credentials.get({
                     publicKey: publicKeyCredentialRequestOptions
@@ -2297,6 +2406,9 @@
                     throw new Error('Biometric authentication cancelled');
                 }
 
+                // Update last used timestamp
+                await updateCredentialLastUsed(username);
+                
                 return true;
             } catch (error) {
                 console.error('Biometric authentication error:', error);
@@ -2304,9 +2416,29 @@
             }
         }
 
-        // ==================== AUTO LOGIN ON APP LAUNCH ====================
+        // Update last used timestamp
+        async function updateCredentialLastUsed(username) {
+            if (!imageDB) return;
+            try {
+                const cred = await getBiometricCredentials(username);
+                if (cred) {
+                    const transaction = imageDB.transaction(['biometricCredentials'], 'readwrite');
+                    const store = transaction.objectStore('biometricCredentials');
+                    cred.lastUsed = new Date().toISOString();
+                    await store.put(cred);
+                }
+            } catch (e) {
+                console.log('Failed to update last used:', e);
+            }
+        }
+
+        // ==================== ENHANCED AUTO LOGIN ====================
         
         async function attemptAutoLogin() {
+            // Prevent multiple attempts
+            if (autoLoginAttempted) return;
+            autoLoginAttempted = true;
+            
             const users = DB_LS.getUsers();
             
             // If no users exist, show normal auth screen
@@ -2320,7 +2452,8 @@
                 if (users.length === 1) {
                     lastLoggedInUser = users[0].username;
                 } else {
-                    // Multiple users, no last known - show normal login
+                    // Multiple users, no last known - show normal login with biometric option
+                    updateBiometricLoginButton();
                     return;
                 }
             }
@@ -2330,62 +2463,168 @@
             const storedCred = await getBiometricCredentials(lastLoggedInUser);
             
             if (!hasBiometric || !storedCred) {
-                // Biometric not set up for this user
+                // Biometric not set up for this user - show biometric login button if available
+                updateBiometricLoginButton();
                 return;
             }
 
             // Check if biometric hardware is available
             const available = await checkBiometricAvailability();
             if (!available) {
+                updateBiometricLoginButton();
                 return;
             }
 
-            // Show auto-login screen and attempt biometric auth
+            // Show auto-login screen
             showAutoLoginScreen(lastLoggedInUser);
             
+            // Small delay to let the UI render
+            await new Promise(r => setTimeout(r, 300));
+            
             try {
-                await authenticateWithBiometric(lastLoggedInUser);
+                // Attempt automatic authentication
+                await authenticateWithBiometric(lastLoggedInUser, true);
                 
                 // Success! Get user data and login
                 const user = users.find(u => u.username === lastLoggedInUser);
                 if (user) {
                     hideAutoLoginScreen();
-                    completeLogin(user, true); // true = from biometric
+                    completeLogin(user, true);
                     return;
                 }
             } catch (error) {
                 console.log('Auto-login failed:', error);
-                // Fall through to show normal login
+                
+                // Check if this is a user cancellation or system error
+                if (error.name === 'NotAllowedError' || error.message.includes('cancelled')) {
+                    // User cancelled - show fallback options
+                    showQuickAuthButton(lastLoggedInUser);
+                } else if (error.message.includes('No biometric credential')) {
+                    // Credential lost - clear it
+                    localStorage.removeItem(`biometric_${lastLoggedInUser}`);
+                    hideAutoLoginScreen();
+                    showToast('Biometric credential expired. Please use PIN.', 'error');
+                } else {
+                    // Other error - show fallback
+                    showQuickAuthButton(lastLoggedInUser);
+                }
             }
-            
-            hideAutoLoginScreen();
         }
 
         function showAutoLoginScreen(username) {
             const screen = document.getElementById('auto-login-screen');
             const text = document.getElementById('auto-login-text');
             const subtext = document.getElementById('auto-login-subtext');
+            const icon = document.getElementById('auto-login-icon');
             
-            // Detect device type for appropriate messaging
-            const isApple = /iPad|iPhone|iPod|Macintosh/.test(navigator.userAgent) && !window.MSStream;
-            const hasFaceID = isApple && /iPhone|iPad/.test(navigator.userAgent);
+            const deviceInfo = getDeviceInfo();
             
             text.textContent = `Welcome, ${username}`;
-            subtext.textContent = hasFaceID ? 'Use Face ID to unlock' : 'Use Touch ID to unlock';
+            subtext.textContent = deviceInfo.hasFaceID ? 'Use Face ID to unlock' : 'Use Touch ID to unlock';
+            
+            // Update icon based on device
+            if (deviceInfo.hasFaceID) {
+                icon.innerHTML = '<i class="fas fa-smile"></i>';
+            } else {
+                icon.innerHTML = '<i class="fas fa-fingerprint"></i>';
+            }
             
             screen.classList.remove('hidden');
         }
 
         function hideAutoLoginScreen() {
-            document.getElementById('auto-login-screen').classList.add('hidden');
+            const screen = document.getElementById('auto-login-screen');
+            screen.classList.add('hidden');
+            hideQuickAuthButton();
+        }
+
+        function showQuickAuthButton(username) {
+            const btn = document.getElementById('quick-auth-btn');
+            const text = document.getElementById('quick-auth-text');
+            const deviceInfo = getDeviceInfo();
+            
+            text.textContent = `Tap to unlock with ${deviceInfo.platform}`;
+            btn.classList.remove('hidden');
+            
+            // Also update the login form button
+            updateBiometricLoginButton(username);
+        }
+
+        function hideQuickAuthButton() {
+            const btn = document.getElementById('quick-auth-btn');
+            btn.classList.add('hidden');
+        }
+
+        async function triggerQuickAuth() {
+            const username = lastLoggedInUser || document.getElementById('user-select')?.value;
+            if (!username) return;
+            
+            hideQuickAuthButton();
+            showAutoLoginScreen(username);
+            
+            try {
+                await authenticateWithBiometric(username, false);
+                const users = DB_LS.getUsers();
+                const user = users.find(u => u.username === username);
+                if (user) {
+                    hideAutoLoginScreen();
+                    completeLogin(user, true);
+                }
+            } catch (error) {
+                console.error('Quick auth failed:', error);
+                hideAutoLoginScreen();
+                showToast('Authentication failed. Please use PIN.', 'error');
+            }
+        }
+
+        // Update the biometric login button in the login form
+        function updateBiometricLoginButton(preferredUser = null) {
+            const btn = document.getElementById('biometric-quick-login-btn');
+            const text = document.getElementById('biometric-login-text');
+            const deviceInfo = getDeviceInfo();
+            
+            // Only show if biometric is available
+            if (!biometricAvailable) {
+                btn.classList.add('hidden');
+                return;
+            }
+            
+            text.textContent = `Login with ${deviceInfo.platform}`;
+            btn.classList.remove('hidden');
+        }
+
+        // Trigger biometric from login button
+        async function triggerBiometricFromLogin() {
+            const username = document.getElementById('user-select')?.value || lastLoggedInUser;
+            if (!username) {
+                showToast('Please select a user first', 'error');
+                return;
+            }
+            
+            showAutoLoginScreen(username);
+            
+            try {
+                await authenticateWithBiometric(username, false);
+                const users = DB_LS.getUsers();
+                const user = users.find(u => u.username === username);
+                if (user) {
+                    hideAutoLoginScreen();
+                    completeLogin(user, true);
+                }
+            } catch (error) {
+                console.error('Biometric login failed:', error);
+                hideAutoLoginScreen();
+                showToast('Biometric authentication failed. Please use PIN.', 'error');
+            }
         }
 
         function cancelAutoLogin() {
             hideAutoLoginScreen();
             // User can now use PIN login normally
+            updateBiometricLoginButton();
         }
 
-        // ==================== BIOMETRIC SETUP PROMPT AFTER ACCOUNT CREATION ====================
+        // ==================== BIOMETRIC SETUP PROMPT ====================
         
         let userJustCreated = null;
 
@@ -2395,15 +2634,13 @@
             const title = prompt.querySelector('.biometric-prompt-title');
             const btn = prompt.querySelector('.biometric-prompt-btn.primary');
             
-            // Detect device type for appropriate messaging
-            const isApple = /iPad|iPhone|iPod|Macintosh/.test(navigator.userAgent) && !window.MSStream;
-            const hasFaceID = isApple && /iPhone|iPad/.test(navigator.userAgent);
+            const deviceInfo = getDeviceInfo();
             
-            if (hasFaceID) {
+            if (deviceInfo.hasFaceID) {
                 icon.className = 'fas fa-smile';
                 title.textContent = 'Enable Face ID?';
                 btn.innerHTML = '<i class="fas fa-smile"></i> Enable Face ID';
-            } else if (isApple) {
+            } else if (deviceInfo.isApple) {
                 icon.className = 'fas fa-fingerprint';
                 title.textContent = 'Enable Touch ID?';
                 btn.innerHTML = '<i class="fas fa-fingerprint"></i> Enable Touch ID';
@@ -2440,7 +2677,7 @@
                 localStorage.setItem('lastLoggedInUser', lastLoggedInUser);
                 
                 hideBiometricSetupPrompt();
-                showToast('Face ID enabled successfully!');
+                showToast(`${getDeviceInfo().platform} enabled successfully!`);
                 
                 // Auto-login with the new biometric
                 completeLogin(userJustCreated, true);
@@ -2670,18 +2907,27 @@
             
             select.addEventListener('change', function() {
                 document.getElementById('pin-section').classList.toggle('hidden', !this.value);
+                // Update biometric button visibility based on selection
+                if (this.value && biometricAvailable) {
+                    const hasBiometric = localStorage.getItem(`biometric_${this.value}`) === 'true';
+                    if (hasBiometric) {
+                        updateBiometricLoginButton(this.value);
+                    }
+                }
             });
 
             updateApiKeyStatus();
             updateStorageWidgetToggle();
             
-            // Check biometric availability
+            // Check biometric availability and update UI
             checkBiometricAvailability().then(available => {
                 biometricAvailable = available;
+                if (available) {
+                    updateBiometricLoginButton();
+                }
+                // Attempt auto-login after checking availability
+                attemptAutoLogin();
             });
-
-            // Attempt auto-login if users exist
-            attemptAutoLogin();
         }
 
         function updateStorageWidgetToggle() {
@@ -2790,9 +3036,11 @@
             updateApiKeyStatus();
             updateStorageWidgetVisibility();
             
+            const deviceInfo = getDeviceInfo();
             const welcomeMsg = fromBiometric ? 
-                `Welcome, ${user.username} (Face ID)` : 
+                `Welcome, ${user.username} (${deviceInfo.platform})` : 
                 `Welcome, ${user.username}`;
+            
             showToast(welcomeMsg);
         }
 
@@ -2866,6 +3114,7 @@
         function logout() {
             currentUser = null;
             biometricEnabled = false;
+            autoLoginAttempted = false; // Reset so we can auto-login next time
             document.getElementById('main-app').classList.add('hidden');
             document.getElementById('auth-screen').classList.remove('hidden');
             document.getElementById('pin-input').value = '';
@@ -2873,6 +3122,8 @@
             document.getElementById('user-select').value = '';
             
             // Don't clear lastLoggedInUser so auto-login can work next time
+            // But we do want to show the biometric button if available
+            updateBiometricLoginButton();
         }
 
         function hashPin(pin) {
@@ -5524,14 +5775,10 @@ Rules:
             const infoText = document.getElementById('biometric-info-text');
             const setupBtn = document.getElementById('setup-biometric-btn');
 
-            // Check device type
-            const isApple = /iPad|iPhone|iPod|Macintosh/.test(navigator.userAgent) && !window.MSStream;
-            const hasFaceID = isApple && /iPhone|iPad/.test(navigator.userAgent);
-            
-            const biometricName = hasFaceID ? 'Face ID' : isApple ? 'Touch ID' : 'Biometric Login';
+            const deviceInfo = getDeviceInfo();
 
             if (!biometricAvailable) {
-                title.textContent = biometricName;
+                title.textContent = deviceInfo.platform;
                 status.textContent = 'Not available on this device';
                 status.className = 'text-xs text-gray-500';
                 iconStatus.innerHTML = '<i class="fas fa-times text-gray-400"></i>';
@@ -5549,7 +5796,7 @@ Rules:
             const userEnabled = localStorage.getItem(`biometric_${currentUser.username}`) === 'true';
 
             if (cred && userEnabled) {
-                title.textContent = biometricName;
+                title.textContent = deviceInfo.platform;
                 status.textContent = 'Enabled and ready';
                 status.className = 'text-xs text-green-600 dark:text-green-400';
                 iconStatus.innerHTML = '<i class="fas fa-check text-white"></i>';
@@ -5559,7 +5806,7 @@ Rules:
                 infoBox.classList.add('hidden');
                 setupBtn.classList.add('hidden');
             } else {
-                title.textContent = biometricName;
+                title.textContent = deviceInfo.platform;
                 status.textContent = 'Not set up';
                 status.className = 'text-xs text-gray-500';
                 iconStatus.innerHTML = '<i class="fas fa-fingerprint text-gray-400"></i>';
@@ -5567,7 +5814,7 @@ Rules:
                 toggle.classList.remove('active');
                 toggle.style.display = 'block';
                 infoBox.classList.remove('hidden');
-                infoText.textContent = `Enable ${biometricName} for faster, more secure login on this device. Your biometric data never leaves this device.`;
+                infoText.textContent = `Enable ${deviceInfo.platform} for faster, more secure login on this device. Your biometric data never leaves this device.`;
                 setupBtn.classList.remove('hidden');
             }
         }
@@ -5622,7 +5869,7 @@ Rules:
                 toggle.classList.add('active');
                 updateBiometricSettingsUI();
                 
-                showToast('Face ID / Touch ID enabled successfully!');
+                showToast(`${getDeviceInfo().platform} enabled successfully!`);
                 
             } catch (error) {
                 console.error('Setup error:', error);
