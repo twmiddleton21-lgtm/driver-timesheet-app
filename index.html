@@ -501,7 +501,7 @@
             transform: translateX(24px);
         }
 
-        /* Full screen image viewer styles */
+        /* Full screen image viewer styles - UPDATED WITH BETTER CLOSE HANDLING */
         .fullscreen-image-viewer {
             position: fixed;
             inset: 0;
@@ -521,6 +521,7 @@
             display: flex;
             justify-content: flex-end;
             z-index: 10;
+            pointer-events: none; /* Allow clicks to pass through to image */
         }
         
         .fullscreen-image-viewer .close-btn {
@@ -536,10 +537,13 @@
             cursor: pointer;
             border: none;
             transition: transform 0.2s ease;
+            pointer-events: auto; /* Re-enable clicks on button */
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
         }
         
         .fullscreen-image-viewer .close-btn:hover {
             transform: scale(1.1);
+            background: rgba(239, 68, 68, 1);
         }
         
         .fullscreen-image-viewer .viewer-content {
@@ -548,6 +552,7 @@
             align-items: center;
             justify-content: center;
             padding: 60px 20px 100px;
+            cursor: pointer; /* Indicate clickable to close */
         }
         
         .fullscreen-image-viewer .viewer-content img {
@@ -555,6 +560,7 @@
             max-height: 100%;
             object-fit: contain;
             border-radius: 8px;
+            pointer-events: none; /* Let clicks pass through to container */
         }
         
         .fullscreen-image-viewer .viewer-footer {
@@ -568,6 +574,7 @@
             align-items: center;
             justify-content: space-between;
             gap: 16px;
+            pointer-events: auto;
         }
         
         .fullscreen-image-viewer .filename-container {
@@ -648,6 +655,32 @@
             color: white;
             font-size: 20px;
         }
+
+        /* Share fallback modal */
+        .share-fallback-modal {
+            position: fixed;
+            inset: 0;
+            z-index: 300;
+            background: rgba(0,0,0,0.8);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        
+        .share-fallback-content {
+            background: white;
+            border-radius: 16px;
+            padding: 24px;
+            max-width: 320px;
+            width: 100%;
+            text-align: center;
+        }
+        
+        .dark .share-fallback-content {
+            background: #1E293B;
+            color: white;
+        }
     </style>
 <base target="_blank">
 </head>
@@ -662,7 +695,7 @@
                 </div>
                 <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Driver Timesheet Pro</h1>
                 <p class="text-gray-500 dark:text-gray-400 mt-2 flex items-center justify-center gap-2">
-                    <span class="text-xs bg-primary/10 text-primary px-2 py-1 rounded" id="version-display">v5.2.2</span>
+                    <span class="text-xs bg-primary/10 text-primary px-2 py-1 rounded" id="version-display">v5.2.3</span>
                     <span class="text-xs bg-green-100 text-green-700 px-2 py-1 rounded">Gemini AI</span>
                 </p>
             </div>
@@ -1185,7 +1218,7 @@
                 <div class="bg-white dark:bg-dark-card rounded-2xl p-4 shadow-sm border border-gray-100 dark:border-gray-700">
                     <h3 class="font-semibold text-gray-900 dark:text-white mb-3"><i class="fas fa-info-circle text-primary mr-2"></i>About</h3>
                     <div class="space-y-2 text-sm text-gray-600 dark:text-gray-400">
-                        <p><strong>Version:</strong> <span id="settings-version">v5.2.2 (Fixed Docs)</span></p>
+                        <p><strong>Version:</strong> <span id="settings-version">v5.2.3 (Share Fix)</span></p>
                         <p><strong>OCR Engine:</strong> Google Gemini 2.0 Flash AI</p>
                         <p><strong>Storage:</strong> IndexedDB (Local Device)</p>
                         <p class="text-xs">Required timesheet OCR + 3 additional document uploads per week.</p>
@@ -1306,14 +1339,14 @@
         </div>
     </div>
 
-    <!-- Full Screen Image Viewer -->
-    <div id="fullscreen-viewer" class="fullscreen-image-viewer hidden">
+    <!-- Full Screen Image Viewer - UPDATED WITH CLICK TO CLOSE -->
+    <div id="fullscreen-viewer" class="fullscreen-image-viewer hidden" onclick="handleViewerBackdropClick(event)">
         <div class="viewer-header">
-            <button class="close-btn" onclick="closeFullscreenViewer()">
+            <button class="close-btn" onclick="closeFullscreenViewer(event)" type="button">
                 <i class="fas fa-times"></i>
             </button>
         </div>
-        <div class="viewer-content">
+        <div class="viewer-content" onclick="handleViewerContentClick(event)">
             <img id="viewer-image" src="" alt="Document">
         </div>
         <div class="viewer-footer">
@@ -1321,10 +1354,29 @@
                 <div class="filename" id="viewer-filename">image.jpg</div>
                 <div class="doc-type-label" id="viewer-doc-type">Timesheet Front</div>
             </div>
-            <button class="share-btn-large" onclick="shareViewerDocument()">
+            <button class="share-btn-large" onclick="shareViewerDocument(event)" type="button">
                 <i class="fas fa-share-alt"></i>
                 Share
             </button>
+        </div>
+    </div>
+
+    <!-- Share Fallback Modal -->
+    <div id="share-fallback-modal" class="share-fallback-modal hidden" onclick="closeShareFallback(event)">
+        <div class="share-fallback-content" onclick="event.stopPropagation()">
+            <div class="w-16 h-16 bg-blue-100 dark:bg-blue-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
+                <i class="fas fa-share-alt text-2xl text-blue-600"></i>
+            </div>
+            <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-2">Share Document</h3>
+            <p class="text-sm text-gray-500 dark:text-gray-400 mb-4" id="share-fallback-text">Your document is ready to share</p>
+            <div class="space-y-2">
+                <button onclick="downloadCurrentDocument()" class="w-full bg-primary text-white font-semibold py-3 rounded-xl">
+                    <i class="fas fa-download mr-2"></i>Download File
+                </button>
+                <button onclick="closeShareFallback()" class="w-full text-gray-500 py-2 text-sm">
+                    Cancel
+                </button>
+            </div>
         </div>
     </div>
 
@@ -1391,7 +1443,7 @@
 
     <script>
         // ==================== CONFIG ====================
-        const APP_VERSION = '5.2.2';
+        const APP_VERSION = '5.2.3';
         const GEMINI_MODEL = 'gemini-2.0-flash';
         
         let currentUser = null;
@@ -1428,6 +1480,7 @@
 
         // Current viewer state
         let currentViewerDoc = null;
+        let currentTimesheetForShare = null; // NEW: Store timesheet for sharing from week modal
 
         // ==================== INDEXEDDB ====================
         const DB_NAME = 'DriverTimesheetDB_v5';
@@ -1598,7 +1651,7 @@
         // ==================== AUTH ====================
         function initAuth() {
             document.getElementById('version-display').textContent = 'v' + APP_VERSION;
-            document.getElementById('settings-version').textContent = 'v' + APP_VERSION + ' (Fixed Docs)';
+            document.getElementById('settings-version').textContent = 'v' + APP_VERSION + ' (Share Fix)';
             
             const users = DB_LS.getUsers();
             const select = document.getElementById('user-select');
@@ -2145,25 +2198,70 @@
             showToast('Document removed');
         }
 
-        // ==================== FULLSCREEN VIEWER ====================
+        // ==================== FULLSCREEN VIEWER - FIXED WITH PROPER CLOSE HANDLING ====================
+        
+        // Store document for share fallback
+        let shareFallbackDoc = null;
+        
         function openFullscreenViewer(imageUrl, filename, docType, docData) {
             currentViewerDoc = docData;
+            shareFallbackDoc = docData; // Store for fallback modal
             document.getElementById('viewer-image').src = imageUrl;
             document.getElementById('viewer-filename').textContent = filename;
             document.getElementById('viewer-doc-type').textContent = docType;
             document.getElementById('fullscreen-viewer').classList.remove('hidden');
             document.body.style.overflow = 'hidden';
+            
+            // Add escape key handler
+            document.addEventListener('keydown', handleViewerEscapeKey);
         }
 
-        function closeFullscreenViewer() {
+        function closeFullscreenViewer(event) {
+            if (event) {
+                event.stopPropagation();
+                event.preventDefault();
+            }
+            
             document.getElementById('fullscreen-viewer').classList.add('hidden');
             document.body.style.overflow = '';
             currentViewerDoc = null;
+            
+            // Remove escape key handler
+            document.removeEventListener('keydown', handleViewerEscapeKey);
         }
 
-        async function shareViewerDocument() {
+        function handleViewerEscapeKey(e) {
+            if (e.key === 'Escape') {
+                closeFullscreenViewer();
+            }
+        }
+
+        function handleViewerBackdropClick(event) {
+            // Only close if clicking the backdrop itself, not children
+            if (event.target === event.currentTarget) {
+                closeFullscreenViewer();
+            }
+        }
+
+        function handleViewerContentClick(event) {
+            // Click on image area closes viewer (but not if clicking the image itself)
+            if (event.target === event.currentTarget) {
+                closeFullscreenViewer();
+            }
+        }
+
+        // FIXED: Share function with proper error handling and fallback
+        async function shareViewerDocument(event) {
+            if (event) {
+                event.stopPropagation();
+                event.preventDefault();
+            }
+            
             if (!currentViewerDoc) return;
             
+            let shareSucceeded = false;
+            
+            // Try native share if available
             if (navigator.share && navigator.canShare) {
                 try {
                     const response = await fetch(currentViewerDoc.dataUrl);
@@ -2176,18 +2274,48 @@
                             text: `${currentViewerDoc.docName || 'Document'} - ${currentViewerDoc.name}`,
                             files: [file]
                         });
+                        shareSucceeded = true;
                         return;
                     }
                 } catch (e) {
-                    console.log('Native share failed, falling back');
+                    console.log('Native share failed or was cancelled:', e);
+                    // Don't show error - user might have just cancelled
                 }
             }
             
-            // Fallback: download
+            // If we get here, sharing failed or isn't available
+            // Show fallback modal instead of auto-downloading
+            showShareFallback();
+        }
+
+        // NEW: Share fallback modal functions
+        function showShareFallback() {
+            const modal = document.getElementById('share-fallback-modal');
+            const text = document.getElementById('share-fallback-text');
+            
+            if (shareFallbackDoc) {
+                text.textContent = `${shareFallbackDoc.docName || 'Document'}: ${shareFallbackDoc.name}`;
+            }
+            
+            modal.classList.remove('hidden');
+        }
+
+        function closeShareFallback(event) {
+            if (event) {
+                event.stopPropagation();
+            }
+            document.getElementById('share-fallback-modal').classList.add('hidden');
+        }
+
+        function downloadCurrentDocument() {
+            if (!shareFallbackDoc) return;
+            
             const link = document.createElement('a');
-            link.href = currentViewerDoc.dataUrl;
-            link.download = currentViewerDoc.name;
+            link.href = shareFallbackDoc.dataUrl;
+            link.download = shareFallbackDoc.name;
             link.click();
+            
+            closeShareFallback();
             showToast('Document saved to downloads');
         }
 
@@ -3318,7 +3446,11 @@ Rules:
             if (ts) openWeekDetails(ts);
         }
 
+        // ==================== WEEK DETAILS MODAL - WITH SHARE FOR MAIN TIMESHEET ====================
         async function openWeekDetails(ts) {
+            // Store for sharing
+            currentTimesheetForShare = ts;
+            
             document.getElementById('week-modal-title').textContent = ts.weekRange;
             const content = document.getElementById('week-modal-content');
             
@@ -3354,8 +3486,31 @@ Rules:
                 `;
             }
             
+            // Main timesheet image with share button - NEW!
+            let timesheetImageHtml = '';
+            if (frontImg) {
+                timesheetImageHtml = `
+                    <div class="mb-4 relative group">
+                        <img src="${frontImg.data}" class="w-full rounded-xl cursor-pointer" onclick="viewTimesheetFullScreen()" alt="Timesheet">
+                        
+                        <!-- Share button overlay for main timesheet -->
+                        <div class="absolute top-3 right-3 flex gap-2">
+                            <button onclick="shareMainTimesheet(event)" class="bg-blue-500 hover:bg-blue-600 text-white w-10 h-10 rounded-full flex items-center justify-center shadow-lg transition-transform hover:scale-110" title="Share Timesheet">
+                                <i class="fas fa-share-alt"></i>
+                            </button>
+                        </div>
+                        
+                        <div class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-4 rounded-b-xl">
+                            <p class="text-white text-sm font-medium">
+                                <i class="fas fa-image mr-2"></i>Main Timesheet Image
+                            </p>
+                        </div>
+                    </div>
+                `;
+            }
+            
             content.innerHTML = `
-                ${frontImg ? `<div class="mb-4"><img src="${frontImg.data}" class="w-full rounded-xl"></div>` : ''}
+                ${timesheetImageHtml}
                 
                 ${docsHtml}
                 
@@ -3412,6 +3567,74 @@ Rules:
             document.getElementById('week-modal').classList.remove('hidden');
         }
 
+        // NEW: View timesheet in fullscreen viewer
+        async function viewTimesheetFullScreen() {
+            if (!currentTimesheetForShare) return;
+            
+            const frontImg = await getFromStore(STORES.images, currentTimesheetForShare.imageIds.front);
+            if (!frontImg) {
+                showToast('Image not found', 'error');
+                return;
+            }
+            
+            // Create a doc object for the viewer
+            const docData = {
+                dataUrl: frontImg.data,
+                name: `timesheet_${currentTimesheetForShare.weekRange.replace(/\s/g, '_')}.jpg`,
+                type: 'image/jpeg',
+                docName: 'Main Timesheet'
+            };
+            
+            openFullscreenViewer(frontImg.data, docData.name, 'Main Timesheet', docData);
+        }
+
+        // NEW: Share main timesheet from week modal
+        async function shareMainTimesheet(event) {
+            if (event) {
+                event.stopPropagation();
+            }
+            
+            if (!currentTimesheetForShare) return;
+            
+            const frontImg = await getFromStore(STORES.images, currentTimesheetForShare.imageIds.front);
+            if (!frontImg) {
+                showToast('Image not found', 'error');
+                return;
+            }
+            
+            // Create doc object for sharing
+            const docData = {
+                dataUrl: frontImg.data,
+                name: `timesheet_${currentTimesheetForShare.weekRange.replace(/\s/g, '_')}.jpg`,
+                type: 'image/jpeg',
+                docName: 'Main Timesheet'
+            };
+            
+            // Try native share
+            if (navigator.share && navigator.canShare) {
+                try {
+                    const response = await fetch(frontImg.data);
+                    const blob = await response.blob();
+                    const file = new File([blob], docData.name, { type: 'image/jpeg' });
+                    
+                    if (navigator.canShare({ files: [file] })) {
+                        await navigator.share({
+                            title: 'Timesheet - ' + currentTimesheetForShare.weekRange,
+                            text: `Timesheet for week ${currentTimesheetForShare.weekRange}`,
+                            files: [file]
+                        });
+                        return;
+                    }
+                } catch (e) {
+                    console.log('Native share failed:', e);
+                }
+            }
+            
+            // Fallback: open in fullscreen viewer with share option
+            openFullscreenViewer(frontImg.data, docData.name, 'Main Timesheet', docData);
+            showToast('Tap Share button to download', 'info');
+        }
+
         async function openHistoryDocument(docId) {
             const doc = await getFromStore(STORES.documents, docId);
             if (!doc) return;
@@ -3429,6 +3652,7 @@ Rules:
 
         function closeWeekModal() {
             document.getElementById('week-modal').classList.add('hidden');
+            currentTimesheetForShare = null; // Clear reference
         }
 
         function updateStats() {
@@ -3510,7 +3734,9 @@ Rules:
             const iconEl = document.getElementById('toast-icon');
             
             msgEl.textContent = message;
-            iconEl.className = type === 'error' ? 'fas fa-exclamation-circle text-red-400' : 'fas fa-check-circle text-green-400';
+            iconEl.className = type === 'error' ? 'fas fa-exclamation-circle text-red-400' : 
+                              type === 'info' ? 'fas fa-info-circle text-blue-400' :
+                              'fas fa-check-circle text-green-400';
             
             toast.classList.remove('-translate-y-20', 'opacity-0');
             setTimeout(() => toast.classList.add('-translate-y-20', 'opacity-0'), 3000);
