@@ -716,6 +716,16 @@
             border-color: #ea580c;
         }
     </style>
+    <!-- THEME INITIALIZATION SCRIPT - Runs immediately before page renders -->
+    <script>
+        (function() {
+            const isDark = localStorage.getItem('darkMode') === 'true';
+            if (isDark) {
+                document.documentElement.classList.remove('light');
+                document.documentElement.classList.add('dark');
+            }
+        })();
+    </script>
 <base target="_blank">
 </head>
 <body class="bg-gray-50 dark:bg-dark text-gray-800 dark:text-gray-100 transition-colors duration-300 min-h-screen pb-20">
@@ -764,13 +774,13 @@
 
             <!-- Create User Form -->
             <div id="create-user-form" class="hidden space-y-4">
-                <h2 class="text-xl font-bold text-center mb-4">Create New Driver</h2>
+                <h2 class="text-xl font-bold text-center mb-4 text-gray-900 dark:text-white">Create New Driver</h2>
                 
-                <input type="text" id="new-username" placeholder="Driver Name" class="w-full p-4 bg-gray-100 dark:bg-dark-card rounded-xl border-2 border-transparent focus:border-primary outline-none">
+                <input type="text" id="new-username" placeholder="Driver Name" class="w-full p-4 bg-gray-100 dark:bg-dark-card rounded-xl border-2 border-transparent focus:border-primary outline-none text-gray-900 dark:text-white">
                 
-                <input type="password" id="new-pin" maxlength="4" inputmode="numeric" placeholder="Create 4-digit PIN" class="w-full p-4 bg-gray-100 dark:bg-dark-card rounded-xl border-2 border-transparent focus:border-primary outline-none text-center text-2xl tracking-widest">
+                <input type="password" id="new-pin" maxlength="4" inputmode="numeric" placeholder="Create 4-digit PIN" class="w-full p-4 bg-gray-100 dark:bg-dark-card rounded-xl border-2 border-transparent focus:border-primary outline-none text-center text-2xl tracking-widest text-gray-900 dark:text-white">
                 
-                <input type="password" id="confirm-pin" maxlength="4" inputmode="numeric" placeholder="Confirm PIN" class="w-full p-4 bg-gray-100 dark:bg-dark-card rounded-xl border-2 border-transparent focus:border-primary outline-none text-center text-2xl tracking-widest">
+                <input type="password" id="confirm-pin" maxlength="4" inputmode="numeric" placeholder="Confirm PIN" class="w-full p-4 bg-gray-100 dark:bg-dark-card rounded-xl border-2 border-transparent focus:border-primary outline-none text-center text-2xl tracking-widest text-gray-900 dark:text-white">
                 
                 <div class="bg-blue-50 dark:bg-blue-900/20 rounded-xl p-4 border border-blue-200 dark:border-blue-800">
                     <label class="block text-sm font-medium text-blue-900 dark:text-blue-300 mb-2">
@@ -780,7 +790,7 @@
                 </div>
                 
                 <div class="flex gap-3">
-                    <button onclick="hideCreateUser()" class="flex-1 py-4 rounded-xl border-2 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 font-semibold">Cancel</button>
+                    <button onclick="hideCreateUser()" class="flex-1 py-4 rounded-xl border-2 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 font-semibold hover:bg-gray-50 dark:hover:bg-dark-card transition-all">Cancel</button>
                     <button onclick="createUser()" class="flex-1 bg-primary hover:bg-blue-600 text-white font-semibold py-4 rounded-xl shadow-lg">Create</button>
                 </div>
             </div>
@@ -912,8 +922,8 @@
                             <i class="fas fa-robot mr-1"></i>Auto-detected
                         </span>
                     </label>
-                    <input type="date" id="scan-date-select" class="w-full p-3 bg-gray-100 dark:bg-dark-surface rounded-xl border-2 border-transparent focus:border-primary outline-none">
-                    <p class="text-xs text-gray-500 mt-2" id="selected-week-info">Week ending auto-detected from timesheet</p>
+                    <input type="date" id="scan-date-select" class="w-full p-3 bg-gray-100 dark:bg-dark-surface rounded-xl border-2 border-transparent focus:border-primary outline-none text-gray-900 dark:text-white">
+                    <p class="text-xs text-gray-500 dark:text-gray-400 mt-2" id="selected-week-info">Week ending auto-detected from timesheet</p>
                 </div>
 
                 <!-- Timesheet Upload (OCR - MANDATORY) -->
@@ -1165,7 +1175,7 @@
                             <i class="fas fa-robot mr-1"></i>Auto-detected
                         </span>
                     </label>
-                    <input type="date" id="vor-date-select" class="w-full p-3 bg-gray-100 dark:bg-dark-surface rounded-xl border-2 border-transparent focus:border-orange-500 outline-none">
+                    <input type="date" id="vor-date-select" class="w-full p-3 bg-gray-100 dark:bg-dark-surface rounded-xl border-2 border-transparent focus:border-orange-500 outline-none text-gray-900 dark:text-white">
                 </div>
 
                 <!-- Defect Number -->
@@ -1177,7 +1187,7 @@
                         </span>
                     </label>
                     <input type="text" id="vor-defect-number" placeholder="e.g., 092018" 
-                        class="w-full p-3 bg-gray-100 dark:bg-dark-surface rounded-xl border-2 border-transparent focus:border-orange-500 outline-none font-mono text-lg">
+                        class="w-full p-3 bg-gray-100 dark:bg-dark-surface rounded-xl border-2 border-transparent focus:border-orange-500 outline-none font-mono text-lg text-gray-900 dark:text-white">
                 </div>
 
                 <!-- Reg/Trailer Number -->
@@ -1189,7 +1199,7 @@
                         </span>
                     </label>
                     <input type="text" id="vor-reg-number" placeholder="e.g., WU69 XDY" 
-                        class="w-full p-3 bg-gray-100 dark:bg-dark-surface rounded-xl border-2 border-transparent focus:border-orange-500 outline-none font-mono text-lg uppercase">
+                        class="w-full p-3 bg-gray-100 dark:bg-dark-surface rounded-xl border-2 border-transparent focus:border-orange-500 outline-none font-mono text-lg uppercase text-gray-900 dark:text-white">
                 </div>
 
                 <!-- Time -->
@@ -1201,7 +1211,7 @@
                         </span>
                     </label>
                     <input type="time" id="vor-time" 
-                        class="w-full p-3 bg-gray-100 dark:bg-dark-surface rounded-xl border-2 border-transparent focus:border-orange-500 outline-none">
+                        class="w-full p-3 bg-gray-100 dark:bg-dark-surface rounded-xl border-2 border-transparent focus:border-orange-500 outline-none text-gray-900 dark:text-white">
                 </div>
 
                 <!-- Nature of Defect -->
@@ -1213,7 +1223,7 @@
                         </span>
                     </label>
                     <textarea id="vor-nature" rows="3" placeholder="Describe the defect..." 
-                        class="w-full p-3 bg-gray-100 dark:bg-dark-surface rounded-xl border-2 border-transparent focus:border-orange-500 outline-none resize-none"></textarea>
+                        class="w-full p-3 bg-gray-100 dark:bg-dark-surface rounded-xl border-2 border-transparent focus:border-orange-500 outline-none resize-none text-gray-900 dark:text-white"></textarea>
                 </div>
 
                 <!-- Main VOR Photo (Required) -->
@@ -1353,7 +1363,7 @@
                     </label>
                     <div class="flex gap-2">
                         <input type="text" id="defect-search-input" placeholder="Enter defect number..." 
-                            class="flex-1 p-3 bg-white dark:bg-dark-surface rounded-xl border-2 border-amber-300 dark:border-amber-700 focus:border-amber-500 outline-none font-mono">
+                            class="flex-1 p-3 bg-white dark:bg-dark-surface rounded-xl border-2 border-amber-300 dark:border-amber-700 focus:border-amber-500 outline-none font-mono text-gray-900 dark:text-white">
                         <button onclick="searchDefectNumber()" class="px-4 py-2 bg-amber-500 text-white rounded-xl hover:bg-amber-600 transition-colors">
                             <i class="fas fa-search"></i>
                         </button>
@@ -1612,7 +1622,7 @@
                 <div>
                     <input type="password" id="gemini-api-key-input" 
                         placeholder="Paste your API key here (starts with AIza...)" 
-                        class="w-full p-4 bg-gray-100 dark:bg-dark-surface rounded-xl border-2 border-transparent focus:border-primary outline-none text-sm font-mono">
+                        class="w-full p-4 bg-gray-100 dark:bg-dark-surface rounded-xl border-2 border-transparent focus:border-primary outline-none text-sm font-mono text-gray-900 dark:text-white">
                 </div>
 
                 <div class="bg-yellow-50 dark:bg-yellow-900/20 rounded-lg p-3 border border-yellow-200 dark:border-yellow-800">
@@ -2088,7 +2098,10 @@
             // Set VOR date to today
             document.getElementById('vor-date-select').value = formatDateForInput(today);
             
-            initTheme();
+            // Theme is already initialized by the inline script, just update the label
+            const isDark = document.documentElement.classList.contains('dark');
+            document.getElementById('theme-label').textContent = isDark ? 'Light Mode' : 'Dark Mode';
+            
             renderCalendar();
             updateStats();
             renderRecent();
@@ -3913,13 +3926,18 @@ Rules:
                 const actions = document.getElementById(`doc-${i}-actions`);
                 
                 item.classList.remove('has-file');
+                
                 icon.className = `fas ${DOC_ICONS[i]} text-gray-400`;
                 icon.classList.remove('hidden');
+                
                 status.textContent = 'Add';
                 preview.src = '';
                 preview.classList.add('hidden');
                 input.value = '';
-                if (actions) actions.style.display = 'none';
+                
+                if (actions) {
+                    actions.style.display = 'none';
+                }
             }
             
             // Reset badge
@@ -4746,14 +4764,6 @@ Rules:
             if (viewName === 'scan') updateApiKeyStatus();
             if (viewName === 'settings') { updateApiKeyStatus(); checkStorageQuota(); updateStorageWidgetToggle(); }
             if (viewName === 'archive') renderArchiveList();
-        }
-
-        function initTheme() {
-            const isDark = localStorage.getItem('darkMode') === 'true';
-            if (isDark) {
-                document.documentElement.classList.add('dark');
-                document.getElementById('theme-label').textContent = 'Light Mode';
-            }
         }
 
         function toggleTheme() {
