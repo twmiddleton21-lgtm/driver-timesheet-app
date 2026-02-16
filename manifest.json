@@ -1,0 +1,20 @@
+{
+  "name": "Driver Timesheet Pro",
+  "short_name": "Driver Archive",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#3B82F6",
+  "theme_color": "#3B82F6",
+  "icons": [
+    {
+      "src": "Trucker Archive App Icon.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "Trucker Archive App Icon.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
