@@ -341,7 +341,7 @@
             background-color: #475569;
         }
 
-        /* Document upload specific styles - FIXED WITH ALWAYS VISIBLE ACTIONS */
+        /* Document upload specific styles - FIXED VERSION */
         .doc-upload-grid {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
@@ -373,6 +373,7 @@
             border-color: #10B981;
             background-color: rgba(16, 185, 129, 0.1);
             border-style: solid;
+            padding: 0;
         }
         
         .doc-upload-item i {
@@ -402,38 +403,40 @@
             z-index: 1;
         }
         
-        /* Action buttons overlay on document - ALWAYS VISIBLE */
-        .doc-actions-overlay {
+        /* Action buttons at bottom of image - SMALLER SIZE */
+        .doc-actions-bar {
             position: absolute;
-            inset: 0;
-            background: rgba(0, 0, 0, 0.6);
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: rgba(0, 0, 0, 0.7);
             display: flex;
             flex-direction: row;
             align-items: center;
             justify-content: center;
-            gap: 8px;
+            gap: 12px;
+            padding: 6px;
+            z-index: 2;
             opacity: 0;
             transition: opacity 0.2s ease;
-            z-index: 2;
         }
         
-        .doc-upload-item.has-file .doc-actions-overlay {
+        .doc-upload-item.has-file .doc-actions-bar {
             opacity: 1;
         }
         
         .doc-action-btn {
-            width: 36px;
-            height: 36px;
+            width: 28px;
+            height: 28px;
             border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
             cursor: pointer;
-            font-size: 14px;
+            font-size: 12px;
             border: none;
             color: white;
             transition: transform 0.2s ease;
-            flex-shrink: 0;
         }
         
         .doc-action-btn:hover {
@@ -498,7 +501,7 @@
             transform: translateX(24px);
         }
 
-        /* Full screen image viewer styles - FOR HISTORY PAGE */
+        /* Full screen image viewer styles */
         .fullscreen-image-viewer {
             position: fixed;
             inset: 0;
@@ -645,76 +648,6 @@
             color: white;
             font-size: 20px;
         }
-
-        /* NEW: Scanned Documents Section Styles */
-        .scanned-doc-grid {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 12px;
-        }
-        
-        .scanned-doc-item {
-            aspect-ratio: 1;
-            border-radius: 12px;
-            position: relative;
-            overflow: hidden;
-            background: #f3f4f6;
-            border: 2px solid #e5e7eb;
-        }
-        
-        .dark .scanned-doc-item {
-            background: #1E293B;
-            border-color: #334155;
-        }
-        
-        .scanned-doc-item img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-        }
-        
-        .scanned-doc-actions {
-            position: absolute;
-            inset: 0;
-            background: rgba(0, 0, 0, 0.5);
-            display: flex;
-            flex-direction: row;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-        }
-        
-        .scanned-action-btn {
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            font-size: 16px;
-            border: 2px solid rgba(255,255,255,0.3);
-            color: white;
-            transition: all 0.2s ease;
-            backdrop-filter: blur(4px);
-        }
-        
-        .scanned-action-btn:hover {
-            transform: scale(1.1);
-            border-color: rgba(255,255,255,0.8);
-        }
-        
-        .scanned-action-btn.view-btn {
-            background: rgba(16, 185, 129, 0.9);
-        }
-        
-        .scanned-action-btn.share-btn {
-            background: rgba(59, 130, 246, 0.9);
-        }
-        
-        .scanned-action-btn.delete-btn {
-            background: rgba(239, 68, 68, 0.9);
-        }
     </style>
 <base target="_blank">
 </head>
@@ -729,7 +662,7 @@
                 </div>
                 <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Driver Timesheet Pro</h1>
                 <p class="text-gray-500 dark:text-gray-400 mt-2 flex items-center justify-center gap-2">
-                    <span class="text-xs bg-primary/10 text-primary px-2 py-1 rounded" id="version-display">v5.2.0</span>
+                    <span class="text-xs bg-primary/10 text-primary px-2 py-1 rounded" id="version-display">v5.2.2</span>
                     <span class="text-xs bg-green-100 text-green-700 px-2 py-1 rounded">Gemini AI</span>
                 </p>
             </div>
@@ -943,16 +876,16 @@
                     </div>
                 </div>
 
-                <!-- Additional Documents (No OCR) - FIXED VERSION -->
+                <!-- Additional Documents (No OCR) - FIXED WITH SMALLER BUTTONS AT BOTTOM -->
                 <div class="bg-white dark:bg-dark-card rounded-2xl p-4 shadow-sm border border-gray-100 dark:border-gray-700">
                     <div class="flex items-center justify-between mb-3">
                         <h3 class="font-medium text-gray-900 dark:text-white flex items-center gap-2">
                             <i class="fas fa-file-alt text-purple-500"></i>
                             Additional Documents
                         </h3>
-                        <span class="text-xs text-purple-600 bg-purple-50 dark:bg-purple-900/20 px-2 py-1 rounded-full">Optional</span>
+                        <span class="text-xs text-green-600 bg-green-50 dark:bg-green-900/20 px-2 py-1 rounded-full font-medium" id="doc-count-badge">0/3</span>
                     </div>
-                    <p class="text-xs text-gray-500 dark:text-gray-400 mb-3">Tap to add. Tap document to view, share, or delete.</p>
+                    <p class="text-xs text-gray-500 dark:text-gray-400 mb-3">Tap to add. Documents save without AI processing.</p>
                     
                     <div class="doc-upload-grid">
                         <!-- Timesheet Front -->
@@ -963,8 +896,8 @@
                             <span class="doc-status" id="doc-1-status">Add</span>
                             <img id="doc-1-preview" class="doc-preview-thumb hidden">
                             
-                            <!-- Action buttons overlay - ALWAYS VISIBLE when has-file -->
-                            <div class="doc-actions-overlay" id="doc-1-actions" style="display: none;">
+                            <!-- Action buttons at bottom - SMALLER -->
+                            <div class="doc-actions-bar" id="doc-1-actions" style="display: none;">
                                 <button class="doc-action-btn view-btn" onclick="event.stopPropagation(); viewDoc(1)" title="View">
                                     <i class="fas fa-eye"></i>
                                 </button>
@@ -985,8 +918,8 @@
                             <span class="doc-status" id="doc-2-status">Add</span>
                             <img id="doc-2-preview" class="doc-preview-thumb hidden">
                             
-                            <!-- Action buttons overlay - ALWAYS VISIBLE when has-file -->
-                            <div class="doc-actions-overlay" id="doc-2-actions" style="display: none;">
+                            <!-- Action buttons at bottom - SMALLER -->
+                            <div class="doc-actions-bar" id="doc-2-actions" style="display: none;">
                                 <button class="doc-action-btn view-btn" onclick="event.stopPropagation(); viewDoc(2)" title="View">
                                     <i class="fas fa-eye"></i>
                                 </button>
@@ -1007,8 +940,8 @@
                             <span class="doc-status" id="doc-3-status">Add</span>
                             <img id="doc-3-preview" class="doc-preview-thumb hidden">
                             
-                            <!-- Action buttons overlay - ALWAYS VISIBLE when has-file -->
-                            <div class="doc-actions-overlay" id="doc-3-actions" style="display: none;">
+                            <!-- Action buttons at bottom - SMALLER -->
+                            <div class="doc-actions-bar" id="doc-3-actions" style="display: none;">
                                 <button class="doc-action-btn view-btn" onclick="event.stopPropagation(); viewDoc(3)" title="View">
                                     <i class="fas fa-eye"></i>
                                 </button>
@@ -1020,22 +953,6 @@
                                 </button>
                             </div>
                         </div>
-                    </div>
-                </div>
-
-                <!-- NEW: Scanned Documents Section (Shows after upload) -->
-                <div id="scanned-documents-section" class="bg-white dark:bg-dark-card rounded-2xl p-4 shadow-sm border border-gray-100 dark:border-gray-700 hidden">
-                    <div class="flex items-center justify-between mb-3">
-                        <h3 class="font-medium text-gray-900 dark:text-white flex items-center gap-2">
-                            <i class="fas fa-images text-green-500"></i>
-                            Scanned Documents
-                        </h3>
-                        <span class="text-xs text-green-600 bg-green-50 dark:bg-green-900/20 px-2 py-1 rounded-full" id="scanned-count">0/3</span>
-                    </div>
-                    <p class="text-xs text-gray-500 dark:text-gray-400 mb-3">Manage your uploaded documents</p>
-                    
-                    <div class="scanned-doc-grid" id="scanned-doc-grid">
-                        <!-- Dynamically populated -->
                     </div>
                 </div>
 
@@ -1268,10 +1185,10 @@
                 <div class="bg-white dark:bg-dark-card rounded-2xl p-4 shadow-sm border border-gray-100 dark:border-gray-700">
                     <h3 class="font-semibold text-gray-900 dark:text-white mb-3"><i class="fas fa-info-circle text-primary mr-2"></i>About</h3>
                     <div class="space-y-2 text-sm text-gray-600 dark:text-gray-400">
-                        <p><strong>Version:</strong> <span id="settings-version">v5.2.0 (Unified Docs)</span></p>
+                        <p><strong>Version:</strong> <span id="settings-version">v5.2.2 (Fixed Docs)</span></p>
                         <p><strong>OCR Engine:</strong> Google Gemini 2.0 Flash AI</p>
                         <p><strong>Storage:</strong> IndexedDB (Local Device)</p>
-                        <p class="text-xs">Required timesheet OCR + 3 additional document uploads per week with integrated preview.</p>
+                        <p class="text-xs">Required timesheet OCR + 3 additional document uploads per week.</p>
                     </div>
                 </div>
 
@@ -1389,7 +1306,7 @@
         </div>
     </div>
 
-    <!-- Full Screen Image Viewer (for History page attached documents) -->
+    <!-- Full Screen Image Viewer -->
     <div id="fullscreen-viewer" class="fullscreen-image-viewer hidden">
         <div class="viewer-header">
             <button class="close-btn" onclick="closeFullscreenViewer()">
@@ -1474,7 +1391,7 @@
 
     <script>
         // ==================== CONFIG ====================
-        const APP_VERSION = '5.2.1';
+        const APP_VERSION = '5.2.2';
         const GEMINI_MODEL = 'gemini-2.0-flash';
         
         let currentUser = null;
@@ -2061,7 +1978,21 @@
                 // No document yet, trigger file input
                 document.getElementById(`file-doc-${docNum}`).click();
             }
-            // If document exists, the overlay buttons handle the actions
+            // If document exists, the action buttons handle the interactions
+        }
+
+        function updateDocCountBadge() {
+            const docs = Object.values(currentDocs).filter(d => d !== null);
+            const count = docs.length;
+            const badge = document.getElementById('doc-count-badge');
+            if (badge) {
+                badge.textContent = `${count}/3`;
+                if (count === 3) {
+                    badge.className = 'text-xs text-white bg-green-500 px-2 py-1 rounded-full font-medium';
+                } else {
+                    badge.className = 'text-xs text-green-600 bg-green-50 dark:bg-green-900/20 px-2 py-1 rounded-full font-medium';
+                }
+            }
         }
 
         async function handleDocSelect(event, docNum) {
@@ -2094,8 +2025,8 @@
                 };
                 
                 updateDocUI(docNum);
-                updateScannedDocumentsSection();
-                showToast(`${DOC_NAMES[docNum]} added successfully`);
+                updateDocCountBadge();
+                showToast(`${DOC_NAMES[docNum]} added`);
             };
             
             reader.onerror = () => {
@@ -2128,50 +2059,10 @@
                 icon.classList.remove('hidden');
             }
             
-            // Show action buttons overlay
+            // Show action buttons bar at bottom
             if (actions) {
                 actions.style.display = 'flex';
             }
-        }
-
-        // NEW: Update the scanned documents section
-        function updateScannedDocumentsSection() {
-            const section = document.getElementById('scanned-documents-section');
-            const grid = document.getElementById('scanned-doc-grid');
-            const countBadge = document.getElementById('scanned-count');
-            
-            const docs = Object.entries(currentDocs).filter(([k, v]) => v !== null);
-            const docCount = docs.length;
-            
-            if (docCount === 0) {
-                section.classList.add('hidden');
-                return;
-            }
-            
-            section.classList.remove('hidden');
-            countBadge.textContent = `${docCount}/3`;
-            
-            grid.innerHTML = docs.map(([num, doc]) => `
-                <div class="scanned-doc-item">
-                    ${doc.type.startsWith('image/') ? 
-                        `<img src="${doc.dataUrl}" alt="${doc.docName}">` :
-                        `<div class="w-full h-full flex items-center justify-center bg-red-100 dark:bg-red-900/30">
-                            <i class="fas fa-file-pdf text-3xl text-red-500"></i>
-                         </div>`
-                    }
-                    <div class="scanned-doc-actions">
-                        <button class="scanned-action-btn view-btn" onclick="viewDoc(${num})" title="View">
-                            <i class="fas fa-eye"></i>
-                        </button>
-                        <button class="scanned-action-btn share-btn" onclick="shareDoc(${num})" title="Share">
-                            <i class="fas fa-share-alt"></i>
-                        </button>
-                        <button class="scanned-action-btn delete-btn" onclick="removeDoc(${num})" title="Delete">
-                            <i class="fas fa-trash"></i>
-                        </button>
-                    </div>
-                </div>
-            `).join('');
         }
 
         function viewDoc(docNum) {
@@ -2248,8 +2139,8 @@
                 actions.style.display = 'none';
             }
             
-            // Update scanned section
-            updateScannedDocumentsSection();
+            // Update badge
+            updateDocCountBadge();
             
             showToast('Document removed');
         }
@@ -3071,8 +2962,8 @@ Rules:
                 if (actions) actions.style.display = 'none';
             }
             
-            // Hide scanned documents section
-            document.getElementById('scanned-documents-section').classList.add('hidden');
+            // Reset badge
+            updateDocCountBadge();
             
             // Reset timesheet upload
             document.getElementById('preview-front').src = '';
