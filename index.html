@@ -341,7 +341,7 @@
             background-color: #475569;
         }
 
-        /* Document upload specific styles - UPDATED WITH INTEGRATED ACTIONS */
+        /* Document upload specific styles - FIXED WITH ALWAYS VISIBLE ACTIONS */
         .doc-upload-grid {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
@@ -402,13 +402,13 @@
             z-index: 1;
         }
         
-        /* Action buttons overlay on document - ALWAYS VISIBLE ON MOBILE, HOVER ON DESKTOP */
+        /* Action buttons overlay on document - ALWAYS VISIBLE */
         .doc-actions-overlay {
             position: absolute;
             inset: 0;
-            background: rgba(0, 0, 0, 0.7);
+            background: rgba(0, 0, 0, 0.6);
             display: flex;
-            flex-direction: column;
+            flex-direction: row;
             align-items: center;
             justify-content: center;
             gap: 8px;
@@ -418,20 +418,7 @@
         }
         
         .doc-upload-item.has-file .doc-actions-overlay {
-            opacity: 0;
-        }
-        
-        .doc-upload-item.has-file:hover .doc-actions-overlay,
-        .doc-upload-item.has-file:active .doc-actions-overlay {
             opacity: 1;
-        }
-        
-        /* Mobile: always show actions when has-file */
-        @media (hover: none) and (pointer: coarse) {
-            .doc-upload-item.has-file .doc-actions-overlay {
-                opacity: 1;
-                background: rgba(0, 0, 0, 0.5);
-            }
         }
         
         .doc-action-btn {
@@ -446,6 +433,7 @@
             border: none;
             color: white;
             transition: transform 0.2s ease;
+            flex-shrink: 0;
         }
         
         .doc-action-btn:hover {
@@ -656,6 +644,76 @@
         .attached-doc-thumbnail .doc-overlay i {
             color: white;
             font-size: 20px;
+        }
+
+        /* NEW: Scanned Documents Section Styles */
+        .scanned-doc-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+        }
+        
+        .scanned-doc-item {
+            aspect-ratio: 1;
+            border-radius: 12px;
+            position: relative;
+            overflow: hidden;
+            background: #f3f4f6;
+            border: 2px solid #e5e7eb;
+        }
+        
+        .dark .scanned-doc-item {
+            background: #1E293B;
+            border-color: #334155;
+        }
+        
+        .scanned-doc-item img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        
+        .scanned-doc-actions {
+            position: absolute;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.5);
+            display: flex;
+            flex-direction: row;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+        
+        .scanned-action-btn {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            font-size: 16px;
+            border: 2px solid rgba(255,255,255,0.3);
+            color: white;
+            transition: all 0.2s ease;
+            backdrop-filter: blur(4px);
+        }
+        
+        .scanned-action-btn:hover {
+            transform: scale(1.1);
+            border-color: rgba(255,255,255,0.8);
+        }
+        
+        .scanned-action-btn.view-btn {
+            background: rgba(16, 185, 129, 0.9);
+        }
+        
+        .scanned-action-btn.share-btn {
+            background: rgba(59, 130, 246, 0.9);
+        }
+        
+        .scanned-action-btn.delete-btn {
+            background: rgba(239, 68, 68, 0.9);
         }
     </style>
 <base target="_blank">
@@ -885,7 +943,7 @@
                     </div>
                 </div>
 
-                <!-- Additional Documents (No OCR) - UPDATED WITH INTEGRATED ACTIONS -->
+                <!-- Additional Documents (No OCR) - FIXED VERSION -->
                 <div class="bg-white dark:bg-dark-card rounded-2xl p-4 shadow-sm border border-gray-100 dark:border-gray-700">
                     <div class="flex items-center justify-between mb-3">
                         <h3 class="font-medium text-gray-900 dark:text-white flex items-center gap-2">
@@ -898,15 +956,15 @@
                     
                     <div class="doc-upload-grid">
                         <!-- Timesheet Front -->
-                        <div class="doc-upload-item" id="doc-1-item">
+                        <div class="doc-upload-item" id="doc-1-item" onclick="handleDocItemClick(1)">
                             <input type="file" id="file-doc-1" class="hidden" accept="image/*,application/pdf" onchange="handleDocSelect(event, 1)">
                             <i class="fas fa-file-image text-gray-400" id="doc-1-icon"></i>
                             <span class="doc-label text-gray-600 dark:text-gray-300">Timesheet<br>Front</span>
                             <span class="doc-status" id="doc-1-status">Add</span>
                             <img id="doc-1-preview" class="doc-preview-thumb hidden">
                             
-                            <!-- Action buttons overlay -->
-                            <div class="doc-actions-overlay" id="doc-1-actions">
+                            <!-- Action buttons overlay - ALWAYS VISIBLE when has-file -->
+                            <div class="doc-actions-overlay" id="doc-1-actions" style="display: none;">
                                 <button class="doc-action-btn view-btn" onclick="event.stopPropagation(); viewDoc(1)" title="View">
                                     <i class="fas fa-eye"></i>
                                 </button>
@@ -920,15 +978,15 @@
                         </div>
                         
                         <!-- Fuel And Expense -->
-                        <div class="doc-upload-item" id="doc-2-item">
+                        <div class="doc-upload-item" id="doc-2-item" onclick="handleDocItemClick(2)">
                             <input type="file" id="file-doc-2" class="hidden" accept="image/*,application/pdf" onchange="handleDocSelect(event, 2)">
                             <i class="fas fa-gas-pump text-gray-400" id="doc-2-icon"></i>
                             <span class="doc-label text-gray-600 dark:text-gray-300">Fuel &<br>Expense</span>
                             <span class="doc-status" id="doc-2-status">Add</span>
                             <img id="doc-2-preview" class="doc-preview-thumb hidden">
                             
-                            <!-- Action buttons overlay -->
-                            <div class="doc-actions-overlay" id="doc-2-actions">
+                            <!-- Action buttons overlay - ALWAYS VISIBLE when has-file -->
+                            <div class="doc-actions-overlay" id="doc-2-actions" style="display: none;">
                                 <button class="doc-action-btn view-btn" onclick="event.stopPropagation(); viewDoc(2)" title="View">
                                     <i class="fas fa-eye"></i>
                                 </button>
@@ -942,15 +1000,15 @@
                         </div>
                         
                         <!-- Circle Check Sheets -->
-                        <div class="doc-upload-item" id="doc-3-item">
+                        <div class="doc-upload-item" id="doc-3-item" onclick="handleDocItemClick(3)">
                             <input type="file" id="file-doc-3" class="hidden" accept="image/*,application/pdf" onchange="handleDocSelect(event, 3)">
                             <i class="fas fa-clipboard-check text-gray-400" id="doc-3-icon"></i>
                             <span class="doc-label text-gray-600 dark:text-gray-300">Circle Check<br>Sheets</span>
                             <span class="doc-status" id="doc-3-status">Add</span>
                             <img id="doc-3-preview" class="doc-preview-thumb hidden">
                             
-                            <!-- Action buttons overlay -->
-                            <div class="doc-actions-overlay" id="doc-3-actions">
+                            <!-- Action buttons overlay - ALWAYS VISIBLE when has-file -->
+                            <div class="doc-actions-overlay" id="doc-3-actions" style="display: none;">
                                 <button class="doc-action-btn view-btn" onclick="event.stopPropagation(); viewDoc(3)" title="View">
                                     <i class="fas fa-eye"></i>
                                 </button>
@@ -962,6 +1020,22 @@
                                 </button>
                             </div>
                         </div>
+                    </div>
+                </div>
+
+                <!-- NEW: Scanned Documents Section (Shows after upload) -->
+                <div id="scanned-documents-section" class="bg-white dark:bg-dark-card rounded-2xl p-4 shadow-sm border border-gray-100 dark:border-gray-700 hidden">
+                    <div class="flex items-center justify-between mb-3">
+                        <h3 class="font-medium text-gray-900 dark:text-white flex items-center gap-2">
+                            <i class="fas fa-images text-green-500"></i>
+                            Scanned Documents
+                        </h3>
+                        <span class="text-xs text-green-600 bg-green-50 dark:bg-green-900/20 px-2 py-1 rounded-full" id="scanned-count">0/3</span>
+                    </div>
+                    <p class="text-xs text-gray-500 dark:text-gray-400 mb-3">Manage your uploaded documents</p>
+                    
+                    <div class="scanned-doc-grid" id="scanned-doc-grid">
+                        <!-- Dynamically populated -->
                     </div>
                 </div>
 
@@ -1400,7 +1474,7 @@
 
     <script>
         // ==================== CONFIG ====================
-        const APP_VERSION = '5.2.0';
+        const APP_VERSION = '5.2.1';
         const GEMINI_MODEL = 'gemini-2.0-flash';
         
         let currentUser = null;
@@ -1427,6 +1501,12 @@
             1: 'Timesheet Front',
             2: 'Fuel & Expense',
             3: 'Circle Check'
+        };
+
+        const DOC_ICONS = {
+            1: 'fa-file-image',
+            2: 'fa-gas-pump',
+            3: 'fa-clipboard-check'
         };
 
         // Current viewer state
@@ -1601,7 +1681,7 @@
         // ==================== AUTH ====================
         function initAuth() {
             document.getElementById('version-display').textContent = 'v' + APP_VERSION;
-            document.getElementById('settings-version').textContent = 'v' + APP_VERSION + ' (Unified Docs)';
+            document.getElementById('settings-version').textContent = 'v' + APP_VERSION + ' (Fixed Docs)';
             
             const users = DB_LS.getUsers();
             const select = document.getElementById('user-select');
@@ -1972,7 +2052,18 @@
             });
         }
 
-        // ==================== DOCUMENT HANDLING (No OCR) - UPDATED ====================
+        // ==================== DOCUMENT HANDLING (FIXED VERSION) ====================
+        
+        // Handle click on document item - either trigger file input or show actions
+        function handleDocItemClick(docNum) {
+            const doc = currentDocs[docNum];
+            if (!doc) {
+                // No document yet, trigger file input
+                document.getElementById(`file-doc-${docNum}`).click();
+            }
+            // If document exists, the overlay buttons handle the actions
+        }
+
         async function handleDocSelect(event, docNum) {
             event.stopPropagation();
             const file = event.target.files[0];
@@ -1998,11 +2089,13 @@
                     dataUrl: e.target.result,
                     name: file.name,
                     size: file.size,
-                    type: file.type
+                    type: file.type,
+                    docName: DOC_NAMES[docNum]
                 };
                 
                 updateDocUI(docNum);
-                showToast(`${DOC_NAMES[docNum]} ready`);
+                updateScannedDocumentsSection();
+                showToast(`${DOC_NAMES[docNum]} added successfully`);
             };
             
             reader.onerror = () => {
@@ -2021,6 +2114,7 @@
             const icon = document.getElementById(`doc-${docNum}-icon`);
             const status = document.getElementById(`doc-${docNum}-status`);
             const preview = document.getElementById(`doc-${docNum}-preview`);
+            const actions = document.getElementById(`doc-${docNum}-actions`);
             
             item.classList.add('has-file');
             icon.className = 'hidden';
@@ -2033,6 +2127,51 @@
                 icon.className = 'fas fa-file-pdf text-red-500 text-2xl';
                 icon.classList.remove('hidden');
             }
+            
+            // Show action buttons overlay
+            if (actions) {
+                actions.style.display = 'flex';
+            }
+        }
+
+        // NEW: Update the scanned documents section
+        function updateScannedDocumentsSection() {
+            const section = document.getElementById('scanned-documents-section');
+            const grid = document.getElementById('scanned-doc-grid');
+            const countBadge = document.getElementById('scanned-count');
+            
+            const docs = Object.entries(currentDocs).filter(([k, v]) => v !== null);
+            const docCount = docs.length;
+            
+            if (docCount === 0) {
+                section.classList.add('hidden');
+                return;
+            }
+            
+            section.classList.remove('hidden');
+            countBadge.textContent = `${docCount}/3`;
+            
+            grid.innerHTML = docs.map(([num, doc]) => `
+                <div class="scanned-doc-item">
+                    ${doc.type.startsWith('image/') ? 
+                        `<img src="${doc.dataUrl}" alt="${doc.docName}">` :
+                        `<div class="w-full h-full flex items-center justify-center bg-red-100 dark:bg-red-900/30">
+                            <i class="fas fa-file-pdf text-3xl text-red-500"></i>
+                         </div>`
+                    }
+                    <div class="scanned-doc-actions">
+                        <button class="scanned-action-btn view-btn" onclick="viewDoc(${num})" title="View">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                        <button class="scanned-action-btn share-btn" onclick="shareDoc(${num})" title="Share">
+                            <i class="fas fa-share-alt"></i>
+                        </button>
+                        <button class="scanned-action-btn delete-btn" onclick="removeDoc(${num})" title="Delete">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                </div>
+            `).join('');
         }
 
         function viewDoc(docNum) {
@@ -2040,7 +2179,7 @@
             if (!doc) return;
             
             if (doc.type.startsWith('image/')) {
-                openFullscreenViewer(doc.dataUrl, doc.name, DOC_NAMES[docNum], doc);
+                openFullscreenViewer(doc.dataUrl, doc.name, doc.docName || DOC_NAMES[docNum], doc);
             } else {
                 // For PDFs, download
                 const link = document.createElement('a');
@@ -2064,8 +2203,8 @@
                     
                     if (navigator.canShare({ files: [file] })) {
                         await navigator.share({
-                            title: DOC_NAMES[docNum],
-                            text: `${DOC_NAMES[docNum]} - ${doc.name}`,
+                            title: doc.docName || DOC_NAMES[docNum],
+                            text: `${doc.docName || DOC_NAMES[docNum]} - ${doc.name}`,
                             files: [file]
                         });
                         return;
@@ -2091,19 +2230,26 @@
             const status = document.getElementById(`doc-${docNum}-status`);
             const preview = document.getElementById(`doc-${docNum}-preview`);
             const input = document.getElementById(`file-doc-${docNum}`);
+            const actions = document.getElementById(`doc-${docNum}-actions`);
             
             item.classList.remove('has-file');
             
             // Reset icon based on doc type
-            const iconClass = docNum === 1 ? 'fa-file-image' : 
-                             docNum === 2 ? 'fa-gas-pump' : 'fa-clipboard-check';
-            icon.className = `fas ${iconClass} text-gray-400`;
+            icon.className = `fas ${DOC_ICONS[docNum]} text-gray-400`;
             icon.classList.remove('hidden');
             
             status.textContent = 'Add';
             preview.src = '';
             preview.classList.add('hidden');
             input.value = '';
+            
+            // Hide action buttons
+            if (actions) {
+                actions.style.display = 'none';
+            }
+            
+            // Update scanned section
+            updateScannedDocumentsSection();
             
             showToast('Document removed');
         }
@@ -2904,6 +3050,30 @@ Rules:
             ocrAttempts = 0;
             lastOcrResult = null;
             
+            // Reset documents
+            for (let i = 1; i <= 3; i++) {
+                currentDocs[i] = null;
+                
+                const item = document.getElementById(`doc-${i}-item`);
+                const icon = document.getElementById(`doc-${i}-icon`);
+                const status = document.getElementById(`doc-${i}-status`);
+                const preview = document.getElementById(`doc-${i}-preview`);
+                const input = document.getElementById(`file-doc-${i}`);
+                const actions = document.getElementById(`doc-${i}-actions`);
+                
+                item.classList.remove('has-file');
+                icon.className = `fas ${DOC_ICONS[i]} text-gray-400`;
+                icon.classList.remove('hidden');
+                status.textContent = 'Add';
+                preview.src = '';
+                preview.classList.add('hidden');
+                input.value = '';
+                if (actions) actions.style.display = 'none';
+            }
+            
+            // Hide scanned documents section
+            document.getElementById('scanned-documents-section').classList.add('hidden');
+            
             // Reset timesheet upload
             document.getElementById('preview-front').src = '';
             document.getElementById('preview-front').classList.add('hidden');
@@ -2914,11 +3084,6 @@ Rules:
             document.getElementById('timesheet-upload-zone').classList.remove('required');
             document.getElementById('scan-date-select').classList.remove('auto-filled');
             document.getElementById('auto-detected-badge').classList.add('hidden');
-            
-            // Reset documents
-            for (let i = 1; i <= 3; i++) {
-                removeDoc(i);
-            }
             
             const today = new Date();
             const saturday = new Date(today);
@@ -3014,11 +3179,6 @@ Rules:
                     </button>
                 </div>
             `).join('');
-        }
-
-        async function restoreArchivedWeek(weekStart) {
-            await unarchiveWeek(weekStart);
-            switchView('history');
         }
 
         function manageArchives() {
@@ -3483,4 +3643,3 @@ Rules:
     </script>
 </body>
 </html>
-
