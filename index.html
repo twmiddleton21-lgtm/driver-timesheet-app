@@ -1356,13 +1356,13 @@
                     </button>
                 </div>
                 
-                <!-- Defect Number Search -->
+                <!-- Defect Number Search - UPDATED LABEL -->
                 <div class="defect-number-search rounded-2xl p-4 mb-4">
                     <label class="block text-sm font-medium text-amber-800 dark:text-amber-300 mb-2">
-                        <i class="fas fa-search mr-2"></i>Search Defect Number
+                        <i class="fas fa-search mr-2"></i>Search Defect # or Reg/Trailer
                     </label>
                     <div class="flex gap-2">
-                        <input type="text" id="defect-search-input" placeholder="Enter defect number..." 
+                        <input type="text" id="defect-search-input" placeholder="Enter defect number or reg..." 
                             class="flex-1 p-3 bg-white dark:bg-dark-surface rounded-xl border-2 border-amber-300 dark:border-amber-700 focus:border-amber-500 outline-none font-mono text-gray-900 dark:text-white">
                         <button onclick="searchDefectNumber()" class="px-4 py-2 bg-amber-500 text-white rounded-xl hover:bg-amber-600 transition-colors">
                             <i class="fas fa-search"></i>
@@ -1371,6 +1371,9 @@
                             <i class="fas fa-times"></i>
                         </button>
                     </div>
+                    <p class="text-xs text-amber-700 dark:text-amber-400 mt-2">
+                        <i class="fas fa-info-circle mr-1"></i>Searches both defect numbers and registration/trailer numbers
+                    </p>
                 </div>
 
                 <div class="flex gap-2 mb-4 overflow-x-auto pb-2">
@@ -4359,17 +4362,23 @@ Rules:
             `).join('');
         }
 
+        // ==================== UPDATED VOR SEARCH FUNCTION ====================
         async function searchDefectNumber() {
-            const searchTerm = document.getElementById('defect-search-input').value.trim().toLowerCase();
+            const searchTerm = document.getElementById('defect-search-input').value.trim();
             if (!searchTerm) {
                 renderHistory();
                 return;
             }
             
+            const searchTermLower = searchTerm.toLowerCase();
             const vorReports = await getVORReportsForUser(currentUser.username);
-            const filtered = vorReports.filter(v => 
-                v.defectNumber.toLowerCase().includes(searchTerm)
-            );
+            
+            // Search in both defectNumber and regNumber fields
+            const filtered = vorReports.filter(v => {
+                const defectMatch = v.defectNumber && v.defectNumber.toLowerCase().includes(searchTermLower);
+                const regMatch = v.regNumber && v.regNumber.toLowerCase().includes(searchTermLower);
+                return defectMatch || regMatch;
+            });
             
             const list = document.getElementById('vor-history-list');
             if (filtered.length === 0) {
@@ -4393,11 +4402,19 @@ Rules:
             
             // Clear timesheets when searching defects
             document.getElementById('history-list').innerHTML = '<div class="text-center py-4 text-gray-400 text-sm"><p>Search active - showing defects only</p></div>';
+            
+            // Show search summary toast
+            if (filtered.length > 0) {
+                showToast(`Found ${filtered.length} VOR report${filtered.length !== 1 ? 's' : ''} matching "${searchTerm}"`);
+            } else {
+                showToast(`No VOR reports found for "${searchTerm}"`, 'error');
+            }
         }
 
         function clearDefectSearch() {
             document.getElementById('defect-search-input').value = '';
             renderHistory();
+            showToast('Search cleared');
         }
 
         function filterHistory(type) {
