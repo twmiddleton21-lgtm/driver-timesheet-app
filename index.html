@@ -21,7 +21,8 @@
                         danger: '#EF4444',
                         dark: '#0F172A',
                         'dark-card': '#1E293B',
-                        'dark-surface': '#334155'
+                        'dark-surface': '#334155',
+                        'vor-orange': '#F97316'
                     }
                 }
             }
@@ -54,6 +55,7 @@
         .calendar-day.has-data { background: linear-gradient(135deg, #10B981 0%, #059669 100%); color: white; box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3); }
         .calendar-day.has-docs { background: linear-gradient(135deg, #8B5CF6 0%, #7C3AED 100%); color: white; box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3); }
         .calendar-day.has-data.has-docs { background: linear-gradient(135deg, #10B981 0%, #8B5CF6 100%); }
+        .calendar-day.has-vor { background: linear-gradient(135deg, #F97316 0%, #EA580C 100%); color: white; box-shadow: 0 4px 12px rgba(249, 115, 22, 0.3); }
         .calendar-day.today { box-shadow: 0 0 0 3px #3B82F6, 0 0 0 5px rgba(59, 130, 246, 0.3); z-index: 10; }
         .calendar-day.today.has-data { box-shadow: 0 0 0 3px #3B82F6, 0 0 0 5px rgba(59, 130, 246, 0.5); }
         .calendar-day.other-month { opacity: 0.3; }
@@ -62,9 +64,12 @@
         .upload-zone.active { border-color: #3B82F6; background-color: rgba(59, 130, 246, 0.05); transform: scale(1.02); }
         .upload-zone.has-file { border-color: #10B981; background-color: rgba(16, 185, 129, 0.05); }
         .upload-zone.required { border-color: #EF4444; background-color: rgba(239, 68, 68, 0.05); }
+        .upload-zone.vor-zone { border-color: #F97316; }
+        .upload-zone.vor-zone.has-file { border-color: #F97316; background-color: rgba(249, 115, 22, 0.05); }
         
         .nav-item { transition: all 0.3s ease; }
         .nav-item.active { color: #3B82F6; }
+        .nav-item.active.vor-active { color: #F97316; }
         .nav-item.active i { transform: translateY(-2px); }
         
         .fade-in { animation: fadeIn 0.3s ease-out; }
@@ -681,6 +686,35 @@
             background: #1E293B;
             color: white;
         }
+
+        /* VOR specific styles */
+        .vor-badge {
+            background: linear-gradient(135deg, #F97316 0%, #EA580C 100%);
+        }
+        
+        .vor-card {
+            border-left: 4px solid #F97316;
+        }
+        
+        .defect-number-search {
+            background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+            border: 2px solid #F59E0B;
+        }
+        
+        .dark .defect-number-search {
+            background: linear-gradient(135deg, #451a03 0%, #78350f 100%);
+            border-color: #F59E0B;
+        }
+        
+        .vor-section-header {
+            background: linear-gradient(135deg, #fff7ed 0%, #ffedd5 100%);
+            border: 1px solid #fdba74;
+        }
+        
+        .dark .vor-section-header {
+            background: linear-gradient(135deg, #431407 0%, #7c2d12 100%);
+            border-color: #ea580c;
+        }
     </style>
 <base target="_blank">
 </head>
@@ -767,8 +801,8 @@
                         <p class="text-xs text-gray-500 dark:text-gray-400" id="sync-status"><i class="fas fa-database text-green-500"></i> IndexedDB Storage</p>
                     </div>
                 </div>
-                <button onclick="logout()" class="touch-btn flex items-center justify-center text-gray-500 hover:text-red-500 transition-colors">
-                    <i class="fas fa-sign-out-alt text-xl"></i>
+                <button onclick="switchView('settings')" class="touch-btn flex items-center justify-center text-gray-500 hover:text-primary transition-colors">
+                    <i class="fas fa-cog text-xl"></i>
                 </button>
             </div>
         </header>
@@ -803,6 +837,7 @@
                     <div class="flex items-center justify-center gap-4 mt-4 text-xs text-gray-500 dark:text-gray-400 flex-wrap">
                         <div class="flex items-center gap-1"><div class="w-3 h-3 rounded bg-green-500"></div><span>Timesheet</span></div>
                         <div class="flex items-center gap-1"><div class="w-3 h-3 rounded bg-purple-500"></div><span>Documents</span></div>
+                        <div class="flex items-center gap-1"><div class="w-3 h-3 rounded bg-orange-500"></div><span>VOR</span></div>
                         <div class="flex items-center gap-1"><div class="w-3 h-3 rounded bg-gradient-to-r from-green-500 to-purple-500"></div><span>Both</span></div>
                         <div class="flex items-center gap-1"><div class="w-3 h-3 rounded-full bg-primary ring-2 ring-primary ring-offset-2"></div><span>Today</span></div>
                     </div>
@@ -1098,20 +1133,259 @@
                 </button>
             </div>
 
+            <!-- VOR Scan View -->
+            <div id="vor-view" class="view-section hidden fade-in space-y-4">
+                <div class="text-center mb-4">
+                    <h2 class="text-xl font-bold text-gray-900 dark:text-white flex items-center justify-center gap-2">
+                        <i class="fas fa-exclamation-triangle text-orange-500"></i>
+                        VOR Defect Report
+                    </h2>
+                    <p class="text-sm text-gray-500 dark:text-gray-400">Vehicle Off Road - Report defects</p>
+                </div>
+
+                <!-- API Key Warning -->
+                <div id="vor-api-key-warning" class="hidden bg-amber-50 dark:bg-amber-900/20 rounded-2xl p-4 border border-amber-200 dark:border-amber-800">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 bg-amber-100 dark:bg-amber-900/30 rounded-full flex items-center justify-center">
+                            <i class="fas fa-key text-amber-600"></i>
+                        </div>
+                        <div class="flex-1">
+                            <p class="text-sm font-bold text-amber-800 dark:text-amber-300">Gemini API Key Required</p>
+                            <p class="text-xs text-amber-700 dark:text-amber-400">Add your API key in Settings to enable AI scanning</p>
+                        </div>
+                        <button onclick="showGeminiKeyModal()" class="px-3 py-1 bg-amber-600 text-white rounded-lg text-xs font-medium">Add Key</button>
+                    </div>
+                </div>
+
+                <!-- Date -->
+                <div class="bg-white dark:bg-dark-card rounded-2xl p-4 shadow-sm border border-gray-100 dark:border-gray-700">
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        Date of Defect
+                        <span id="vor-auto-detected-badge" class="hidden ml-2 text-xs bg-orange-100 text-orange-700 px-2 py-0.5 rounded-full">
+                            <i class="fas fa-robot mr-1"></i>Auto-detected
+                        </span>
+                    </label>
+                    <input type="date" id="vor-date-select" class="w-full p-3 bg-gray-100 dark:bg-dark-surface rounded-xl border-2 border-transparent focus:border-orange-500 outline-none">
+                </div>
+
+                <!-- Defect Number -->
+                <div class="bg-white dark:bg-dark-card rounded-2xl p-4 shadow-sm border border-gray-100 dark:border-gray-700">
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        Defect Number
+                        <span id="vor-defect-number-badge" class="hidden ml-2 text-xs bg-orange-100 text-orange-700 px-2 py-0.5 rounded-full">
+                            <i class="fas fa-robot mr-1"></i>Auto-detected
+                        </span>
+                    </label>
+                    <input type="text" id="vor-defect-number" placeholder="e.g., 092018" 
+                        class="w-full p-3 bg-gray-100 dark:bg-dark-surface rounded-xl border-2 border-transparent focus:border-orange-500 outline-none font-mono text-lg">
+                </div>
+
+                <!-- Reg/Trailer Number -->
+                <div class="bg-white dark:bg-dark-card rounded-2xl p-4 shadow-sm border border-gray-100 dark:border-gray-700">
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        Reg/Trailer Number
+                        <span id="vor-reg-badge" class="hidden ml-2 text-xs bg-orange-100 text-orange-700 px-2 py-0.5 rounded-full">
+                            <i class="fas fa-robot mr-1"></i>Auto-detected
+                        </span>
+                    </label>
+                    <input type="text" id="vor-reg-number" placeholder="e.g., WU69 XDY" 
+                        class="w-full p-3 bg-gray-100 dark:bg-dark-surface rounded-xl border-2 border-transparent focus:border-orange-500 outline-none font-mono text-lg uppercase">
+                </div>
+
+                <!-- Time -->
+                <div class="bg-white dark:bg-dark-card rounded-2xl p-4 shadow-sm border border-gray-100 dark:border-gray-700">
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        Time
+                        <span id="vor-time-badge" class="hidden ml-2 text-xs bg-orange-100 text-orange-700 px-2 py-0.5 rounded-full">
+                            <i class="fas fa-robot mr-1"></i>Auto-detected
+                        </span>
+                    </label>
+                    <input type="time" id="vor-time" 
+                        class="w-full p-3 bg-gray-100 dark:bg-dark-surface rounded-xl border-2 border-transparent focus:border-orange-500 outline-none">
+                </div>
+
+                <!-- Nature of Defect -->
+                <div class="bg-white dark:bg-dark-card rounded-2xl p-4 shadow-sm border border-gray-100 dark:border-gray-700">
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        Nature of Defect
+                        <span id="vor-nature-badge" class="hidden ml-2 text-xs bg-orange-100 text-orange-700 px-2 py-0.5 rounded-full">
+                            <i class="fas fa-robot mr-1"></i>Auto-detected
+                        </span>
+                    </label>
+                    <textarea id="vor-nature" rows="3" placeholder="Describe the defect..." 
+                        class="w-full p-3 bg-gray-100 dark:bg-dark-surface rounded-xl border-2 border-transparent focus:border-orange-500 outline-none resize-none"></textarea>
+                </div>
+
+                <!-- Main VOR Photo (Required) -->
+                <div class="bg-white dark:bg-dark-card rounded-2xl p-4 shadow-sm border border-gray-100 dark:border-gray-700">
+                    <div class="flex items-center justify-between mb-3">
+                        <h3 class="font-medium text-gray-900 dark:text-white flex items-center gap-2">
+                            <i class="fas fa-exclamation-triangle text-orange-500"></i>
+                            Defect Photo <span class="text-xs bg-red-100 text-red-600 px-2 py-0.5 rounded font-bold">REQUIRED</span>
+                        </h3>
+                        <span class="text-xs text-red-500 font-medium" id="vor-photo-status">Required</span>
+                    </div>
+                    <div class="upload-zone vor-zone rounded-xl p-6 text-center cursor-pointer relative overflow-hidden bg-gray-50 dark:bg-dark-surface image-preview-container" id="vor-upload-zone"
+                         onclick="document.getElementById('vor-file-main').click()"
+                         ondrop="handleVORDrop(event)" ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)">
+                        <input type="file" id="vor-file-main" class="hidden" accept="image/*" capture="environment" onchange="handleVORFileSelect(event)">
+                        <div id="vor-upload-default">
+                            <i class="fas fa-camera text-3xl text-orange-400 mb-2"></i>
+                            <p class="text-sm text-gray-600 dark:text-gray-400 font-medium">Tap to take defect photo</p>
+                            <p class="text-xs text-gray-400 mt-1">This is required for processing</p>
+                        </div>
+                        <img id="vor-preview-main" class="hidden w-full h-48 object-cover rounded-lg mx-auto">
+                        <div id="vor-processing-indicator" class="image-processing-overlay hidden">
+                            <div class="text-center">
+                                <i class="fas fa-spinner fa-spin text-2xl mb-2"></i>
+                                <p>Processing...</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Additional Photo (Optional) -->
+                <div class="bg-white dark:bg-dark-card rounded-2xl p-4 shadow-sm border border-gray-100 dark:border-gray-700">
+                    <div class="flex items-center justify-between mb-3">
+                        <h3 class="font-medium text-gray-900 dark:text-white flex items-center gap-2">
+                            <i class="fas fa-image text-gray-400"></i>
+                            Additional Photo <span class="text-xs bg-gray-100 text-gray-500 px-2 py-0.5 rounded font-medium">OPTIONAL</span>
+                        </h3>
+                        <span class="text-xs text-gray-400 font-medium" id="vor-additional-status">Optional</span>
+                    </div>
+                    <div class="upload-zone rounded-xl p-6 text-center cursor-pointer relative overflow-hidden bg-gray-50 dark:bg-dark-surface image-preview-container" id="vor-additional-zone"
+                         onclick="document.getElementById('vor-file-additional').click()">
+                        <input type="file" id="vor-file-additional" class="hidden" accept="image/*" capture="environment" onchange="handleVORAdditionalSelect(event)">
+                        <div id="vor-additional-default">
+                            <i class="fas fa-plus-circle text-3xl text-gray-400 mb-2"></i>
+                            <p class="text-sm text-gray-600 dark:text-gray-400 font-medium">Tap to add optional photo</p>
+                        </div>
+                        <img id="vor-preview-additional" class="hidden w-full h-48 object-cover rounded-lg mx-auto">
+                    </div>
+                </div>
+
+                <!-- VOR OCR Error -->
+                <div id="vor-ocr-error" class="hidden bg-red-50 dark:bg-red-900/20 rounded-2xl p-4 border border-red-200 dark:border-red-800">
+                    <div class="flex items-center gap-3">
+                        <i class="fas fa-exclamation-triangle text-red-500 text-xl"></i>
+                        <div class="flex-1">
+                            <p class="text-sm font-bold text-red-800 dark:text-red-300">Extraction Failed</p>
+                            <p class="text-xs text-red-600 dark:text-red-400" id="vor-error-message">Please try again or enter manually</p>
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-2 gap-2 mt-3">
+                        <button onclick="retryVOROCR()" class="py-2 bg-red-100 dark:bg-red-900/30 text-red-700 rounded-lg text-sm font-medium">
+                            <i class="fas fa-redo mr-1"></i>Retry Scan
+                        </button>
+                        <button onclick="showVORManualEntry()" class="py-2 bg-orange-100 dark:bg-orange-900/30 text-orange-700 rounded-lg text-sm font-medium">
+                            <i class="fas fa-edit mr-1"></i>Manual Entry
+                        </button>
+                    </div>
+                </div>
+
+                <!-- VOR OCR Progress -->
+                <div id="vor-ocr-progress" class="hidden bg-white dark:bg-dark-card rounded-2xl p-4 shadow-sm border border-gray-100 dark:border-gray-700">
+                    <div class="flex items-center justify-between mb-2">
+                        <span class="text-sm font-medium text-gray-700 dark:text-gray-300" id="vor-ocr-status-text">Initializing...</span>
+                        <span class="text-sm text-orange-500" id="vor-ocr-percentage">0%</span>
+                    </div>
+                    <div class="w-full bg-gray-200 dark:bg-dark-surface rounded-full h-2 overflow-hidden">
+                        <div id="vor-ocr-progress-bar" class="bg-orange-500 h-2 rounded-full transition-all duration-300 progress-bar-animated" style="width: 0%"></div>
+                    </div>
+                    <div class="flex items-center gap-2 mt-2 text-xs text-gray-500">
+                        <i class="fas fa-circle-notch fa-spin" id="vor-ocr-spinner"></i>
+                        <span id="vor-ocr-stage">Preparing image...</span>
+                    </div>
+                </div>
+
+                <!-- VOR Auto Results -->
+                <div id="vor-auto-results" class="hidden space-y-4">
+                    <div class="bg-orange-50 dark:bg-orange-900/20 rounded-2xl p-4 border border-orange-200 dark:border-orange-800">
+                        <div class="flex items-center justify-between mb-2">
+                            <h3 class="font-bold text-orange-800 dark:text-orange-300">
+                                <i class="fas fa-check-circle mr-2"></i>Defect Detected
+                            </h3>
+                            <span class="text-xs bg-orange-200 dark:bg-orange-800 text-orange-800 dark:text-orange-200 px-2 py-1 rounded-full" id="vor-confidence-badge">High Confidence</span>
+                        </div>
+                        <div class="space-y-2 text-sm">
+                            <div class="flex justify-between">
+                                <span class="text-gray-500 dark:text-gray-400">Defect Number:</span>
+                                <span class="font-bold text-gray-900 dark:text-white font-mono" id="vor-result-defect-number">--</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-gray-500 dark:text-gray-400">Date:</span>
+                                <span class="font-bold text-gray-900 dark:text-white" id="vor-result-date">--</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-gray-500 dark:text-gray-400">Time:</span>
+                                <span class="font-bold text-gray-900 dark:text-white" id="vor-result-time">--</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-gray-500 dark:text-gray-400">Reg/Trailer:</span>
+                                <span class="font-bold text-gray-900 dark:text-white font-mono" id="vor-result-reg">--</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <button onclick="startVOROCR()" id="vor-scan-btn" class="w-full bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white font-bold py-4 rounded-xl shadow-lg shadow-orange-500/30 transition-all transform active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed mt-4">
+                    <i class="fas fa-exclamation-triangle mr-2"></i>Scan Defect Report
+                </button>
+
+                <button onclick="saveVORReport()" id="vor-save-btn" class="hidden w-full bg-orange-500 hover:bg-orange-600 text-white font-bold py-4 rounded-xl shadow-lg shadow-orange-500/30 transition-all transform active:scale-95 mt-4">
+                    <i class="fas fa-save mr-2"></i>Save VOR Report
+                </button>
+            </div>
+
             <!-- History View -->
             <div id="history-view" class="view-section hidden fade-in">
                 <div class="flex items-center justify-between mb-4">
-                    <h2 class="text-xl font-bold text-gray-900 dark:text-white">All Timesheets</h2>
+                    <h2 class="text-xl font-bold text-gray-900 dark:text-white">All Records</h2>
                     <button onclick="showArchiveView()" class="text-sm text-primary hover:underline">
                         <i class="fas fa-archive mr-1"></i>View Archive
                     </button>
                 </div>
+                
+                <!-- Defect Number Search -->
+                <div class="defect-number-search rounded-2xl p-4 mb-4">
+                    <label class="block text-sm font-medium text-amber-800 dark:text-amber-300 mb-2">
+                        <i class="fas fa-search mr-2"></i>Search Defect Number
+                    </label>
+                    <div class="flex gap-2">
+                        <input type="text" id="defect-search-input" placeholder="Enter defect number..." 
+                            class="flex-1 p-3 bg-white dark:bg-dark-surface rounded-xl border-2 border-amber-300 dark:border-amber-700 focus:border-amber-500 outline-none font-mono">
+                        <button onclick="searchDefectNumber()" class="px-4 py-2 bg-amber-500 text-white rounded-xl hover:bg-amber-600 transition-colors">
+                            <i class="fas fa-search"></i>
+                        </button>
+                        <button onclick="clearDefectSearch()" class="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-xl hover:bg-gray-300 transition-colors">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                </div>
+
                 <div class="flex gap-2 mb-4 overflow-x-auto pb-2">
                     <button onclick="filterHistory('all')" class="filter-btn active px-4 py-2 rounded-full bg-primary text-white text-sm font-medium whitespace-nowrap" data-filter="all">All</button>
                     <button onclick="filterHistory('month')" class="filter-btn px-4 py-2 rounded-full bg-gray-200 dark:bg-dark-surface text-gray-700 dark:text-gray-300 text-sm font-medium whitespace-nowrap" data-filter="month">This Month</button>
                     <button onclick="filterHistory('year')" class="filter-btn px-4 py-2 rounded-full bg-gray-200 dark:bg-dark-surface text-gray-700 dark:text-gray-300 text-sm font-medium whitespace-nowrap" data-filter="year">This Year</button>
                 </div>
-                <div id="history-list" class="space-y-3"></div>
+
+                <!-- Timesheets Section -->
+                <div class="mb-6">
+                    <h3 class="font-semibold text-gray-900 dark:text-white mb-3 flex items-center gap-2">
+                        <i class="fas fa-calendar-week text-primary"></i>
+                        Timesheets
+                    </h3>
+                    <div id="history-list" class="space-y-3"></div>
+                </div>
+
+                <!-- VOR Reports Section -->
+                <div>
+                    <h3 class="font-semibold text-gray-900 dark:text-white mb-3 flex items-center gap-2">
+                        <i class="fas fa-exclamation-triangle text-orange-500"></i>
+                        VOR Defect Reports
+                    </h3>
+                    <div id="vor-history-list" class="space-y-3"></div>
+                </div>
             </div>
 
             <!-- Archive View -->
@@ -1222,6 +1496,7 @@
                         <p><strong>OCR Engine:</strong> Google Gemini 2.0 Flash AI</p>
                         <p><strong>Storage:</strong> IndexedDB (Local Device)</p>
                         <p class="text-xs">Required timesheet OCR + 3 additional document uploads per week.</p>
+                        <p class="text-xs text-orange-600">VOR Defect reporting with AI extraction.</p>
                     </div>
                 </div>
 
@@ -1246,6 +1521,14 @@
                             <i class="fas fa-chevron-right text-gray-400"></i>
                         </button>
 
+                        <button onclick="showDeleteVOROptions()" class="w-full flex items-center justify-between p-3 bg-gray-100 dark:bg-dark-surface rounded-xl hover:bg-orange-50 dark:hover:bg-orange-900/20 transition-colors text-left">
+                            <div>
+                                <p class="font-medium text-gray-900 dark:text-white">Delete VOR Reports</p>
+                                <p class="text-xs text-gray-500">Manage defect reports</p>
+                            </div>
+                            <i class="fas fa-chevron-right text-gray-400"></i>
+                        </button>
+
                         <button onclick="manageArchives()" class="w-full flex items-center justify-between p-3 bg-gray-100 dark:bg-dark-surface rounded-xl hover:bg-purple-50 dark:hover:bg-purple-900/20 transition-colors text-left">
                             <div>
                                 <p class="font-medium text-gray-900 dark:text-white">Manage Archives</p>
@@ -1258,6 +1541,15 @@
                             <i class="fas fa-trash-alt mr-2"></i>Delete All Timesheet Data
                         </button>
                     </div>
+                </div>
+
+                <!-- Logout Button -->
+                <div class="bg-white dark:bg-dark-card rounded-2xl p-4 shadow-sm border border-gray-100 dark:border-gray-700">
+                    <h3 class="font-semibold text-gray-900 dark:text-white mb-3"><i class="fas fa-sign-out-alt text-primary mr-2"></i>Account</h3>
+                    <button onclick="logout()" class="w-full p-4 bg-gray-100 dark:bg-dark-surface hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-xl font-bold transition-all flex items-center justify-center gap-2">
+                        <i class="fas fa-sign-out-alt"></i>
+                        Log Out
+                    </button>
                 </div>
 
                 <!-- Account Deletion -->
@@ -1289,13 +1581,15 @@
                     </div>
                     <span class="text-xs font-medium">Scan</span>
                 </button>
+                <button onclick="switchView('vor')" class="nav-item flex flex-col items-center gap-1 text-gray-400 flex-1 h-full justify-center vor-nav-item" data-view="vor">
+                    <div class="w-12 h-12 bg-gradient-to-br from-orange-500 to-red-500 rounded-full flex items-center justify-center text-white shadow-lg shadow-orange-500/30 -mt-6 border-4 border-gray-50 dark:border-dark">
+                        <i class="fas fa-exclamation-triangle text-lg"></i>
+                    </div>
+                    <span class="text-xs font-medium">VOR</span>
+                </button>
                 <button onclick="switchView('history')" class="nav-item flex flex-col items-center gap-1 text-gray-400 flex-1 h-full justify-center" data-view="history">
                     <i class="fas fa-list text-xl transition-transform"></i>
                     <span class="text-xs font-medium">History</span>
-                </button>
-                <button onclick="switchView('settings')" class="nav-item flex flex-col items-center gap-1 text-gray-400 flex-1 h-full justify-center" data-view="settings">
-                    <i class="fas fa-cog text-xl transition-transform"></i>
-                    <span class="text-xs font-medium">Settings</span>
                 </button>
             </div>
         </nav>
@@ -1435,6 +1729,25 @@
         </div>
     </div>
 
+    <!-- VOR Detail Modal -->
+    <div id="vor-detail-modal" class="fixed inset-0 z-50 hidden">
+        <div class="absolute inset-0 bg-black/50 backdrop-blur-sm" onclick="closeVORDetailModal()"></div>
+        <div class="absolute inset-x-0 bottom-0 md:inset-0 md:flex md:items-center md:justify-center p-4">
+            <div class="bg-white dark:bg-dark-card w-full md:max-w-2xl md:rounded-2xl rounded-t-2xl shadow-2xl slide-up max-h-[90vh] overflow-y-auto">
+                <div class="sticky top-0 bg-white dark:bg-dark-card border-b border-gray-200 dark:border-gray-700 p-4 flex justify-between items-center z-10">
+                    <h3 class="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                        <i class="fas fa-exclamation-triangle text-orange-500"></i>
+                        VOR Defect Report
+                    </h3>
+                    <button onclick="closeVORDetailModal()" class="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 dark:hover:bg-dark-surface">
+                        <i class="fas fa-times text-gray-500"></i>
+                    </button>
+                </div>
+                <div class="p-4 space-y-4" id="vor-detail-content"></div>
+            </div>
+        </div>
+    </div>
+
     <!-- Toast -->
     <div id="toast" class="fixed top-20 left-4 right-4 md:left-auto md:right-4 md:w-auto bg-gray-900 dark:bg-white text-white dark:text-gray-900 px-6 py-3 rounded-xl shadow-lg transform -translate-y-20 opacity-0 transition-all duration-300 z-50 flex items-center gap-3 max-w-md">
         <i id="toast-icon" class="fas fa-check-circle text-green-400 dark:text-green-600"></i>
@@ -1466,6 +1779,12 @@
             3: null
         };
 
+        // VOR State
+        let vorCurrentImage = null;
+        let vorProcessedImage = null;
+        let vorAdditionalImage = null;
+        let vorAutoDetectedData = null;
+
         const DOC_NAMES = {
             1: 'Timesheet Front',
             2: 'Fuel & Expense',
@@ -1480,16 +1799,17 @@
 
         // Current viewer state
         let currentViewerDoc = null;
-        let currentTimesheetForShare = null; // NEW: Store timesheet for sharing from week modal
+        let currentTimesheetForShare = null;
 
         // ==================== INDEXEDDB ====================
         const DB_NAME = 'DriverTimesheetDB_v5';
-        const DB_VERSION = 2;
+        const DB_VERSION = 3; // Incremented for VOR store
         const STORES = {
             images: 'images',
             timesheets: 'timesheets',
             archives: 'archives',
-            documents: 'documents'
+            documents: 'documents',
+            vorReports: 'vorReports'
         };
         
         async function initImageDB() {
@@ -1523,6 +1843,12 @@
                     
                     if (!db.objectStoreNames.contains(STORES.archives)) {
                         db.createObjectStore(STORES.archives, { keyPath: 'id' });
+                    }
+
+                    if (!db.objectStoreNames.contains(STORES.vorReports)) {
+                        const vorStore = db.createObjectStore(STORES.vorReports, { keyPath: 'id' });
+                        vorStore.createIndex('defectNumber', 'defectNumber', { unique: false });
+                        vorStore.createIndex('date', 'date', { unique: false });
                     }
                 };
             });
@@ -1575,6 +1901,12 @@
         async function getDocumentsForWeek(weekStart) {
             const allDocs = await getAllFromStore(STORES.documents);
             return allDocs.filter(doc => doc.weekStart === weekStart);
+        }
+
+        async function getVORReportsForUser(username) {
+            const allReports = await getAllFromStore(STORES.vorReports);
+            return allReports.filter(report => report.username === username)
+                .sort((a, b) => new Date(b.date) - new Date(a.date));
         }
 
         async function clearAllStores() {
@@ -1651,7 +1983,7 @@
         // ==================== AUTH ====================
         function initAuth() {
             document.getElementById('version-display').textContent = 'v' + APP_VERSION;
-            document.getElementById('settings-version').textContent = 'v' + APP_VERSION + ' (Share Fix)';
+            document.getElementById('settings-version').textContent = 'v' + APP_VERSION + ' (VOR Edition)';
             
             const users = DB_LS.getUsers();
             const select = document.getElementById('user-select');
@@ -1699,6 +2031,7 @@
             const btnText = document.getElementById('api-key-btn-text');
             const status = document.getElementById('api-key-status');
             const warning = document.getElementById('api-key-warning');
+            const vorWarning = document.getElementById('vor-api-key-warning');
             
             if (isConfigured) {
                 if (badge) {
@@ -1708,6 +2041,7 @@
                 if (btnText) btnText.textContent = 'Update API Key';
                 if (status) status.textContent = 'Key ending in ...' + GEMINI_API_KEY.slice(-4);
                 if (warning) warning.classList.add('hidden');
+                if (vorWarning) vorWarning.classList.add('hidden');
             } else {
                 if (badge) {
                     badge.textContent = 'Not Configured';
@@ -1717,6 +2051,9 @@
                 if (status) status.textContent = 'Required for AI scanning';
                 if (warning && document.getElementById('scan-view').classList.contains('hidden') === false) {
                     warning.classList.remove('hidden');
+                }
+                if (vorWarning && document.getElementById('vor-view').classList.contains('hidden') === false) {
+                    vorWarning.classList.remove('hidden');
                 }
             }
         }
@@ -1747,6 +2084,9 @@
             saturday.setDate(today.getDate() + (6 - today.getDay()));
             document.getElementById('scan-date-select').value = formatDateForInput(saturday);
             updateScanWeekDisplay();
+            
+            // Set VOR date to today
+            document.getElementById('vor-date-select').value = formatDateForInput(today);
             
             initTheme();
             renderCalendar();
@@ -1842,6 +2182,7 @@
             const timesheets = DB_LS.getTimesheets(currentUser.username);
             const weekData = {};
             const docData = {};
+            const vorData = {};
             
             timesheets.forEach(ts => {
                 const date = parseDate(ts.weekStart);
@@ -1856,6 +2197,15 @@
                 if (date.getFullYear() === year && date.getMonth() === month) {
                     if (!docData[date.getDate()]) docData[date.getDate()] = 0;
                     docData[date.getDate()]++;
+                }
+            });
+
+            // Get VOR reports for calendar
+            const vorReports = await getVORReportsForUser(currentUser.username);
+            vorReports.forEach(vor => {
+                const date = parseDate(vor.date);
+                if (date.getFullYear() === year && date.getMonth() === month) {
+                    vorData[date.getDate()] = vor;
                 }
             });
             
@@ -1876,9 +2226,10 @@
                 const isToday = (day === todayDate && month === todayMonth && year === todayYear);
                 const hasData = weekData[day];
                 const hasDocs = docData[day] > 0;
-                const cell = createCalendarDay(day, false, isToday, hasData, hasDocs);
+                const hasVOR = vorData[day];
+                const cell = createCalendarDay(day, false, isToday, hasData, hasDocs, hasVOR);
                 
-                if (hasData || hasDocs) cell.onclick = () => selectWeek(weekData[day], day, hasDocs);
+                if (hasData || hasDocs || hasVOR) cell.onclick = () => selectWeek(weekData[day], day, hasDocs, hasVOR);
                 else cell.onclick = () => selectEmptyWeek(year, month, day);
                 
                 grid.appendChild(cell);
@@ -1890,7 +2241,7 @@
             }
         }
 
-        function createCalendarDay(day, isOtherMonth, isToday = false, hasData = false, hasDocs = false) {
+        function createCalendarDay(day, isOtherMonth, isToday = false, hasData = false, hasDocs = false, hasVOR = false) {
             const div = document.createElement('div');
             let className = 'calendar-day';
             
@@ -1900,6 +2251,7 @@
             if (isToday) className += ' today';
             if (hasData) className += ' has-data';
             if (hasDocs) className += ' has-docs';
+            if (hasVOR) className += ' has-vor';
             
             div.className = className;
             
@@ -1909,14 +2261,20 @@
             }
             
             let docIndicator = '';
-            if (hasDocs && !hasData) {
+            if (hasDocs && !hasData && !hasVOR) {
                 docIndicator = '<div class="absolute bottom-1 w-1.5 h-1.5 bg-purple-500 rounded-full"></div>';
+            }
+            
+            let vorIndicator = '';
+            if (hasVOR) {
+                vorIndicator = '<div class="absolute bottom-1 right-1 w-2 h-2 bg-orange-500 rounded-full"></div>';
             }
             
             div.innerHTML = `
                 <span class="text-lg font-bold">${day}</span>
                 ${hasData ? '<div style="background: rgba(255,255,255,0.5); height: 3px; width: 60%; border-radius: 2px; margin-top: 2px;"></div>' : ''}
                 ${docIndicator}
+                ${vorIndicator}
                 ${todayIndicator}
             `;
             return div;
@@ -1927,7 +2285,7 @@
             renderCalendar();
         }
 
-        async function selectWeek(timesheet, day, hasDocs) {
+        async function selectWeek(timesheet, day, hasDocs, hasVOR) {
             selectedWeekStart = timesheet ? timesheet.weekStart : 
                 formatDateForInput(new Date(currentMonth.getFullYear(), currentMonth.getMonth(), day));
             
@@ -2022,16 +2380,13 @@
             });
         }
 
-        // ==================== DOCUMENT HANDLING (FIXED VERSION) ====================
+        // ==================== DOCUMENT HANDLING ====================
         
-        // Handle click on document item - either trigger file input or show actions
         function handleDocItemClick(docNum) {
             const doc = currentDocs[docNum];
             if (!doc) {
-                // No document yet, trigger file input
                 document.getElementById(`file-doc-${docNum}`).click();
             }
-            // If document exists, the action buttons handle the interactions
         }
 
         function updateDocCountBadge() {
@@ -2112,7 +2467,6 @@
                 icon.classList.remove('hidden');
             }
             
-            // Show action buttons bar at bottom
             if (actions) {
                 actions.style.display = 'flex';
             }
@@ -2125,7 +2479,6 @@
             if (doc.type.startsWith('image/')) {
                 openFullscreenViewer(doc.dataUrl, doc.name, doc.docName || DOC_NAMES[docNum], doc);
             } else {
-                // For PDFs, download
                 const link = document.createElement('a');
                 link.href = doc.dataUrl;
                 link.download = doc.name;
@@ -2138,7 +2491,6 @@
             const doc = currentDocs[docNum];
             if (!doc) return;
             
-            // Try native share if available
             if (navigator.share && navigator.canShare) {
                 try {
                     const response = await fetch(doc.dataUrl);
@@ -2158,7 +2510,6 @@
                 }
             }
             
-            // Fallback: download
             const link = document.createElement('a');
             link.href = doc.dataUrl;
             link.download = doc.name;
@@ -2178,7 +2529,6 @@
             
             item.classList.remove('has-file');
             
-            // Reset icon based on doc type
             icon.className = `fas ${DOC_ICONS[docNum]} text-gray-400`;
             icon.classList.remove('hidden');
             
@@ -2187,32 +2537,28 @@
             preview.classList.add('hidden');
             input.value = '';
             
-            // Hide action buttons
             if (actions) {
                 actions.style.display = 'none';
             }
             
-            // Update badge
             updateDocCountBadge();
             
             showToast('Document removed');
         }
 
-        // ==================== FULLSCREEN VIEWER - FIXED WITH PROPER CLOSE HANDLING ====================
+        // ==================== FULLSCREEN VIEWER ====================
         
-        // Store document for share fallback
         let shareFallbackDoc = null;
         
         function openFullscreenViewer(imageUrl, filename, docType, docData) {
             currentViewerDoc = docData;
-            shareFallbackDoc = docData; // Store for fallback modal
+            shareFallbackDoc = docData;
             document.getElementById('viewer-image').src = imageUrl;
             document.getElementById('viewer-filename').textContent = filename;
             document.getElementById('viewer-doc-type').textContent = docType;
             document.getElementById('fullscreen-viewer').classList.remove('hidden');
             document.body.style.overflow = 'hidden';
             
-            // Add escape key handler
             document.addEventListener('keydown', handleViewerEscapeKey);
         }
 
@@ -2226,7 +2572,6 @@
             document.body.style.overflow = '';
             currentViewerDoc = null;
             
-            // Remove escape key handler
             document.removeEventListener('keydown', handleViewerEscapeKey);
         }
 
@@ -2237,20 +2582,17 @@
         }
 
         function handleViewerBackdropClick(event) {
-            // Only close if clicking the backdrop itself, not children
             if (event.target === event.currentTarget) {
                 closeFullscreenViewer();
             }
         }
 
         function handleViewerContentClick(event) {
-            // Click on image area closes viewer (but not if clicking the image itself)
             if (event.target === event.currentTarget) {
                 closeFullscreenViewer();
             }
         }
 
-        // FIXED: Share function with proper error handling and fallback
         async function shareViewerDocument(event) {
             if (event) {
                 event.stopPropagation();
@@ -2261,7 +2603,6 @@
             
             let shareSucceeded = false;
             
-            // Try native share if available
             if (navigator.share && navigator.canShare) {
                 try {
                     const response = await fetch(currentViewerDoc.dataUrl);
@@ -2279,16 +2620,12 @@
                     }
                 } catch (e) {
                     console.log('Native share failed or was cancelled:', e);
-                    // Don't show error - user might have just cancelled
                 }
             }
             
-            // If we get here, sharing failed or isn't available
-            // Show fallback modal instead of auto-downloading
             showShareFallback();
         }
 
-        // NEW: Share fallback modal functions
         function showShareFallback() {
             const modal = document.getElementById('share-fallback-modal');
             const text = document.getElementById('share-fallback-text');
@@ -2380,7 +2717,502 @@
             reader.readAsDataURL(file);
         }
 
-        // ==================== GEMINI AI OCR ====================
+        // ==================== VOR HANDLING ====================
+        
+        function handleVORDrop(e) {
+            e.preventDefault();
+            e.currentTarget.classList.remove('active');
+            const file = e.dataTransfer.files[0];
+            if (file && file.type.startsWith('image/')) processVORFile(file);
+        }
+
+        function handleVORFileSelect(e) {
+            const file = e.target.files[0];
+            if (file) processVORFile(file);
+        }
+
+        async function processVORFile(file) {
+            const MAX_SIZE = 10 * 1024 * 1024;
+            if (file.size > MAX_SIZE) {
+                showToast('Image too large (max 10MB)', 'error');
+                return;
+            }
+            
+            document.getElementById('vor-processing-indicator').classList.remove('hidden');
+            
+            const reader = new FileReader();
+            reader.onload = async (e) => {
+                try {
+                    vorCurrentImage = e.target.result;
+                    vorProcessedImage = await preprocessImage(vorCurrentImage);
+                    
+                    document.getElementById('vor-preview-main').src = vorProcessedImage;
+                    document.getElementById('vor-preview-main').classList.remove('hidden');
+                    document.getElementById('vor-upload-default').classList.add('hidden');
+                    document.getElementById('vor-photo-status').textContent = 'Ready';
+                    document.getElementById('vor-photo-status').className = 'text-xs text-orange-600 font-medium';
+                    document.getElementById('vor-upload-zone').classList.remove('required');
+                    
+                    showToast('Defect photo loaded. Tap "Scan Defect Report" to extract.');
+                } catch (err) {
+                    vorProcessedImage = vorCurrentImage;
+                    document.getElementById('vor-preview-main').src = vorCurrentImage;
+                    document.getElementById('vor-preview-main').classList.remove('hidden');
+                    document.getElementById('vor-upload-default').classList.add('hidden');
+                } finally {
+                    document.getElementById('vor-processing-indicator').classList.add('hidden');
+                }
+            };
+            reader.onerror = () => {
+                showToast('Error reading image', 'error');
+                document.getElementById('vor-processing-indicator').classList.add('hidden');
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function handleVORAdditionalSelect(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            
+            const MAX_SIZE = 10 * 1024 * 1024;
+            if (file.size > MAX_SIZE) {
+                showToast('Image too large (max 10MB)', 'error');
+                return;
+            }
+            
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                vorAdditionalImage = e.target.result;
+                document.getElementById('vor-preview-additional').src = vorAdditionalImage;
+                document.getElementById('vor-preview-additional').classList.remove('hidden');
+                document.getElementById('vor-additional-default').classList.add('hidden');
+                document.getElementById('vor-additional-status').textContent = 'Added';
+                document.getElementById('vor-additional-status').className = 'text-xs text-green-600 font-medium';
+                showToast('Additional photo added');
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function updateVOROcrProgress(percentage, stage) {
+            const bar = document.getElementById('vor-ocr-progress-bar');
+            const pct = document.getElementById('vor-ocr-percentage');
+            const stageText = document.getElementById('vor-ocr-stage');
+            const statusText = document.getElementById('vor-ocr-status-text');
+            
+            if (bar) bar.style.width = percentage + '%';
+            if (pct) pct.textContent = percentage + '%';
+            if (stageText) stageText.textContent = stage;
+            if (statusText) statusText.textContent = stage;
+        }
+
+        async function performVOROCR(imageDataUrl) {
+            if (!isGeminiConfigured()) {
+                throw new Error('Gemini API key not configured. Please add your API key in settings.');
+            }
+
+            const base64Image = imageDataUrl.split(',')[1];
+            if (!base64Image) {
+                throw new Error('Invalid image format');
+            }
+
+            const prompt = `You are an expert OCR system specialized in extracting data from Vehicle Defect Reports (VDR) and VOR (Vehicle Off Road) forms.
+
+Analyze this defect report image and extract the following information:
+
+1. DEFECT NUMBER (usually starts with "No" or just a number, e.g., "092018")
+2. DATE (format DD-MM-YY or similar)
+3. TIME (24-hour format, e.g., "16:00")
+4. REG/TRAILER NUMBER (vehicle registration, e.g., "WU69 XDY")
+5. NATURE OF DEFECT (description of the problem, e.g., "FAULT IN 12/24 VOLT SYSTEM")
+
+Look for fields labeled:
+- "No" or "Defect No"
+- "DATE"
+- "TIME"  
+- "REG.No./TRAILER No" or "VEHICLE"
+- "NATURE OF DEFECT"
+
+Return ONLY a JSON object in this exact format:
+{
+  "defectNumber": "string or null",
+  "date": "DD-MM-YYYY or null",
+  "time": "HH:MM or null",
+  "regNumber": "string or null",
+  "natureOfDefect": "string or null",
+  "confidence": "high|medium|low"
+}
+
+Rules:
+- Use null for fields not found
+- Convert dates to DD-MM-YYYY format
+- Convert times to HH:MM format
+- Reg numbers may have spaces (e.g., "WU69 XDY")
+- Nature of defect may be handwritten - extract as clearly as possible
+- Confidence is high if 4+ fields clear, medium if 2-3, low if fewer`;
+
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`;
+
+            const requestBody = {
+                contents: [{
+                    parts: [
+                        { text: prompt },
+                        {
+                            inline_data: {
+                                mime_type: "image/jpeg",
+                                data: base64Image
+                            }
+                        }
+                    ]
+                }],
+                generationConfig: {
+                    temperature: 0.1,
+                    maxOutputTokens: 2048
+                }
+            };
+
+            try {
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 30000);
+
+                const response = await fetch(`${apiUrl}?key=${GEMINI_API_KEY}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(requestBody),
+                    signal: controller.signal
+                });
+
+                clearTimeout(timeoutId);
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(`API error (${response.status}): ${errorData.error?.message || 'Unknown error'}`);
+                }
+
+                const data = await response.json();
+
+                if (!data.candidates || data.candidates.length === 0) {
+                    throw new Error('No response from Gemini API');
+                }
+
+                const text = data.candidates[0].content.parts[0].text;
+
+                let parsedData;
+                try {
+                    const jsonMatch = text.match(/```json\s*([\s\S]*?)```/) || 
+                                     text.match(/```\s*([\s\S]*?)```/) ||
+                                     [null, text];
+                    const jsonStr = jsonMatch[1] || text;
+                    parsedData = JSON.parse(jsonStr);
+                } catch (e) {
+                    parsedData = extractVORDataFromText(text);
+                }
+
+                return parsedData;
+
+            } catch (error) {
+                if (error.name === 'AbortError') {
+                    throw new Error('Request timed out. Please check your internet connection.');
+                }
+                throw error;
+            }
+        }
+
+        function extractVORDataFromText(text) {
+            const data = {
+                defectNumber: null,
+                date: null,
+                time: null,
+                regNumber: null,
+                natureOfDefect: null,
+                confidence: 'low'
+            };
+
+            const defectMatch = text.match(/defectNumber["\s:]+([^"\n,}]+)/i) ||
+                               text.match(/No["\s:]+([^"\n,}]+)/i) ||
+                               text.match(/(\d{5,6})/);
+            if (defectMatch) data.defectNumber = defectMatch[1].trim();
+
+            const dateMatch = text.match(/date["\s:]+([^"\n,}]+)/i) ||
+                             text.match(/(\d{1,2}[-/]\d{1,2}[-/]\d{2,4})/);
+            if (dateMatch) data.date = dateMatch[1].trim();
+
+            const timeMatch = text.match(/time["\s:]+([^"\n,}]+)/i) ||
+                             text.match(/(\d{1,2}:\d{2})/);
+            if (timeMatch) data.time = timeMatch[1].trim();
+
+            const regMatch = text.match(/regNumber["\s:]+([^"\n,}]+)/i) ||
+                            text.match(/reg["\s:]+([^"\n,}]+)/i) ||
+                            text.match(/([A-Z]{2}\d{2}\s*[A-Z]{3})/i);
+            if (regMatch) data.regNumber = regMatch[1].trim();
+
+            const natureMatch = text.match(/natureOfDefect["\s:]+([^"\n}]+)/i) ||
+                               text.match(/nature["\s:]+([^"\n}]+)/i);
+            if (natureMatch) data.natureOfDefect = natureMatch[1].trim();
+
+            return data;
+        }
+
+        async function startVOROCR() {
+            if (!vorProcessedImage && !vorCurrentImage) {
+                showToast('Defect photo is required', 'error');
+                document.getElementById('vor-upload-zone').classList.add('required');
+                return;
+            }
+
+            if (!isGeminiConfigured()) {
+                showGeminiKeyModal();
+                return;
+            }
+
+            const imageToProcess = vorProcessedImage || vorCurrentImage;
+
+            document.getElementById('vor-ocr-error').classList.add('hidden');
+            document.getElementById('vor-scan-btn').classList.add('hidden');
+            document.getElementById('vor-ocr-progress').classList.remove('hidden');
+            document.getElementById('vor-auto-results').classList.add('hidden');
+
+            updateVOROcrProgress(5, 'Preparing image...');
+
+            try {
+                await new Promise(r => setTimeout(r, 100));
+                updateVOROcrProgress(15, 'Connecting to Gemini AI...');
+                
+                const geminiResult = await performVOROCR(imageToProcess);
+                
+                updateVOROcrProgress(80, 'Processing results...');
+                
+                vorAutoDetectedData = geminiResult;
+
+                // Fill in the form
+                if (geminiResult.defectNumber) {
+                    document.getElementById('vor-defect-number').value = geminiResult.defectNumber;
+                    document.getElementById('vor-defect-number').classList.add('auto-filled');
+                    document.getElementById('vor-defect-number-badge').classList.remove('hidden');
+                }
+
+                if (geminiResult.date) {
+                    const parsedDate = parseVORDate(geminiResult.date);
+                    if (parsedDate) {
+                        document.getElementById('vor-date-select').value = formatDateForInput(parsedDate);
+                        document.getElementById('vor-date-select').classList.add('auto-filled');
+                        document.getElementById('vor-auto-detected-badge').classList.remove('hidden');
+                    }
+                }
+
+                if (geminiResult.time) {
+                    document.getElementById('vor-time').value = geminiResult.time;
+                    document.getElementById('vor-time').classList.add('auto-filled');
+                    document.getElementById('vor-time-badge').classList.remove('hidden');
+                }
+
+                if (geminiResult.regNumber) {
+                    document.getElementById('vor-reg-number').value = geminiResult.regNumber.toUpperCase();
+                    document.getElementById('vor-reg-number').classList.add('auto-filled');
+                    document.getElementById('vor-reg-badge').classList.remove('hidden');
+                }
+
+                if (geminiResult.natureOfDefect) {
+                    document.getElementById('vor-nature').value = geminiResult.natureOfDefect;
+                    document.getElementById('vor-nature').classList.add('auto-filled');
+                    document.getElementById('vor-nature-badge').classList.remove('hidden');
+                }
+
+                updateVOROcrProgress(100, 'Complete!');
+
+                setTimeout(() => {
+                    document.getElementById('vor-ocr-progress').classList.add('hidden');
+                    showVORAutoResults();
+                }, 500);
+
+                const filledFields = [geminiResult.defectNumber, geminiResult.date, geminiResult.time, 
+                                    geminiResult.regNumber, geminiResult.natureOfDefect].filter(f => f).length;
+                const confidence = filledFields >= 4 ? 'high' : filledFields >= 2 ? 'medium' : 'low';
+                
+                showToast(`✅ Extracted ${filledFields}/5 fields with Gemini AI`);
+
+            } catch (err) {
+                console.error('VOR OCR Error:', err);
+                
+                document.getElementById('vor-ocr-progress').classList.add('hidden');
+                document.getElementById('vor-ocr-error').classList.remove('hidden');
+                document.getElementById('vor-scan-btn').classList.remove('hidden');
+                
+                let errorMsg = err.message || 'OCR failed. Please try again.';
+                document.getElementById('vor-error-message').textContent = errorMsg;
+                
+                showToast(errorMsg, 'error');
+            }
+        }
+
+        function parseVORDate(dateStr) {
+            const formats = [
+                /(\d{1,2})[-/](\d{1,2})[-/](\d{2,4})/,
+                /(\d{1,2})\s+(\w+)\s+(\d{4})/i
+            ];
+
+            for (const format of formats) {
+                const match = dateStr.match(format);
+                if (match) {
+                    let day, month, year;
+                    
+                    if (match[0].match(/\d{1,2}\s+\w+\s+\d{4}/)) {
+                        day = parseInt(match[1]);
+                        const monthNames = ['jan','feb','mar','apr','may','jun','jul','aug','sep','oct','nov','dec'];
+                        month = monthNames.indexOf(match[2].toLowerCase());
+                        year = parseInt(match[3]);
+                    } else {
+                        day = parseInt(match[1]);
+                        month = parseInt(match[2]) - 1;
+                        year = parseInt(match[3]);
+                    }
+
+                    if (year < 100) year = 2000 + year;
+
+                    const date = new Date(year, month, day);
+                    if (date.getDate() === day) return date;
+                }
+            }
+            return null;
+        }
+
+        function showVORAutoResults() {
+            document.getElementById('vor-auto-results').classList.remove('hidden');
+            document.getElementById('vor-save-btn').classList.remove('hidden');
+            
+            const data = vorAutoDetectedData || {};
+            
+            document.getElementById('vor-result-defect-number').textContent = data.defectNumber || '--';
+            document.getElementById('vor-result-date').textContent = data.date || '--';
+            document.getElementById('vor-result-time').textContent = data.time || '--';
+            document.getElementById('vor-result-reg').textContent = data.regNumber ? data.regNumber.toUpperCase() : '--';
+            
+            const filledFields = [data.defectNumber, data.date, data.time, data.regNumber, data.natureOfDefect].filter(f => f).length;
+            const confidence = filledFields >= 4 ? 'High' : filledFields >= 2 ? 'Medium' : 'Low';
+            
+            const badge = document.getElementById('vor-confidence-badge');
+            badge.textContent = confidence + ' Confidence';
+            badge.className = 'text-xs px-2 py-1 rounded-full ' + 
+                (confidence === 'High' ? 'bg-green-200 text-green-800' :
+                 confidence === 'Medium' ? 'bg-yellow-200 text-yellow-800' :
+                 'bg-red-200 text-red-800');
+        }
+
+        function retryVOROCR() {
+            document.getElementById('vor-ocr-error').classList.add('hidden');
+            startVOROCR();
+        }
+
+        function showVORManualEntry() {
+            document.getElementById('vor-ocr-error').classList.add('hidden');
+            document.getElementById('vor-auto-results').classList.remove('hidden');
+            document.getElementById('vor-save-btn').classList.remove('hidden');
+            showToast('Enter details manually', 'info');
+        }
+
+        async function saveVORReport() {
+            const defectNumber = document.getElementById('vor-defect-number').value.trim();
+            const date = document.getElementById('vor-date-select').value;
+            const time = document.getElementById('vor-time').value;
+            const regNumber = document.getElementById('vor-reg-number').value.trim().toUpperCase();
+            const nature = document.getElementById('vor-nature').value.trim();
+
+            if (!defectNumber) {
+                showToast('Defect number is required', 'error');
+                return;
+            }
+            if (!date) {
+                showToast('Date is required', 'error');
+                return;
+            }
+
+            const vorId = `vor_${currentUser.username}_${Date.now()}`;
+            
+            // Save main image
+            const mainImageId = `${vorId}_main`;
+            if (vorProcessedImage || vorCurrentImage) {
+                await saveToStore(STORES.images, mainImageId, { 
+                    data: vorProcessedImage || vorCurrentImage 
+                });
+            }
+
+            // Save additional image if present
+            let additionalImageId = null;
+            if (vorAdditionalImage) {
+                additionalImageId = `${vorId}_additional`;
+                await saveToStore(STORES.images, additionalImageId, { 
+                    data: vorAdditionalImage 
+                });
+            }
+
+            const vorReport = {
+                id: vorId,
+                username: currentUser.username,
+                defectNumber: defectNumber,
+                date: date,
+                time: time || null,
+                regNumber: regNumber || null,
+                natureOfDefect: nature || null,
+                mainImageId: mainImageId,
+                additionalImageId: additionalImageId,
+                createdAt: new Date().toISOString(),
+                ocrData: vorAutoDetectedData
+            };
+
+            await saveToStore(STORES.vorReports, vorId, vorReport);
+
+            resetVORForm();
+            
+            showToast(`VOR Report #${defectNumber} saved successfully`);
+            switchView('history');
+        }
+
+        function resetVORForm() {
+            vorCurrentImage = null;
+            vorProcessedImage = null;
+            vorAdditionalImage = null;
+            vorAutoDetectedData = null;
+
+            document.getElementById('vor-defect-number').value = '';
+            document.getElementById('vor-date-select').value = formatDateForInput(new Date());
+            document.getElementById('vor-time').value = '';
+            document.getElementById('vor-reg-number').value = '';
+            document.getElementById('vor-nature').value = '';
+
+            document.getElementById('vor-preview-main').src = '';
+            document.getElementById('vor-preview-main').classList.add('hidden');
+            document.getElementById('vor-upload-default').classList.remove('hidden');
+            document.getElementById('vor-file-main').value = '';
+
+            document.getElementById('vor-preview-additional').src = '';
+            document.getElementById('vor-preview-additional').classList.add('hidden');
+            document.getElementById('vor-additional-default').classList.remove('hidden');
+            document.getElementById('vor-file-additional').value = '';
+
+            document.getElementById('vor-defect-number').classList.remove('auto-filled');
+            document.getElementById('vor-date-select').classList.remove('auto-filled');
+            document.getElementById('vor-time').classList.remove('auto-filled');
+            document.getElementById('vor-reg-number').classList.remove('auto-filled');
+            document.getElementById('vor-nature').classList.remove('auto-filled');
+
+            document.getElementById('vor-defect-number-badge').classList.add('hidden');
+            document.getElementById('vor-auto-detected-badge').classList.add('hidden');
+            document.getElementById('vor-time-badge').classList.add('hidden');
+            document.getElementById('vor-reg-badge').classList.add('hidden');
+            document.getElementById('vor-nature-badge').classList.add('hidden');
+
+            document.getElementById('vor-photo-status').textContent = 'Required';
+            document.getElementById('vor-photo-status').className = 'text-xs text-red-500 font-medium';
+            document.getElementById('vor-additional-status').textContent = 'Optional';
+            document.getElementById('vor-additional-status').className = 'text-xs text-gray-400 font-medium';
+
+            document.getElementById('vor-auto-results').classList.add('hidden');
+            document.getElementById('vor-save-btn').classList.add('hidden');
+            document.getElementById('vor-scan-btn').classList.remove('hidden');
+        }
+
+        // ==================== GEMINI AI OCR (Timesheet) ====================
         function isGeminiConfigured() {
             return GEMINI_API_KEY && GEMINI_API_KEY.length > 10 && GEMINI_API_KEY.startsWith('AIza');
         }
@@ -3256,6 +4088,32 @@ Rules:
             modal.classList.remove('hidden');
         }
 
+        async function showDeleteVOROptions() {
+            const modal = document.getElementById('delete-modal');
+            const title = document.getElementById('delete-modal-title');
+            const content = document.getElementById('delete-options-content');
+            
+            title.textContent = 'Delete VOR Reports';
+            
+            const vorReports = await getVORReportsForUser(currentUser.username);
+            
+            if (vorReports.length === 0) {
+                content.innerHTML = '<p class="text-gray-500 text-center py-4">No VOR reports to delete</p>';
+            } else {
+                content.innerHTML = vorReports.map(vor => `
+                    <button onclick="confirmDeleteVOR('${vor.id}')" class="w-full flex justify-between items-center p-4 bg-gray-50 dark:bg-dark-surface rounded-xl mb-2 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors">
+                        <div>
+                            <span class="font-medium text-gray-900 dark:text-white block">Defect #${vor.defectNumber}</span>
+                            <span class="text-xs text-gray-500">${vor.date} • ${vor.regNumber || 'No reg'}</span>
+                        </div>
+                        <i class="fas fa-trash text-red-500"></i>
+                    </button>
+                `).join('');
+            }
+            
+            modal.classList.remove('hidden');
+        }
+
         function closeDeleteModal() {
             document.getElementById('delete-modal').classList.add('hidden');
         }
@@ -3329,6 +4187,24 @@ Rules:
             showToast('Month deleted');
         }
 
+        async function confirmDeleteVOR(vorId) {
+            if (confirm('Delete this VOR report permanently?')) {
+                await deleteVORReport(vorId);
+                closeDeleteModal();
+            }
+        }
+
+        async function deleteVORReport(vorId) {
+            const vor = await getFromStore(STORES.vorReports, vorId);
+            if (vor) {
+                if (vor.mainImageId) await deleteFromStore(STORES.images, vor.mainImageId);
+                if (vor.additionalImageId) await deleteFromStore(STORES.images, vor.additionalImageId);
+                await deleteFromStore(STORES.vorReports, vorId);
+            }
+            renderHistory();
+            showToast('VOR report deleted');
+        }
+
         async function deleteAllData() {
             if (confirm('DELETE ALL TIMESHEET DATA?\n\nThis will remove every timesheet and document. This cannot be undone.')) {
                 if (confirm('Are you absolutely sure?')) {
@@ -3390,8 +4266,9 @@ Rules:
             }
         }
 
-        // ==================== HISTORY & OTHER ====================
-        function renderHistory(filter = 'all') {
+        // ==================== HISTORY & VOR ====================
+        async function renderHistory(filter = 'all') {
+            // Render Timesheets
             const list = document.getElementById('history-list');
             let timesheets = DB_LS.getTimesheets(currentUser.username);
             timesheets.sort((a, b) => new Date(b.weekStart) - new Date(a.weekStart));
@@ -3407,24 +4284,102 @@ Rules:
             }
             
             if (timesheets.length === 0) {
-                list.innerHTML = '<div class="text-center py-8 text-gray-400"><i class="fas fa-inbox text-4xl mb-2"></i><p>No timesheets found</p></div>';
+                list.innerHTML = '<div class="text-center py-4 text-gray-400 text-sm"><p>No timesheets found</p></div>';
+            } else {
+                list.innerHTML = timesheets.map(ts => `
+                    <div class="bg-white dark:bg-dark-card rounded-2xl p-4 shadow-sm border border-gray-100 dark:border-gray-700 flex justify-between items-center cursor-pointer" onclick="openWeekDetailsById(${ts.id})">
+                        <div class="flex items-center gap-3">
+                            <div class="w-12 h-12 rounded-xl ${ts.totalHours > 0 ? 'bg-green-100 dark:bg-green-900/30 text-green-600' : 'bg-gray-100 dark:bg-dark-surface text-gray-400'} flex items-center justify-center">
+                                <i class="fas fa-calendar-week text-lg"></i>
+                            </div>
+                            <div>
+                                <h4 class="font-semibold text-sm text-gray-900 dark:text-white">${ts.weekRange}</h4>
+                                <p class="text-xs text-gray-500">${ts.totalHours}h • ${ts.firstWorkingDay || '?'} start</p>
+                            </div>
+                        </div>
+                        <i class="fas fa-chevron-right text-gray-400"></i>
+                    </div>
+                `).join('');
+            }
+
+            // Render VOR Reports
+            await renderVORHistory(filter);
+        }
+
+        async function renderVORHistory(filter = 'all') {
+            const list = document.getElementById('vor-history-list');
+            let vorReports = await getVORReportsForUser(currentUser.username);
+            
+            const now = new Date();
+            if (filter === 'month') {
+                vorReports = vorReports.filter(v => {
+                    const d = parseDate(v.date);
+                    return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
+                });
+            } else if (filter === 'year') {
+                vorReports = vorReports.filter(v => parseDate(v.date).getFullYear() === now.getFullYear());
+            }
+            
+            if (vorReports.length === 0) {
+                list.innerHTML = '<div class="text-center py-4 text-gray-400 text-sm"><p>No VOR reports found</p></div>';
                 return;
             }
             
-            list.innerHTML = timesheets.map(ts => `
-                <div class="bg-white dark:bg-dark-card rounded-2xl p-4 shadow-sm border border-gray-100 dark:border-gray-700 flex justify-between items-center cursor-pointer" onclick="openWeekDetailsById(${ts.id})">
+            list.innerHTML = vorReports.map(vor => `
+                <div class="bg-white dark:bg-dark-card rounded-2xl p-4 shadow-sm border border-gray-100 dark:border-gray-700 flex justify-between items-center cursor-pointer vor-card" onclick="openVORDetails('${vor.id}')">
                     <div class="flex items-center gap-3">
-                        <div class="w-12 h-12 rounded-xl ${ts.totalHours > 0 ? 'bg-green-100 dark:bg-green-900/30 text-green-600' : 'bg-gray-100 dark:bg-dark-surface text-gray-400'} flex items-center justify-center">
-                            <i class="fas fa-calendar-week text-lg"></i>
+                        <div class="w-12 h-12 rounded-xl bg-orange-100 dark:bg-orange-900/30 text-orange-600 flex items-center justify-center">
+                            <i class="fas fa-exclamation-triangle text-lg"></i>
                         </div>
                         <div>
-                            <h4 class="font-semibold text-sm text-gray-900 dark:text-white">${ts.weekRange}</h4>
-                            <p class="text-xs text-gray-500">${ts.totalHours}h • ${ts.firstWorkingDay || '?'} start</p>
+                            <h4 class="font-semibold text-sm text-gray-900 dark:text-white">Defect #${vor.defectNumber}</h4>
+                            <p class="text-xs text-gray-500">${vor.date} • ${vor.regNumber || 'No reg'} • ${vor.time || 'No time'}</p>
                         </div>
                     </div>
                     <i class="fas fa-chevron-right text-gray-400"></i>
                 </div>
             `).join('');
+        }
+
+        async function searchDefectNumber() {
+            const searchTerm = document.getElementById('defect-search-input').value.trim().toLowerCase();
+            if (!searchTerm) {
+                renderHistory();
+                return;
+            }
+            
+            const vorReports = await getVORReportsForUser(currentUser.username);
+            const filtered = vorReports.filter(v => 
+                v.defectNumber.toLowerCase().includes(searchTerm)
+            );
+            
+            const list = document.getElementById('vor-history-list');
+            if (filtered.length === 0) {
+                list.innerHTML = '<div class="text-center py-4 text-gray-400 text-sm"><p>No matching defects found</p></div>';
+            } else {
+                list.innerHTML = filtered.map(vor => `
+                    <div class="bg-white dark:bg-dark-card rounded-2xl p-4 shadow-sm border-2 border-orange-400 dark:border-orange-600 flex justify-between items-center cursor-pointer vor-card" onclick="openVORDetails('${vor.id}')">
+                        <div class="flex items-center gap-3">
+                            <div class="w-12 h-12 rounded-xl bg-orange-100 dark:bg-orange-900/30 text-orange-600 flex items-center justify-center">
+                                <i class="fas fa-exclamation-triangle text-lg"></i>
+                            </div>
+                            <div>
+                                <h4 class="font-semibold text-sm text-gray-900 dark:text-white">Defect #${vor.defectNumber}</h4>
+                                <p class="text-xs text-gray-500">${vor.date} • ${vor.regNumber || 'No reg'}</p>
+                            </div>
+                        </div>
+                        <i class="fas fa-chevron-right text-orange-500"></i>
+                    </div>
+                `).join('');
+            }
+            
+            // Clear timesheets when searching defects
+            document.getElementById('history-list').innerHTML = '<div class="text-center py-4 text-gray-400 text-sm"><p>Search active - showing defects only</p></div>';
+        }
+
+        function clearDefectSearch() {
+            document.getElementById('defect-search-input').value = '';
+            renderHistory();
         }
 
         function filterHistory(type) {
@@ -3446,9 +4401,86 @@ Rules:
             if (ts) openWeekDetails(ts);
         }
 
-        // ==================== WEEK DETAILS MODAL - WITH SHARE FOR MAIN TIMESHEET ====================
+        async function openVORDetails(vorId) {
+            const vor = await getFromStore(STORES.vorReports, vorId);
+            if (!vor) {
+                showToast('VOR report not found', 'error');
+                return;
+            }
+            
+            const mainImg = vor.mainImageId ? await getFromStore(STORES.images, vor.mainImageId) : null;
+            const additionalImg = vor.additionalImageId ? await getFromStore(STORES.images, vor.additionalImageId) : null;
+            
+            document.getElementById('vor-detail-content').innerHTML = `
+                <div class="bg-orange-50 dark:bg-orange-900/20 rounded-2xl p-4 border border-orange-200 dark:border-orange-800 mb-4">
+                    <div class="grid grid-cols-2 gap-4 text-sm">
+                        <div>
+                            <span class="text-gray-500 dark:text-gray-400">Defect Number:</span>
+                            <span class="font-bold text-gray-900 dark:text-white font-mono text-lg block">${vor.defectNumber}</span>
+                        </div>
+                        <div>
+                            <span class="text-gray-500 dark:text-gray-400">Date:</span>
+                            <span class="font-bold text-gray-900 dark:text-white block">${vor.date}</span>
+                        </div>
+                        <div>
+                            <span class="text-gray-500 dark:text-gray-400">Time:</span>
+                            <span class="font-bold text-gray-900 dark:text-white block">${vor.time || 'Not recorded'}</span>
+                        </div>
+                        <div>
+                            <span class="text-gray-500 dark:text-gray-400">Reg/Trailer:</span>
+                            <span class="font-bold text-gray-900 dark:text-white font-mono block">${vor.regNumber || 'Not recorded'}</span>
+                        </div>
+                    </div>
+                </div>
+                
+                ${vor.natureOfDefect ? `
+                <div class="bg-white dark:bg-dark-card rounded-2xl p-4 shadow-sm border border-gray-100 dark:border-gray-700 mb-4">
+                    <h4 class="font-semibold text-gray-900 dark:text-white mb-2">Nature of Defect</h4>
+                    <p class="text-gray-700 dark:text-gray-300 text-sm">${vor.natureOfDefect}</p>
+                </div>
+                ` : ''}
+                
+                ${mainImg ? `
+                <div class="mb-4">
+                    <h4 class="font-semibold text-gray-900 dark:text-white mb-2">Defect Photo</h4>
+                    <img src="${mainImg.data}" class="w-full rounded-xl cursor-pointer" onclick="viewVORImage('${vor.mainImageId}')" alt="Defect">
+                </div>
+                ` : ''}
+                
+                ${additionalImg ? `
+                <div class="mb-4">
+                    <h4 class="font-semibold text-gray-900 dark:text-white mb-2">Additional Photo</h4>
+                    <img src="${additionalImg.data}" class="w-full rounded-xl cursor-pointer" onclick="viewVORImage('${vor.additionalImageId}')" alt="Additional">
+                </div>
+                ` : ''}
+                
+                <button onclick="deleteVORReport('${vor.id}'); closeVORDetailModal();" class="w-full py-3 bg-red-100 dark:bg-red-900/30 text-red-600 rounded-xl font-medium hover:bg-red-200 transition-colors">
+                    <i class="fas fa-trash mr-2"></i>Delete This Report
+                </button>
+            `;
+            
+            document.getElementById('vor-detail-modal').classList.remove('hidden');
+        }
+
+        async function viewVORImage(imageId) {
+            const img = await getFromStore(STORES.images, imageId);
+            if (img) {
+                const docData = {
+                    dataUrl: img.data,
+                    name: 'VOR_Defect_Photo.jpg',
+                    type: 'image/jpeg',
+                    docName: 'VOR Defect Photo'
+                };
+                openFullscreenViewer(img.data, 'VOR_Defect_Photo.jpg', 'VOR Defect Photo', docData);
+            }
+        }
+
+        function closeVORDetailModal() {
+            document.getElementById('vor-detail-modal').classList.add('hidden');
+        }
+
+        // ==================== WEEK DETAILS MODAL ====================
         async function openWeekDetails(ts) {
-            // Store for sharing
             currentTimesheetForShare = ts;
             
             document.getElementById('week-modal-title').textContent = ts.weekRange;
@@ -3486,14 +4518,12 @@ Rules:
                 `;
             }
             
-            // Main timesheet image with share button - NEW!
             let timesheetImageHtml = '';
             if (frontImg) {
                 timesheetImageHtml = `
                     <div class="mb-4 relative group">
                         <img src="${frontImg.data}" class="w-full rounded-xl cursor-pointer" onclick="viewTimesheetFullScreen()" alt="Timesheet">
                         
-                        <!-- Share button overlay for main timesheet -->
                         <div class="absolute top-3 right-3 flex gap-2">
                             <button onclick="shareMainTimesheet(event)" class="bg-blue-500 hover:bg-blue-600 text-white w-10 h-10 rounded-full flex items-center justify-center shadow-lg transition-transform hover:scale-110" title="Share Timesheet">
                                 <i class="fas fa-share-alt"></i>
@@ -3567,7 +4597,6 @@ Rules:
             document.getElementById('week-modal').classList.remove('hidden');
         }
 
-        // NEW: View timesheet in fullscreen viewer
         async function viewTimesheetFullScreen() {
             if (!currentTimesheetForShare) return;
             
@@ -3577,7 +4606,6 @@ Rules:
                 return;
             }
             
-            // Create a doc object for the viewer
             const docData = {
                 dataUrl: frontImg.data,
                 name: `timesheet_${currentTimesheetForShare.weekRange.replace(/\s/g, '_')}.jpg`,
@@ -3588,7 +4616,6 @@ Rules:
             openFullscreenViewer(frontImg.data, docData.name, 'Main Timesheet', docData);
         }
 
-        // NEW: Share main timesheet from week modal
         async function shareMainTimesheet(event) {
             if (event) {
                 event.stopPropagation();
@@ -3602,7 +4629,6 @@ Rules:
                 return;
             }
             
-            // Create doc object for sharing
             const docData = {
                 dataUrl: frontImg.data,
                 name: `timesheet_${currentTimesheetForShare.weekRange.replace(/\s/g, '_')}.jpg`,
@@ -3610,7 +4636,6 @@ Rules:
                 docName: 'Main Timesheet'
             };
             
-            // Try native share
             if (navigator.share && navigator.canShare) {
                 try {
                     const response = await fetch(frontImg.data);
@@ -3630,7 +4655,6 @@ Rules:
                 }
             }
             
-            // Fallback: open in fullscreen viewer with share option
             openFullscreenViewer(frontImg.data, docData.name, 'Main Timesheet', docData);
             showToast('Tap Share button to download', 'info');
         }
@@ -3652,7 +4676,7 @@ Rules:
 
         function closeWeekModal() {
             document.getElementById('week-modal').classList.add('hidden');
-            currentTimesheetForShare = null; // Clear reference
+            currentTimesheetForShare = null;
         }
 
         function updateStats() {
@@ -3696,15 +4720,25 @@ Rules:
         function switchView(viewName) {
             document.querySelectorAll('.view-section').forEach(el => el.classList.add('hidden'));
             document.querySelectorAll('.nav-item').forEach(el => {
-                el.classList.remove('active', 'text-primary');
+                el.classList.remove('active', 'text-primary', 'vor-active');
                 el.classList.add('text-gray-400');
             });
             
-            document.getElementById(`${viewName}-view`).classList.remove('hidden');
-            const activeBtn = document.querySelector(`[data-view="${viewName}"]`);
-            if (activeBtn) {
-                activeBtn.classList.add('active', 'text-primary');
-                activeBtn.classList.remove('text-gray-400');
+            if (viewName === 'vor') {
+                document.getElementById('vor-view').classList.remove('hidden');
+                const activeBtn = document.querySelector(`[data-view="vor"]`);
+                if (activeBtn) {
+                    activeBtn.classList.add('active', 'vor-active');
+                    activeBtn.classList.remove('text-gray-400');
+                }
+                updateApiKeyStatus();
+            } else {
+                document.getElementById(`${viewName}-view`).classList.remove('hidden');
+                const activeBtn = document.querySelector(`[data-view="${viewName}"]`);
+                if (activeBtn) {
+                    activeBtn.classList.add('active', 'text-primary');
+                    activeBtn.classList.remove('text-gray-400');
+                }
             }
             
             if (viewName === 'history') renderHistory();
