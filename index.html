@@ -4,46 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="theme-color" content="#3B82F6">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="Driver Archive">
     <meta name="description" content="Driver Timesheet Pro - Professional timesheet and VOR defect reporting with AI-powered OCR">
     
     <title>Driver Archive</title>
-    
-    <!-- PWA Manifest - RELATIVE PATH -->
-    <link rel="manifest" href="./manifest.json">
-    
-    <!-- Apple Touch Icons - RELATIVE PATHS, NO SPACES IN FILENAME -->
-    <link rel="apple-touch-icon" href="./app-icon.png">
-    <link rel="apple-touch-icon" sizes="180x180" href="./app-icon.png">
-    <link rel="apple-touch-icon" sizes="192x192" href="./app-icon.png">
-    <link rel="apple-touch-icon" sizes="512x512" href="./app-icon.png">
-    
-    <!-- Favicon for browsers - RELATIVE PATH -->
-    <link rel="icon" type="image/png" href="./app-icon.png">
-    
-    <!-- iOS Splash Screen Images - RELATIVE PATHS -->
-    <!-- iPhone 14 Pro Max, 14 Plus, 13 Pro Max, 12 Pro Max -->
-    <link rel="apple-touch-startup-image" media="screen and (device-width: 430px) and (device-height: 932px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" href="./app-icon.png">
-    <!-- iPhone 14 Pro, 14, 13 Pro, 13, 12 Pro, 12 -->
-    <link rel="apple-touch-startup-image" media="screen and (device-width: 393px) and (device-height: 852px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" href="./app-icon.png">
-    <!-- iPhone 13 mini, 12 mini, 11 Pro, XS, X -->
-    <link rel="apple-touch-startup-image" media="screen and (device-width: 375px) and (device-height: 812px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" href="./app-icon.png">
-    <!-- iPhone 11 Pro Max, XS Max -->
-    <link rel="apple-touch-startup-image" media="screen and (device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" href="./app-icon.png">
-    <!-- iPhone 11, XR -->
-    <link rel="apple-touch-startup-image" media="screen and (device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)" href="./app-icon.png">
-    <!-- iPhone 8 Plus, 7 Plus, 6s Plus, 6 Plus -->
-    <link rel="apple-touch-startup-image" media="screen and (device-width: 414px) and (device-height: 736px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" href="./app-icon.png">
-    <!-- iPhone 8, 7, 6s, 6, SE (2nd/3rd gen) -->
-    <link rel="apple-touch-startup-image" media="screen and (device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)" href="./app-icon.png">
-    <!-- iPad Pro 12.9" -->
-    <link rel="apple-touch-startup-image" media="screen and (device-width: 1024px) and (device-height: 1366px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)" href="./app-icon.png">
-    <!-- iPad Pro 11", iPad Air 10.9" -->
-    <link rel="apple-touch-startup-image" media="screen and (device-width: 834px) and (device-height: 1194px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)" href="./app-icon.png">
-    <!-- iPad 10.2", iPad Air 10.5", iPad mini -->
-    <link rel="apple-touch-startup-image" media="screen and (device-width: 810px) and (device-height: 1080px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)" href="./app-icon.png">
     
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
@@ -1137,19 +1100,11 @@
 
     <!-- Main App -->
     <div id="main-app" class="hidden">
-        <!-- Header -->
+        <!-- Header - Updated with centered Driver Archive title -->
         <header class="bg-white dark:bg-dark-card shadow-sm sticky top-0 z-40">
-            <div class="px-4 py-3 flex items-center justify-between">
-                <div class="flex items-center gap-3">
-                    <div class="w-10 h-10 bg-primary rounded-xl flex items-center justify-center text-white shadow-lg shadow-blue-500/30">
-                        <i class="fas fa-truck text-lg"></i>
-                    </div>
-                    <div>
-                        <h1 class="text-lg font-bold text-gray-900 dark:text-white leading-tight" id="header-username">Driver</h1>
-                        <p class="text-xs text-gray-500 dark:text-gray-400" id="sync-status"><i class="fas fa-database text-green-500"></i> IndexedDB Storage</p>
-                    </div>
-                </div>
-                <button onclick="switchView('settings')" class="touch-btn flex items-center justify-center text-gray-500 hover:text-primary transition-colors">
+            <div class="px-4 py-3 flex items-center justify-center relative">
+                <h1 class="text-xl font-bold text-gray-900 dark:text-white">Driver Archive</h1>
+                <button onclick="switchView('settings')" class="absolute right-4 touch-btn flex items-center justify-center text-gray-500 hover:text-primary transition-colors">
                     <i class="fas fa-cog text-xl"></i>
                 </button>
             </div>
@@ -3049,7 +3004,6 @@
             
             document.getElementById('auth-screen').classList.add('hidden');
             document.getElementById('main-app').classList.remove('hidden');
-            document.getElementById('header-username').textContent = user.username;
             
             const today = new Date();
             const saturday = new Date(today);
